@@ -180,7 +180,7 @@
 
 <script>
 const GITHUB_CONFIG = {
-    token: "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",
+    token: "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",
     owner: "ayushayushayushayush",
     repo: "pokemon",
     path: "deleted_examples.txt"
@@ -210,13 +210,11 @@ function startApp() {
 
 async function syncToGitHub() {
     try {
-        // UTF-8 safe Base64 encoding
         const textToSync = deletedExamples.join('\n');
         const content = btoa(unescape(encodeURIComponent(textToSync)));
         const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}`;
         
         let sha = "";
-        // First, try to get the file to see if it exists and get its SHA
         const getFile = await fetch(url, { 
             headers: { 
                 Authorization: `Bearer ${GITHUB_CONFIG.token}`,
@@ -229,7 +227,6 @@ async function syncToGitHub() {
             sha = fileData.sha;
         }
 
-        // Create or Update the file
         const response = await fetch(url, {
             method: "PUT",
             headers: { 
