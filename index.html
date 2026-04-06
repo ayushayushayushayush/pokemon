@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro - GitHub Sync</title>
+    <title>WordFlow Pro - UI Update</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -77,25 +77,46 @@
             border: 1px solid #38383a;
         }
 
-        .card-front { justify-content: center; align-items: center; text-align: center; padding: 30px; }
+        /* 1. Moved content higher up */
+        .card-front { 
+            justify-content: flex-start; 
+            align-items: center; 
+            text-align: center; 
+            padding: 60px 30px; 
+        }
         
         .word-container {
             cursor: pointer;
             padding: 20px;
             transition: opacity 0.2s;
+            width: 100%;
         }
         .word-container:active { opacity: 0.6; }
         
         .word-display { font-size: 3.5rem; font-weight: 800; color: var(--text-main); margin: 0; }
-        .ipa-sub { font-size: 1.1rem; color: var(--text-secondary); margin-top: 10px; font-family: monospace; }
         
+        /* 2. IPA and Phonetic stacked vertically */
+        .ipa-sub { 
+            font-size: 1.2rem; 
+            color: var(--text-secondary); 
+            margin-top: 15px; 
+            font-family: monospace; 
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* 3. Tap to flip button bigger and closer to bottom */
         .flip-hint {
-            margin-top: 40px;
-            font-size: 0.75rem;
+            position: absolute;
+            bottom: 40px;
+            font-size: 1rem;
             color: var(--primary);
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            padding: 15px;
+            cursor: pointer;
         }
 
         .card-back { transform: rotateY(180deg); }
@@ -158,7 +179,10 @@
             <div class="card-face card-front">
                 <div class="word-container" onclick="playAudio(event)">
                     <h1 id="f-word" class="word-display">...</h1>
-                    <div class="ipa-sub"><span id="f-ipa"></span> • <span id="f-phonetic"></span></div>
+                    <div class="ipa-sub">
+                        <span id="f-ipa"></span>
+                        <span id="f-phonetic"></span>
+                    </div>
                 </div>
                 <div class="flip-hint" onclick="flipCard()">Tap to Flip</div>
             </div>
@@ -244,8 +268,6 @@ async function syncToGitHub() {
         if (!response.ok) {
             const err = await response.json();
             console.error("GitHub Error:", err.message);
-        } else {
-            console.log("GitHub Sync Successful");
         }
     } catch (e) {
         console.error("Sync Process Error:", e);
