@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro - Example Counters</title>
+    <title>WordFlow Pro - UI Refined</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -137,7 +137,7 @@
         .example-item { 
             background: var(--example-bg); 
             padding: 16px; 
-            border-left: 4px solid var(--primary); 
+            /* Blue frame removed here */
             font-size: 0.95rem; 
             line-height: 1.5; 
             color: #E5E5EA;
@@ -146,7 +146,8 @@
         }
 
         .ex-num {
-            color: var(--primary);
+            /* Changed to white */
+            color: #FFFFFF;
             font-weight: 800;
             margin-right: 8px;
         }
@@ -163,7 +164,8 @@
 </div>
 
 <header id="app-header" style="display:none;">
-    <div style="width: 80px;"></div> <div id="counter" class="counter">0 / 0</div>
+    <div style="width: 80px;"></div> 
+    <div id="counter" class="counter">0 / 0</div>
     <div onclick="jumpPrompt()" style="color:var(--primary); font-weight:600; font-size:0.9rem;">Jump</div>
 </header>
 
