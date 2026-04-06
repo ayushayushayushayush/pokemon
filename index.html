@@ -27,7 +27,6 @@
         * { 
             box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent; 
-            /* Prevent native long-press menus in some browsers to allow our custom logic */
             -webkit-touch-callout: none; 
             user-select: none;
         }
@@ -46,8 +45,37 @@
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 1000;
-            display: flex; align-items: center; justify-content: center;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 12px;
         }
+
+        #loading-screen p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Sync status indicator */
+        #sync-status {
+            position: fixed;
+            top: calc(var(--safe-top) + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            z-index: 500;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        #sync-status.show { opacity: 1; }
+        #sync-status.syncing { background: #3a3a3c; color: var(--text-secondary); }
+        #sync-status.synced  { background: #1c3a1c; color: #30d158; }
+        #sync-status.error   { background: #3a1c1c; color: var(--delete-red); }
 
         header {
             padding: calc(var(--safe-top) + 15px) 20px 10px;
@@ -168,6 +196,8 @@
 </head>
 <body>
 
+<div id="sync-status"></div>
+
 <div id="loading-screen">
     <p>Loading...</p>
 </div>
@@ -210,15 +240,80 @@
 </div>
 
 <script>
+// ─── JSONBin Config ───────────────────────────────────────────────
+const BIN_ID  = "69d3dacfaaba882197cd5a0e";
+const API_KEY = "$2a$10$2XIWmqUVHyv39zmLplK6YOCLf07sb3WyJIxxleZUrKRb61lugMCu6";
+const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+// ─── State ────────────────────────────────────────────────────────
 let wordData = [];
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
+let syncTimeout = null; // debounce handle
 
+// ─── Sync Status UI ───────────────────────────────────────────────
+function showSync(state, message) {
+    const el = document.getElementById('sync-status');
+    el.className = `show ${state}`;
+    el.textContent = message;
+    clearTimeout(el._hideTimer);
+    if (state !== 'syncing') {
+        el._hideTimer = setTimeout(() => { el.className = ''; }, 2500);
+    }
+}
+
+// ─── JSONBin: Fetch deleted list from cloud ───────────────────────
+async function fetchDeletedFromCloud() {
+    try {
+        const res = await fetch(BIN_URL + "/latest", {
+            headers: { "X-Master-Key": API_KEY }
+        });
+        if (!res.ok) throw new Error("Fetch failed");
+        const data = await res.json();
+        const cloudList = data.record?.deleted || [];
+        // Merge cloud + local so nothing is lost
+        const merged = Array.from(new Set([...cloudList, ...deletedExamples]));
+        deletedExamples = merged;
+        localStorage.setItem('wf_deleted_log', JSON.stringify(merged));
+        return true;
+    } catch (e) {
+        console.warn("Could not fetch from JSONBin, using local cache.", e);
+        return false;
+    }
+}
+
+// ─── JSONBin: Push deleted list to cloud (debounced) ─────────────
+function pushDeletedToCloud() {
+    clearTimeout(syncTimeout);
+    showSync('syncing', '↑ Syncing…');
+    syncTimeout = setTimeout(async () => {
+        try {
+            const res = await fetch(BIN_URL, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Master-Key": API_KEY
+                },
+                body: JSON.stringify({ deleted: deletedExamples })
+            });
+            if (!res.ok) throw new Error("Push failed");
+            showSync('synced', '✓ Synced');
+        } catch (e) {
+            console.warn("Could not sync to JSONBin.", e);
+            showSync('error', '⚠ Sync failed (saved locally)');
+        }
+    }, 800); // wait 800ms after last delete before pushing
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────
 window.onload = () => {
     Papa.parse("words.csv", {
         download: true, header: true,
-        complete: function(results) {
+        complete: async function(results) {
             wordData = results.data.filter(row => row.WORD);
+            // Fetch cloud state before showing the app
+            document.getElementById('loading-screen').querySelector('p').textContent = 'Syncing…';
+            await fetchDeletedFromCloud();
             startApp();
         }
     });
@@ -231,6 +326,7 @@ function startApp() {
     updateCard();
 }
 
+// ─── Card Rendering ───────────────────────────────────────────────
 function updateCard() {
     if (wordData.length === 0) return;
     const item = wordData[currentIndex];
@@ -260,7 +356,7 @@ function updateCard() {
                 exDiv.className = 'example-item';
                 exDiv.innerHTML = `<span class="ex-num">${exampleCounter}.</span>${text}`;
                 
-                // LONG PRESS LOGIC
+                // Long press logic
                 let pressTimer;
                 
                 const startPress = () => {
@@ -268,14 +364,11 @@ function updateCard() {
                         if (confirm("Delete this example?")) {
                             deleteExample(exId, exDiv);
                         }
-                    }, 700); // Trigger after 700ms
+                    }, 700);
                 };
 
-                const cancelPress = () => {
-                    clearTimeout(pressTimer);
-                };
+                const cancelPress = () => clearTimeout(pressTimer);
 
-                // Desktop/Mobile support
                 exDiv.addEventListener('mousedown', startPress);
                 exDiv.addEventListener('touchstart', startPress, {passive: true});
                 exDiv.addEventListener('mouseup', cancelPress);
@@ -290,6 +383,7 @@ function updateCard() {
     }
 }
 
+// ─── Delete ───────────────────────────────────────────────────────
 function deleteExample(id, element) {
     element.style.opacity = '0';
     element.style.transform = 'scale(0.95)';
@@ -297,17 +391,35 @@ function deleteExample(id, element) {
         deletedExamples.push(id);
         localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
         element.remove();
+        pushDeletedToCloud(); // sync to cloud
     }, 200);
 }
 
-function resetDeleted() {
-    if(confirm("Restore all deleted examples?")) {
+// ─── Restore ──────────────────────────────────────────────────────
+async function resetDeleted() {
+    if (confirm("Restore all deleted examples?")) {
         deletedExamples = [];
         localStorage.removeItem('wf_deleted_log');
+        showSync('syncing', '↑ Syncing…');
+        try {
+            const res = await fetch(BIN_URL, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Master-Key": API_KEY
+                },
+                body: JSON.stringify({ deleted: [] })
+            });
+            if (!res.ok) throw new Error();
+            showSync('synced', '✓ Restored & synced');
+        } catch {
+            showSync('error', '⚠ Restored locally only');
+        }
         updateCard();
     }
 }
 
+// ─── Navigation ───────────────────────────────────────────────────
 function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
 function nextCard() { currentIndex = (currentIndex + 1) % wordData.length; updateCard(); }
 function prevCard() { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; updateCard(); }
