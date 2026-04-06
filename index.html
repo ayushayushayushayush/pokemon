@@ -1,705 +1,334 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Barron's Words">
-<meta name="theme-color" content="#0a0a14">
-<title>Barron's 50 — Flashcards</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WordFlow">
+    
+    <title>WordFlow Pro</title>
 
-  :root {
-    --bg: #0a0a14;
-    --surface: #12121f;
-    --card-front: #16162a;
-    --card-back: #0f1f2a;
-    --accent: #c8a96e;
-    --accent2: #6eb5c8;
-    --text: #e8e4d8;
-    --muted: #7a7a9a;
-    --border: rgba(200,169,110,0.15);
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-  }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
-  html, body {
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    -webkit-tap-highlight-color: transparent;
-    -webkit-text-size-adjust: 100%;
-    touch-action: pan-y;
-  }
+    <style>
+        :root {
+            --primary: #007AFF; 
+            --bg: #f2f2f7;
+            --card-bg: #ffffff;
+            --text-main: #1c1c1e;
+            --text-secondary: #8e8e93;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
 
-  /* ── LAYOUT ── */
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100dvh;
-    padding-top: var(--safe-top);
-    padding-bottom: var(--safe-bottom);
-  }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-  /* ── HEADER ── */
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 20px 10px;
-    flex-shrink: 0;
-  }
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
 
-  .header-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: 0.5px;
-  }
+        /* Setup Screen */
+        #setup-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 1000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 40px; text-align: center; transition: opacity 0.5s ease;
+        }
 
-  .header-count {
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    color: var(--muted);
-    letter-spacing: 1px;
-  }
+        .btn-upload {
+            background: var(--primary); color: white; padding: 20px 40px;
+            border-radius: 18px; font-weight: 700; font-size: 1.1rem;
+            box-shadow: 0 10px 20px rgba(0,122,255,0.2); border: none;
+        }
 
-  /* ── PROGRESS ── */
-  .progress-wrap {
-    padding: 0 20px 12px;
-    flex-shrink: 0;
-  }
+        /* Header & Progress */
+        header {
+            padding: calc(var(--safe-top) + 15px) 20px 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
 
-  .progress-bar {
-    height: 2px;
-    background: rgba(200,169,110,0.12);
-    border-radius: 2px;
-    overflow: hidden;
-  }
+        .counter { font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); background: #e5e5ea; padding: 4px 12px; border-radius: 20px; }
 
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    border-radius: 2px;
-    transition: width 0.4s cubic-bezier(.25,.8,.25,1);
-  }
+        /* Flashcard Scene */
+        .app-container {
+            flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
 
-  /* ── CARD STAGE ── */
-  .stage {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 20px;
-    perspective: 1400px;
-    position: relative;
-  }
+        .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 20px; }
+        .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; }
+        .card.is-flipped { transform: rotateY(180deg); }
 
-  /* ── CARD ── */
-  .card-wrapper {
-    width: 100%;
-    max-width: 420px;
-    position: relative;
-    cursor: pointer;
-    user-select: none;
-  }
+        .card-face {
+            position: absolute; width: 100%; height: 100%;
+            -webkit-backface-visibility: hidden; backface-visibility: hidden;
+            border-radius: 35px; box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            background: var(--card-bg); display: flex; flex-direction: column; overflow: hidden;
+        }
 
-  .card-inner {
-    position: relative;
-    width: 100%;
-    transform-style: preserve-3d;
-    transition: transform 0.55s cubic-bezier(.4,0,.2,1);
-    border-radius: 20px;
-  }
+        /* Audio Button */
+        .audio-btn {
+            position: absolute; top: 25px; right: 25px; width: 44px; height: 44px;
+            background: #f2f2f7; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            border: none; font-size: 1.2rem; cursor: pointer; z-index: 10;
+        }
 
-  .card-inner.flipped {
-    transform: rotateY(180deg);
-  }
+        /* Front Face */
+        .card-front { justify-content: center; align-items: center; text-align: center; padding: 30px; }
+        .word-display { font-size: 3.5rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: -1px; }
+        .phonetic-display { font-size: 1.1rem; color: var(--text-secondary); margin-top: 15px; font-family: "SF Mono", monospace; }
 
-  .card-face {
-    width: 100%;
-    border-radius: 20px;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    overflow: hidden;
-    box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px var(--border);
-  }
+        /* Back Face */
+        .card-back { transform: rotateY(180deg); }
+        .scroll-area { height: 100%; overflow-y: auto; padding: 30px; -webkit-overflow-scrolling: touch; }
+        
+        .meaning-box { margin-bottom: 25px; }
+        .type-tag { font-size: 0.8rem; text-transform: uppercase; color: var(--primary); font-weight: 800; letter-spacing: 1px; display: block; margin-bottom: 6px; }
+        .meaning-text { font-size: 1.4rem; font-weight: 700; color: var(--text-main); line-height: 1.3; }
+        
+        .example-item { 
+            background: #f8f9ff; padding: 16px; border-left: 4px solid var(--primary); 
+            border-radius: 12px; margin-bottom: 12px; font-size: 1rem; line-height: 1.5; color: #3a3a3c; 
+        }
 
-  /* ── FRONT ── */
-  .card-front {
-    background: var(--card-front);
-    min-height: 340px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 44px 32px 36px;
-    position: relative;
-  }
+        /* Bottom Controls */
+        .controls {
+            padding: 0 20px calc(var(--safe-bottom) + 20px);
+            display: flex; gap: 12px; width: 100%; max-width: 420px;
+        }
 
-  .card-front::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-  }
+        .nav-btn {
+            flex: 1; height: 65px; border-radius: 20px; border: none;
+            background: #ffffff; color: var(--text-main); font-weight: 700; font-size: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center;
+        }
+        .nav-btn.primary { background: var(--primary); color: white; }
+        .nav-btn:active { transform: scale(0.95); opacity: 0.8; }
 
-  .word-num {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 18px;
-  }
+        /* Jump Bar */
+        .jump-container { padding: 0 20px 15px; width: 100%; display: flex; gap: 8px; }
+        #indexInput { 
+            flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #ddd; 
+            font-size: 1rem; text-align: center; -webkit-appearance: none;
+        }
 
-  .word-main {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(32px, 8vw, 48px);
-    font-weight: 700;
-    color: var(--text);
-    text-align: center;
-    letter-spacing: -0.5px;
-    line-height: 1.1;
-    margin-bottom: 16px;
-  }
-
-  .word-raw {
-    font-family: 'DM Mono', monospace;
-    font-size: 14px;
-    color: var(--accent);
-    letter-spacing: 1px;
-    text-align: center;
-    opacity: 0.85;
-  }
-
-  .flip-hint {
-    position: absolute;
-    bottom: 18px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    opacity: 0.6;
-  }
-
-  .flip-hint svg {
-    width: 13px;
-    height: 13px;
-  }
-
-  /* ── BACK ── */
-  .card-back {
-    background: var(--card-back);
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%;
-    min-height: 340px;
-    transform: rotateY(180deg);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .card-back::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--accent2), var(--accent));
-  }
-
-  .back-header {
-    padding: 22px 24px 14px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    flex-shrink: 0;
-  }
-
-  .back-word {
-    font-family: 'Playfair Display', serif;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 6px;
-  }
-
-  .back-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .tag {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    letter-spacing: 0.5px;
-  }
-
-  .tag-type {
-    background: rgba(200,169,110,0.12);
-    color: var(--accent);
-    border: 1px solid rgba(200,169,110,0.2);
-  }
-
-  .tag-ipa {
-    background: rgba(110,181,200,0.1);
-    color: var(--accent2);
-    border: 1px solid rgba(110,181,200,0.2);
-  }
-
-  .tag-phonetic {
-    color: var(--muted);
-    font-size: 12px;
-  }
-
-  .back-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 24px 22px;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-
-  .meaning-label {
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 6px;
-  }
-
-  .meaning-text {
-    font-family: 'Playfair Display', serif;
-    font-style: italic;
-    font-size: 18px;
-    color: var(--text);
-    line-height: 1.5;
-    margin-bottom: 20px;
-  }
-
-  .examples-label {
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .examples-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: rgba(255,255,255,0.06);
-  }
-
-  .example-item {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13.5px;
-    font-weight: 300;
-    color: rgba(232,228,216,0.75);
-    line-height: 1.65;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-  }
-
-  .example-item:last-child {
-    border-bottom: none;
-  }
-
-  .example-num {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    color: var(--accent);
-    opacity: 0.6;
-    margin-right: 4px;
-  }
-
-  /* ── CONTROLS ── */
-  .controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 14px 20px 16px;
-    flex-shrink: 0;
-  }
-
-  .btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: transform 0.12s, opacity 0.12s, background 0.15s;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-
-  .btn:active { transform: scale(0.94); }
-
-  .btn-nav {
-    width: 54px;
-    height: 54px;
-    background: var(--surface);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    font-size: 22px;
-  }
-
-  .btn-flip {
-    flex: 1;
-    max-width: 200px;
-    height: 54px;
-    background: linear-gradient(135deg, rgba(200,169,110,0.15), rgba(110,181,200,0.15));
-    color: var(--text);
-    border: 1px solid rgba(200,169,110,0.25);
-    letter-spacing: 0.5px;
-  }
-
-  .btn-nav:disabled { opacity: 0.3; }
-
-  /* ── SHUFFLE BUTTON ── */
-  .bottom-row {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    padding: 0 20px 10px;
-    flex-shrink: 0;
-  }
-
-  .btn-small {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: 8px 16px;
-    border-radius: 8px;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.15s;
-    touch-action: manipulation;
-  }
-
-  .btn-small:active { opacity: 0.6; transform: scale(0.96); }
-  .btn-small.active { color: var(--accent); border-color: rgba(200,169,110,0.35); }
-
-  /* ── SWIPE INDICATOR ── */
-  .swipe-overlay {
-    position: absolute;
-    inset: 0;
-    border-radius: 20px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 48px;
-  }
-
-  /* ── DECK COMPLETE ── */
-  .complete-screen {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    padding: 40px;
-    text-align: center;
-    gap: 16px;
-  }
-
-  .complete-screen.visible { display: flex; }
-
-  .complete-icon {
-    font-size: 64px;
-    margin-bottom: 8px;
-  }
-
-  .complete-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--accent);
-  }
-
-  .complete-sub {
-    font-size: 15px;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-
-  .btn-restart {
-    margin-top: 16px;
-    padding: 14px 32px;
-    background: linear-gradient(135deg, rgba(200,169,110,0.2), rgba(110,181,200,0.2));
-    border: 1px solid rgba(200,169,110,0.3);
-    border-radius: 14px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    touch-action: manipulation;
-  }
-
-  /* scrollbar */
-  .back-body::-webkit-scrollbar { width: 3px; }
-  .back-body::-webkit-scrollbar-track { background: transparent; }
-  .back-body::-webkit-scrollbar-thumb { background: rgba(200,169,110,0.2); border-radius: 2px; }
-
-  /* card height syncing for back face */
-  .card-face.card-back {
-    height: auto;
-    min-height: 340px;
-    max-height: 65dvh;
-  }
-</style>
+        .section-label { font-size: 0.7rem; font-weight: 800; color: #8e8e93; text-transform: uppercase; margin: 20px 0 10px; display: block; }
+    </style>
 </head>
 <body>
-<div id="app">
-  <header>
-    <div class="header-title">Barron's 50</div>
-    <div class="header-count" id="counter">1 / 50</div>
-  </header>
 
-  <div class="progress-wrap">
-    <div class="progress-bar">
-      <div class="progress-fill" id="progress" style="width:2%"></div>
+<div id="setup-screen">
+    <h1 style="margin-bottom:10px;">WordFlow Pro</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 40px; padding: 0 30px;">This app will process 3500 words. Please select your <b>BARRONS FINAL</b> CSV file to begin.</p>
+    <label class="btn-upload">
+        Select CSV File
+        <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+    </label>
+</div>
+
+<header id="app-header" style="display:none;">
+    <div onclick="clearData()" style="color:var(--primary); font-weight:600; font-size:0.9rem;">Reset</div>
+    <div id="counter" class="counter">0 / 0</div>
+    <div onclick="toggleSearch()" style="color:var(--primary); font-weight:600; font-size:0.9rem;">Jump</div>
+</header>
+
+<div class="app-container" id="app">
+    <div class="jump-container" id="search-bar" style="display:none;">
+        <input type="number" id="indexInput" placeholder="Go to word # (1-3500)">
+        <button onclick="jumpToWord()" class="nav-btn" style="flex:0.3; height:auto; padding:10px;">Go</button>
     </div>
-  </div>
 
-  <div class="stage" id="stage">
-    <!-- card rendered by JS -->
-  </div>
+    <div class="scene">
+        <div class="card" id="card" onclick="flipCard()">
+            <div class="card-face card-front">
+                <button class="audio-btn" onclick="playAudio(event)">🔊</button>
+                <h1 id="f-word" class="word-display">...</h1>
+                <div class="phonetic-display">
+                    <span id="f-ipa"></span><br>
+                    <span id="f-phonetic" style="opacity: 0.6;"></span>
+                </div>
+            </div>
+            <div class="card-face card-back">
+                <button class="audio-btn" onclick="playAudio(event)">🔊</button>
+                <div class="scroll-area">
+                    <div class="meaning-box">
+                        <span id="b-type" class="type-tag"></span>
+                        <div id="b-meaning" class="meaning-text">...</div>
+                    </div>
+                    <div id="b-pron" style="font-size:0.9rem; color:#888; margin-bottom:20px;"></div>
+                    
+                    <span class="section-label">Usage Examples</span>
+                    <div id="example-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-  <div class="controls">
-    <button class="btn btn-nav" id="prevBtn" onclick="nav(-1)" disabled>←</button>
-    <button class="btn btn-flip" id="flipBtn" onclick="flipCard()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-      Flip
-    </button>
-    <button class="btn btn-nav" id="nextBtn" onclick="nav(1)">→</button>
-  </div>
-
-  <div class="bottom-row">
-    <button class="btn-small" id="shuffleBtn" onclick="toggleShuffle()">⇄ Shuffle</button>
-    <button class="btn-small" onclick="restartDeck()">↺ Restart</button>
-  </div>
+    <div class="controls">
+        <button class="nav-btn" onclick="prevCard(event)">Back</button>
+        <button class="nav-btn primary" onclick="nextCard(event)">Next Word</button>
+    </div>
 </div>
 
 <script>
-const RAW_WORDS = [
-  {n:1,word:"abase",raw:"[uh-beys]",phonetic:"uh-BEYS",ipa:"əˈbeɪs",type:"V.",meaning:"lower; humiliate.",examples:["Defeated, Queen Zenobia was forced to abase herself before the conquering Romans, who made her march in chains before the emperor in the procession celebrating his triumph.","He abased his head.","This legal tactic would abase the proceedings with another cliché of human banalities: the family squabble.","Why do you need to abase and demean me?","More than that, he's willing to abase himself in extraordinary ways.","They were happy to express grief and condolence, and willing to abase themselves in general terms for their unworthiness.","Should I abase myself? Rub ashes in my hair? Tear my clothes?","Viewed from afar, the town seemed to abase itself in the presence of the architectural preëminence of that monarch of buildings.","He was almost angry that his visitor, being thus reminded, did not instantly abase himself.","The more he abases them, the more justified does he appear."]},
-  {n:2,word:"abash",raw:"[uh-bash]",phonetic:"uh-BASH",ipa:"əˈbæʃ",type:"V.",meaning:"embarrass.",examples:["He was not at all abashed by her open admiration.","to abash someone by sneering.","Major scenes are Ivan's coronation; his rising from his supposed deathbed to abash those who are plotting against his son's succession.","In between, the noise quotient would abash a pneumatic drill.","Davis's look appeared to abash him, and with a low, faint sigh he relinquished his hold.","It was the glance of a man who meets an enemy's eye, not shrinkingly, but half-defiant, as if even the bitter retribution could not abash his strong courage.","Her elder cousins abashed her by commenting on her shyness.","They tried not to be abashed by the unfamiliar luxury."]},
-  {n:3,word:"abate",raw:"[uh-beyt]",phonetic:"uh-BEYT",ipa:"əˈbeɪt",type:"V.",meaning:"subside; decrease, lessen.",examples:["Rather than leaving immediately, they waited for the storm to abate.","The pain in his shoulder finally abated.","The storm has abated.","Investor anxiety about the investigation appeared to abate for now.","The time had come, he said, to abate the suffering of the Palestinian people.","The wind has now abated.","The rain was starting to abate.","The fighting in the area shows no sign of abating.","Inflation is finally showing signs of abating.","The mayor plans to abate air pollution in the city by limiting traffic."]},
-  {n:4,word:"abbreviate",raw:"[uh-bree-vee-eyt]",phonetic:"uh-BREE-vee-eyt",ipa:"əˈbri viˌeɪt",type:"V.",meaning:"shorten.",examples:["Because we were running out of time, the lecturer had to abbreviate her speech.","'Chief Executive Officer' is abbreviated as 'CEO.'","'Daniel' is often abbreviated to 'Dan.'","We had to abbreviate the names of the states.","An abbreviated version was published last year.","It is information that is too valuable to abbreviate.","As a result, many doctors are abbreviating the time-honored physical exam.","Some lines were abbreviated because they were repetitive.","Although abbreviated, this evolution is important as it sets the stage for where we are today."]},
-  {n:5,word:"abdicate",raw:"[ab-di-keyt]",phonetic:"AB-di-keyt",ipa:"ˈæb dɪˌkeɪt",type:"V.",meaning:"renounce; give up.",examples:["When Edward VIII abdicated the British throne to marry the woman he loved, he surprised the entire world.","King Edward VIII of England abdicated the throne in 1936.","Yet sometimes miracles happen, and Senates don't entirely abdicate their constitutional advice and consent roles.","She abdicated all responsibility for the project.","The administration has abdicated its leadership on this critical issue.","I think it's an abdication of your responsibility if you don't vote.","Why are you abdicating your role as a parent and depending upon the schools to teach your child these important lessons?","There is no way for a citizen of a republic to abdicate his responsibilities."]},
-  {n:6,word:"abduction",raw:"[ab-duhk-shuhn]",phonetic:"ab-DUHK-shuhn",ipa:"æbˈdʌk ʃən",type:"N.",meaning:"kidnapping.",examples:["The movie Ransom describes the attempts to rescue a multimillionaire's son after the child's abduction by kidnappers.","The FBI, National Security Council, and Delta Force were in contact about her abduction.","There has been a series of abductions of young children from schools in the area.","He was charged with abduction.","I believe that is when the alien abduction took place.","The abduction happened at about 9:15 p.m.","He later was arrested and served five years in prison for abduction.","At least 57 girls were able to escape soon after their abduction, but more than 200 remain missing."]},
-  {n:7,word:"aberrant",raw:"[uh-ber-uhnt]",phonetic:"uh-BER-uhnt",ipa:"əˈbɛr ənt",type:"N.",meaning:"abnormal or deviant.",examples:["Given the aberrant nature of the data, we doubted the validity of the entire experiment.","Colors become aberrant, shifting suddenly from greens into turquoise blue, while authentic nature steps aside for abstraction.","He was detached from reality in a manner that was even more extreme than his normally aberrant standards.","aberrant behavior/sexuality","Government regulators should do more to monitor prescribing patterns and intervene proactively if they appear aberrant.","The assumption is that trolling is this aberrant thing; that trolls are sociopaths.","They can succumb to boredom, developing aberrant, stereotyped behaviors.","A business culture helps keep employees focused on what is important and can deter aberrant behaviors."]},
-  {n:8,word:"abet",raw:"[uh-bet]",phonetic:"uh-BET",ipa:"əˈbɛt",type:"V.",meaning:"aid, usually in doing something wrong; encourage.",examples:["She was unwilling to abet him in the swindle he had planned.","to abet a swindler; to abet a crime.","And I'm not going to aid and abet them in their efforts to do that.","His accountant had aided and abetted him in the fraud.","He was abetting the crime by covering it up.","Shady lawyers abetted the company's officers in stealing the funds.","Aided and abetted by instant technology, rushing has become the default pace of life.","In my opinion, this sad state of affairs was aided and abetted by the media.","Multiple people were later charged with misdemeanor counts of aiding and abetting trespass."]},
-  {n:9,word:"abeyance",raw:"[uh-bey-uhns]",phonetic:"uh-BEY-uhns",ipa:"əˈbeɪ əns",type:"N.",meaning:"suspended action.",examples:["The deal was held in abeyance until her arrival.","Let's hold that problem in abeyance for a while.","an estate in abeyance.","Hostilities between the two groups have been in abeyance since last June.","The project is being held in abeyance until agreement is reached on funding it.","A plea in abeyance is the best deal you can get around here, except for a dismissal.","Its growth impulse had been held in abeyance for months by both of these factors.","For the time the memory of my former life was, as it were, in abeyance."]},
-  {n:10,word:"abhor",raw:"[ab-hawr]",phonetic:"ab-HAWR",ipa:"æbˈhɔr",type:"V.",meaning:"detest; hate.",examples:["She abhorred all forms of bigotry.","I abhor all forms of racism.","His opponent abhors the death penalty.","She has an abhorrence of violence.","His attitude of superiority is abhorrent.","The internet abhors nuance, and it adores digging out old posts.","Nature abhors a vacuum, and an empty plot is an open invitation to weeds.","Even people who outwardly abhor racism can make stereotyped or unfair assessments of people.","That it wasn't abhorred by the masses is even worse."]},
-  {n:11,word:"abject",raw:"[ab-jekt]",phonetic:"AB-jekt",ipa:"ˈæb dʒɛkt",type:"ADJ.",meaning:"wretched; lacking pride.",examples:["On the streets of New York the homeless live in abject poverty, huddling in doorways to find shelter from the wind.","abject poverty.","an abject coward.","an abject apology.","He is almost abject in his respect for his boss.","My experiment was an abject failure.","In this vital skill, he has been an abject failure.","That leaves entire families living in extreme isolation for years, struggling through abject poverty.","The true defining characteristic of the average contemporary academic is total, abject terror of saying anything that might jeopardize her career."]},
-  {n:12,word:"abjure",raw:"[ab-joor]",phonetic:"ab-JOOR",ipa:"æbˈdʒʊər",type:"V.",meaning:"renounce upon oath.",examples:["He abjured his allegiance to the king.","to abjure one's errors; to abjure allegiance.","Many find it fashionable to abjure party labels, insisting they vote 'for the man' independent of any partisan considerations.","But we should not want our spouses to abjure the companionship of others once we are no longer available to them.","He abjured his religion / his life of dissipation.","In defining itself by opposition to the idea of an elite, the party is willfully abjuring one of its noblest legacies.","He made no secret of his belief, refused to abjure, and welcomed death in the service of his faith."]},
-  {n:13,word:"ablution",raw:"[uh-bloo-shuhn]",phonetic:"uh-BLOO-shuhn",ipa:"əˈblu ʃən",type:"N.",meaning:"washing.",examples:["His daily ablutions were accompanied by loud noises that he humorously labeled 'Opera in the Bath.'","Ablution is part of some religious ceremonies.","He went off to the baths to perform his ablutions.","This is where women conduct ritual ablutions before prayer.","A quick trip into the bathroom revealed a line of men washing their feet in the sinks as part of their ritual prayer ablutions.","Let's start reflecting on our ritual ablution practices that we do before we pray.","Each room must be amply provided with utensils, soap, and water, for ablution."]},
-  {n:14,word:"abnegation",raw:"[ab-ni-gey-shuhn]",phonetic:"ab-ni-GEY-shuhn",ipa:"ˌæb nɪˈgeɪ ʃən",type:"N.",meaning:"repudiation; self-sacrifice.",examples:["No act of abnegation was more pronounced than his refusal of any rewards for his discovery.","It was a time of austerity and abnegation.","abnegation of parental responsibilities.","Above all, it requires an abnegation of the self.","They believe it is the duty of women to live for others in complete abnegation of themselves.","It is a heart-warming tale of courage and abnegation.","To ignore these issues would be a serious abnegation of responsibility.","This abnegation of customer care really annoys me.","His abnegation and humility are no less striking than the incontestable sincerity and genuineness of his avowals."]},
-  {n:15,word:"abolish",raw:"[uh-bol-ish]",phonetic:"uh-BOL-ish",ipa:"əˈbɒl ɪʃ",type:"V.",meaning:"cancel; put an end to.",examples:["The president of the college refused to abolish the physical education requirement.","to abolish slavery.","I think bullfighting should be abolished.","Congress abolished the draft in 1973, at the end of the Vietnam War.","Massachusetts voters abolished rent control.","The government has pledged to abolish child poverty by 2020.","It existed for a very long time — it wasn't abolished until 1966.","Reform doesn't have to mean abolishing collective bargaining.","Five states have abolished it in the last seven years."]},
-  {n:16,word:"abominable",raw:"[uh-bom-uh-nuh-buhl]",phonetic:"uh-BOM-uh-nuh-buhl",ipa:"əˈbɒm ə nə bəl",type:"ADJ.",meaning:"detestable; extremely unpleasant; very bad.",examples:["Mary liked John until she learned he was dating Susan; then she called him an abominable young man, with abominable taste in women.","an abominable crime.","The weather was abominable last week.","They have abominable taste in clothes.","The prisoners are forced to live in abominable conditions.","The weather's been abominable all week.","The abominable working conditions made many workers sick.","Addressing such an abominable crime on a global scale is a daunting challenge.","The tax system is abominable."]},
-  {n:17,word:"aboriginal",raw:"[ab-uh-rij-uh-nl]",phonetic:"ab-uh-RIJ-uh-nl",ipa:"ˌæb əˈrɪdʒ ə nl",type:"ADJ., N.",meaning:"being the first of its kind in a region; primitive; native.",examples:["Her studies of the primitive art forms of the aboriginal Indians were widely reported in the scientific journals.","the aboriginal people of Tahiti; aboriginal customs.","an Aboriginal tribe of Tasmania.","aboriginal mammals of the Arctic.","Subsistence hunting by aboriginal groups is allowed under special provisions.","The river was once a trade route for aboriginals and fur traders who built communities along its bank.","What does it mean to be a Native American or indigenous aboriginal today?","The Arunta are an aboriginal tribe from central Australia.","Aboriginal art / traditions."]},
-  {n:18,word:"abortive",raw:"[uh-bawr-tiv]",phonetic:"uh-BAWR-tiv",ipa:"əˈbɔr tɪv",type:"ADJ.",meaning:"unsuccessful; fruitless.",examples:["Attacked by armed troops, the Chinese students had to abandon their abortive attempt to democratize Beijing peacefully.","an abortive rebellion; an abortive scheme.","A Pulitzer Prize finalist in 2016 for reporting on the abortive Turkish coup.","It led him to launch his short, abortive presidential bid.","They had made another abortive search of the island.","He made two abortive attempts on the French throne."]},
-  {n:19,word:"abrade",raw:"[uh-breyd]",phonetic:"uh-BREYD",ipa:"əˈbreɪd",type:"V.",meaning:"wear away by friction; scrape; erode.",examples:["The sharp rocks abraded the skin on her legs, so she put iodine on her abrasions.","Urban life tended to abrade tribal and ethnic distinctions.","The relationship has gradually eroded away, abraded by disappointment.","It's removable so that it doesn't abrade the thigh of your passenger.","The rotary sieve tends to abrade aggregates.","The fresh leaves are used locally as a remedy for superficial burns and abraded surfaces.","Waves abrade the shore and strew the debris worn from it over the lake bed."]},
-  {n:20,word:"abrasive",raw:"[uh-brey-siv]",phonetic:"uh-BREY-siv",ipa:"əˈbreɪ sɪv",type:"ADJ.",meaning:"rubbing away; tending to grind down.",examples:["Just as abrasive cleaning powders can wear away a shiny finish, abrasive remarks can wear away a listener's patience.","an abrasive personality.","She has a rather abrasive manner.","His abrasive style can turn people away.","He can sometimes be abrasive in meetings.","an abrasive cleaner / powder / liquid.","You'll need a strong abrasive for cleaning this sink.","His abrasive style puts people off.","He's a very abrasive person, so he upsets a lot of people."]},
-  {n:21,word:"abridge",raw:"[uh-brij]",phonetic:"uh-BRIJ",ipa:"əˈbrɪdʒ",type:"V.",meaning:"condense or shorten.",examples:["Because the publishers felt the public wanted a shorter version of War and Peace, they proceeded to abridge the novel.","to abridge a reference book; to abridge a visit; to abridge one's freedom.","The book was abridged for children.","He said that Congress would make no law abridging the freedom of speech.","They listened to an abridged version on tape.","When he was done reading the full version he would read shorter, abridged versions, and he noticed a trend: they were terrible.","But the best of the movie finds a way to abridge the novel and still allow the scenes to breathe."]},
-  {n:22,word:"abrogate",raw:"[ab-ruh-geyt]",phonetic:"AB-ruh-geyt",ipa:"ˈæb rəˌgeɪt",type:"ADJ.",meaning:"abolish.",examples:["He intended to abrogate the decree issued by his predecessor.","to abrogate a law.","If a few countries abrogate the Non-Proliferation Treaty, others will follow suit.","The treaty was abrogated in 1929.","Companies are really abrogating responsibility for safety.","He seemed to abrogate his duty to uphold law and order.","The opposition party pledged to abrogate the law if they won the election.","The government cannot just abrogate contracts.","It has abrogated its founding traditions."]},
-  {n:23,word:"abscond",raw:"[ab-skond]",phonetic:"ab-SKOND",ipa:"æbˈskɒnd",type:"V.",meaning:"depart secretly and hide.",examples:["The teller who absconded with the bonds went uncaptured until someone recognized him from his photograph on 'America's Most Wanted.'","The cashier absconded with the money.","GPS devices are seen as reducing the risk that a defendant will abscond or commit a new crime.","She absconded from boarding school and hitchhiked to the city.","Two prisoners absconded last night.","They absconded with $100,000 of the company's money.","She takes the money and instead of depositing it in the bank, she's going to abscond with it.","Commanders have sometimes absconded with large amounts of cash."]},
-  {n:24,word:"absolute",raw:"[ab-suh-loot]",phonetic:"AB-suh-loot",ipa:"ˈæb səˌlut",type:"ADJ.",meaning:"complete; totally unlimited; certain.",examples:["Although the King of Siam was an absolute monarch, he did not want to behead his unfaithful wife without absolute evidence of her infidelity.","absolute liberty; absolute alcohol.","an absolute lie; an absolute denial.","I have absolute faith in her judgment.","There was no absolute proof of fraud.","He's an absolute idiot! That's absolute garbage!","She demanded absolute silence.","The day was an absolute disaster.","Health insurance is an absolute necessity.","The board said they had absolute confidence in the CEO, despite the company's difficulties."]},
-  {n:25,word:"absolve",raw:"[ab-zolv]",phonetic:"ab-ZOLV",ipa:"æbˈzɒlv",type:"V.",meaning:"pardon (an offense).",examples:["The father confessor absolved him of his sins.","The court absolved her of guilt in his death.","to be absolved from one's oath.","Obeying an unlawful order does not absolve an individual of responsibility for atrocities.","The report absolved her from all blame for the accident.","The priest absolved him of all his sins.","He was absolved of all wrongdoing.","This judgment does not absolve the UK government of its responsibilities under international law."]},
-  {n:26,word:"absorb",raw:"[ab-sawrb]",phonetic:"ab-SAWRB",ipa:"æbˈsɔrb",type:"V.",meaning:"assimilate or incorporate; suck or drink up; wholly engage.",examples:["During the nineteenth century, America absorbed hordes of immigrants, turning them into productive citizens.","A sponge absorbs water.","The empire absorbed many small nations.","This job absorbs all of my time.","Carbonic acid is formed when water absorbs carbon dioxide.","So rather than pass the billions of dollars in tariff costs along to consumers, carmakers have chosen to absorb the blow.","Plants absorb carbon dioxide.","Towels absorb moisture.","The barrier absorbed the main impact of the crash.","It's hard to absorb so much information."]},
-  {n:27,word:"abstain",raw:"[ab-steyn]",phonetic:"ab-STEYN",ipa:"æbˈsteɪn",type:"V.",meaning:"refrain; hold oneself back voluntarily from an action or practice.",examples:["After considering the effect of alcohol on his athletic performance, he decided to abstain from drinking while he trained for the race.","to abstain from eating meat.","He took a vow to abstain from alcohol / smoking / sex.","63 members voted in favor, 39 opposed, and 15 abstained.","Some families abstain from eating fried food.","During a flare, doctors will usually recommend that you abstain from alcohol entirely.","Mormons with temple privileges abstain from alcohol, tea and coffee.","While it is easy to empathize with young people's frustration in government, abstaining from the political process is arguably the worst move to make."]},
-  {n:28,word:"abstemious",raw:"[ab-stee-mee-uhs]",phonetic:"ab-STEE-mee-uhs",ipa:"æbˈsti mi əs",type:"ADJ.",meaning:"sparing in eating and drinking; temperate.",examples:["Concerned whether her vegetarian son's abstemious diet provided him with sufficient protein, the worried mother pressed food on him.","an abstemious life; an abstemious diet.","A properly dressed salad is no more abstemious than anything else.","He was an extremely abstemious and puritanical kind of guy, not a food lover at all.","He is so abstemious that he once declared that, to avoid temptation, he would never appear anywhere alcohol was served unless his wife was with him.","In his personal habits he was abstemious, never taking alcohol, and was also a non-smoker.","All day long he had been singularly abstemious.","He was universally regarded as one of the most abstemious men of his age."]},
-  {n:29,word:"abstinence",raw:"[ab-stuh-nuhns]",phonetic:"AB-stuh-nuhns",ipa:"ˈæb stə nəns",type:"N.",meaning:"restraint from eating or drinking.",examples:["The doctor recommended total abstinence from salted foods.","The program promotes sexual abstinence for teens, but also provides information on contraception.","Abstinence addresses the symptoms of addiction, while sobriety has deeper mental and emotional dimensions.","At one time Lenten abstinence from meat was stricter than it is today.","That's not to suggest that abstinence alone has turned Team USA into champions.","Along with her fiancé, they have committed to abstinence until after their wedding.","Alcohol abstinence is recommended for breast-feeding mothers.","They preach complete abstinence from premarital sex."]},
-  {n:30,word:"abstract",raw:"[ab-strakt]",phonetic:"AB-strakt",ipa:"ˈæb strækt",type:"ADJ.",meaning:"theoretical; not concrete; nonrepresentational.",examples:["To him, hunger was an abstract concept; he had never missed a meal.","an abstract idea; abstract science; abstract speculations.","My own experience watching these debates has underscored how quickly abstract legal theories can translate into concrete consequences.","The perils of a nuclear disaster seem relatively abstract compared to the very tangible horrors of an earthquake and tsunami.","Truth and beauty are abstract concepts.","This debate is becoming too abstract — let's have some hard facts!","abstract art; an abstract painter.","There is a section at the end of the magazine that includes abstracts of recent articles.","I love abstract photography and this theme suited me just fine."]},
-  {n:31,word:"abstruse",raw:"[ab-stroos]",phonetic:"ab-STROOS",ipa:"æbˈstrus",type:"ADJ.",meaning:"obscure; profound; difficult to understand.",examples:["She carries around abstruse works of philosophy, not because she understands them but because she wants her friends to think she does.","abstruse theories.","These are abstruse notions for laypersons, so here's an explanation.","an abstruse philosophical essay.","Professional philosophers know how to use those highly technical tools, and that is why their writings often appear abstruse.","Dense, abstruse and elliptical, the piece is virtually incomprehensible.","Philosophy is an abstruse and difficult field.","All of this abstruse theorizing is supposed to help me get up and get on with my day."]},
-  {n:32,word:"abundant",raw:"[uh-buhn-duhnt]",phonetic:"uh-BUHN-duhnt",ipa:"əˈbʌn dənt",type:"ADJ.",meaning:"plentiful; possessing riches or resources.",examples:["At his immigration interview, Ivan listed his abundant reasons for coming to America: the hope of religious freedom, the prospect of employment, the promise of a more abundant life.","an abundant supply of water.","a river abundant in salmon.","There is abundant evidence that cars have a harmful effect on the environment.","Cheap consumer goods are abundant in this part of the world.","It is a region with abundant natural resources.","In the middle of the country, there are abundant wind resources.","Cash is actually abundant and is likely to be so for a while.","She hopes that her abundant experience will prevent her from having to get another internship."]},
-  {n:33,word:"abusive",raw:"[uh-byoo-siv]",phonetic:"uh-BYOO-siv",ipa:"əˈbyu sɪv",type:"ADJ.",meaning:"coarsely insulting; physically harmful.",examples:["An abusive parent damages a child both mentally and physically.","an abusive author; abusive remarks; his abusive handling of the horse; an abusive exercise of power.","He was apparently abusive to the flight attendants.","After many years in an abusive relationship, she left her husband.","The coach was found guilty of being abusive to young children in his care.","She was sacked for sending an abusive email to a colleague.","abusive calls / comments / language.","Workers complained of abusive conditions, where they were forced to work 18 hours a day."]},
-  {n:34,word:"abut",raw:"[uh-buht]",phonetic:"uh-BUHT",ipa:"əˈbʌt",type:"V.",meaning:"border upon; adjoin.",examples:["Where our estates abut, we must build a fence.","This piece of land abuts on a street.","Hundreds of thousands of people live around the Bien Hoa air base, and some of their homes abut the site's perimeter fence.","Also, the extremities of the planks themselves when they are united, or abut against each other.","The parcel of land abuts on an apple orchard.","They live in an old house that abuts onto a bike path.","Their backyard abuts forty acres of woods.","Two soccer fields abut a main building that's wrapped in aluminum webbing.","Drama is achieved in design contrasts such as black marble floors abutting white carpeting."]},
-  {n:35,word:"abysmal",raw:"[uh-biz-muhl]",phonetic:"uh-BIZ-muhl",ipa:"əˈbɪz məl",type:"ADJ.",meaning:"bottomless.",examples:["His arrogance is exceeded only by his abysmal ignorance.","abysmal ignorance; abysmal poverty; abysmal stupidity.","an abysmal film.","abysmal working conditions.","The food was abysmal.","The standard of the students' work is abysmal.","This experiment could help a lot of people, or it could be an abysmal failure.","Most banner ads have an abysmal click-through rate of 0.08%.","Attendance, graduation rates, and test scores are all abysmal.","And the pay for my folks is abysmal."]},
-  {n:36,word:"abyss",raw:"[uh-bis]",phonetic:"uh-BIS",ipa:"əˈbɪs",type:"N.",meaning:"enormous chasm; vast bottomless pit.",examples:["Darth Vader seized the evil emperor and hurled him down into the abyss.","the abyss of their grief and sorrow.","By the end of summer, she had sunk into an abyss of despair.","The country is plunging into an abyss of violence and lawlessness.","She found herself on the edge of an abyss.","And looking into the elevator was a cinematic way to feel the abyss.","That is the abyss from which there is no return.","He's unafraid to stare into the abyss.","Failure to understand this tenet will very quickly sink us into an abyss from which escape might be impossible."]},
-  {n:37,word:"academic",raw:"[ak-uh-dem-ik]",phonetic:"ak-uh-DEM-ik",ipa:"ˌæk əˈdɛm ɪk",type:"ADJ.",meaning:"related to a school; not practical or directly useful.",examples:["The dean's talk about reforming the college admissions system was only an academic discussion: we knew little would change.","academic requirements; an academic question; an academic discussion of a matter already decided.","There was a lot of focus on academic achievement at my school.","I was never a particularly academic child.","The debate about whether this is a recession has become purely academic.","The effectiveness of these cholesterol drugs is not just an academic question — lives depend on it.","That is a purely academic argument.","Like many entrepreneurs, he was not particularly academic at school.","The research company was founded by a group of academics from Stockholm University."]},
-  {n:38,word:"accede",raw:"[ak-seed]",phonetic:"ak-SEED",ipa:"ækˈsid",type:"V.",meaning:"agree.",examples:["If I accede to this demand for blackmail, I am afraid that I will be the victim of future demands.","to accede to the throne.","Anthropic also refuses to accede to the Pentagon's demand for access to the AI system's full capabilities.","Those who accede to the Executive's demands, too, will be in the clear.","Nevertheless, he would accede to my request that he send it to the Proceedings of the National Academy.","He graciously acceded to our request.","It is doubtful whether the government will ever accede to the nationalists' demands for independence.","The diaries were written in 1837, when Queen Victoria acceded to the throne."]},
-  {n:39,word:"accelerate",raw:"[ak-sel-uh-reyt]",phonetic:"ak-SEL-uh-reyt",ipa:"ækˈsɛl əˌreɪt",type:"V.",meaning:"move faster.",examples:["In our science class, we learn how falling bodies accelerate.","to accelerate economic growth; to accelerate the fall of a government.","I accelerated to overtake the bus.","Inflation is likely to accelerate this year, adding further upward pressure on interest rates.","They use special chemicals to accelerate the growth of crops.","The car can accelerate to 60 miles per hour in just 6 seconds.","It's a trend that's been growing since the 1970s and has accelerated since the recession.","As climate change accelerates, the fence will only increase cross-border tension."]},
-  {n:40,word:"accentuate",raw:"[ak-sen-choo-eyt]",phonetic:"ak-SEN-choo-eyt",ipa:"ækˈsɛn tʃuˌeɪt",type:"V.",meaning:"emphasize; stress.",examples:["If you accentuate the positive and eliminate the negative, you may wind up with an overoptimistic view of the world.","But there are plenty of positives to accentuate as the calendar turns.","Clearly, Auggie's story is shaped to accentuate the positive.","The new policy only serves to accentuate the inadequacy of help for the homeless.","The short black dress accentuated her slenderness.","The more robust and bold flavor of this darker blend really accentuates what drinking tea is all about.","He favored extreme close-ups that accentuate the enormity of the trucks and their elaborate decor."]},
-  {n:41,word:"accessible",raw:"[ak-ses-uh-buhl]",phonetic:"ak-SES-uh-buhl",ipa:"ækˈsɛs ə bəl",type:"ADJ.",meaning:"easy to approach; obtainable.",examples:["We asked our guide whether the ruins were accessible on foot.","an accessible road; wheelchair-accessible vans.","Students may believe that poetry is not accessible because of its metaphorical language.","The resort is easily accessible by road, rail, and air.","All the restrooms are fully accessible.","The island is accessible only by ferry.","Public areas and buildings are now more accessible to people with disabilities.","Our building is wheelchair accessible.","The material is accessible and does not require specialist knowledge."]},
-  {n:42,word:"accessory",raw:"[ak-ses-uh-ree]",phonetic:"ak-SES-uh-ree",ipa:"ækˈsɛs ə ri",type:"N.",meaning:"additional object; useful but not essential thing.",examples:["She bought an attractive handbag as an accessory for her dress.","Sunglasses are much more than a fashion accessory.","She wore a green wool suit with matching accessories (= shoes, hat, bag, etc.).","Accessories for the top-of-the-range car include leather upholstery, electric windows, and a sunroof.","He was charged with being an accessory to murder.","She was charged with being an accessory after the fact.","We sell plants, seeds, fertilizer, and gardening accessories, such as tools and gloves.","a range of women's fashion accessories; bathroom / home / kitchen accessories."]},
-  {n:43,word:"acclaim",raw:"[uh-kleym]",phonetic:"uh-KLEYM",ipa:"əˈkleɪm",type:"V.",meaning:"applaud; announce with great approval.",examples:["The NBC sportscasters acclaimed every American victory in the Olympics and decried every American defeat.","to acclaim the conquering heroes; to acclaim the new king.","Ardern won international acclaim for her handling of the pandemic.","Despite the critical acclaim, the novel did not sell well.","Her first novel was published to great acclaim in 2018.","She was widely acclaimed for her contribution to the discovery.","She is being acclaimed as the greatest dancer of her generation.","He has also founded a school that is now winning international acclaim as a model for education."]},
-  {n:44,word:"acclimate",raw:"[ak-luh-meyt]",phonetic:"AK-luh-meyt",ipa:"ˈæk ləˌmeɪt",type:"V.",meaning:"adjust to climate.",examples:["One of the difficulties of our present air age is the need of travelers to acclimate themselves to their new and often strange environments.","There are immediate issues, such as blocked noses, which impact virtually all astronauts as they acclimate to space.","It can be difficult to acclimate to such extreme elevations.","Apparently the zoo animals had become acclimated to the crowd noise and were no longer startled by it.","Gradually acclimate yourself to working out in the heat.","He's become more acclimated to this thing and to being part of the team.","The long march marks the end of six weeks of intense training designed to acclimate the new cadets to the rigors of military life."]},
-  {n:45,word:"acclivity",raw:"[uh-kliv-i-tee]",phonetic:"uh-KLIV-i-tee",ipa:"əˈklɪv ɪ ti",type:"N.",meaning:"sharp upslope of a hill.",examples:["The car would not go up the acclivity in high gear.","They rustled through the bushes without any attempt at concealment, scrambling up the acclivity with the use of both hands and feet.","The snow was deep, the cold intense, the acclivity steep, and the huge rocks projecting.","Every indentation, every acclivity that casts a shadow, gives the impression of that soundless depth.","At last, she sank down on one of the rocky steps of the acclivity.","Here and there, towers were perched high up on acclivities which seemed almost inaccessible.","When it was reached, ensued a rough acclivity, hard for knees and lungs, winding upward for a considerable distance.","Passing up a slight acclivity, we found ourselves in a broad street that led into the heart of the city."]},
-  {n:46,word:"accolade",raw:"[ak-uh-leyd]",phonetic:"AK-uh-leyd",ipa:"ˈæk əˌleɪd",type:"N.",meaning:"award of merit.",examples:["In Hollywood, an 'Oscar' is the highest accolade.","The play received accolades from the press.","Yet he was passed over for the accolade.","She has sold millions of records and earned numerous awards and accolades over a 30-year career.","Her approval was the highest accolade he could receive.","He's been granted the ultimate accolade — his face on a postage stamp.","She wins the accolade for best supporting actress.","Long famous for their fearsome appearance and sharp teeth, piranhas can add another accolade to their storied reputation."]},
-  {n:47,word:"accommodate",raw:"[uh-kom-uh-deyt]",phonetic:"uh-KOM-uh-deyt",ipa:"əˈkɒm əˌdeɪt",type:"V.",meaning:"oblige or help someone; adjust or bring into harmony; adapt.",examples:["Mitch always did everything possible to accommodate his elderly relatives, from driving them to medical appointments to helping them with paperwork.","to accommodate a friend by helping him move to a new apartment.","Will this elevator accommodate 10 people?","to accommodate oneself to circumstances; to accommodate differences.","New students may be accommodated in halls of residence.","We always try to accommodate our clients with financial assistance if necessary.","The new policies fail to accommodate people with disabilities.","The new dormitory will be able to accommodate an additional 200 students.","The airport simply doesn't have enough room to accommodate increased air traffic."]},
-  {n:48,word:"accomplice",raw:"[uh-kom-plis]",phonetic:"uh-KOM-plis",ipa:"əˈkɒm plɪs",type:"N.",meaning:"partner in crime.",examples:["Because he had provided the criminal with the lethal weapon, he was arrested as an accomplice in the murder.","An accomplice posing as a Gemini representative called the investor.","This law encompasses everyone involved in that felony, holding them equally responsible under a doctrine called accomplice liability.","At first, Zamora was helped by an accomplice, a technician for Portugal's national flag carrier TAP.","'Not for a thousand worlds,' added his accomplice.","The thieves and two accomplices made away with over $25,000 in cash."]},
-  {n:49,word:"accord",raw:"[uh-kawrd]",phonetic:"uh-KAWRD",ipa:"əˈkɔrd",type:"N.",meaning:"agreement.",examples:["She was in complete accord with the verdict.","We did the extra work of our own accord.","On May 31 the two leaders signed a peace accord.","The project is completely in accord with government policy.","A vague murmur of accord rose from around the table.","She came of her own accord. No one asked her to come.","With one accord, the delegates walked out of the conference.","Both parties signed an accord last week in Geneva that may finally bring an end to the conflict.","The accord requires 55 countries to join, representing 55% of the world's greenhouse gas emissions, before it enters into force."]},
-  {n:50,word:"accost",raw:"[uh-kawst]",phonetic:"uh-KAWST",ipa:"əˈkɔst",type:"V.",meaning:"approach and speak first to a person.",examples:["When the two young men accosted me, I was frightened because I thought they were going to attack me.","The beggar accosted me for money.","No American should accost another for their beliefs.","I'm usually accosted by beggars and drunks as I walk to the station.","They were accosted at a bus stop by someone who said he needed money.","A gang accosted him in the parking lot.","If people accosted him, it was usually for a handshake or an autograph.","A classmate accosted her, spitting on her and throwing books at her, she said.","Onstage, he would accost the audience."]}
-];
+let wordData = [];
+let currentIndex = 0;
+let db;
 
-let deck = [...RAW_WORDS];
-let idx = 0;
-let isFlipped = false;
-let shuffleOn = false;
-let touchStartX = 0, touchStartY = 0;
+// 1. Initialize IndexedDB (to handle large 3500+ word dataset)
+const request = indexedDB.open("WordFlowDB", 1);
+request.onupgradeneeded = (e) => {
+    db = e.target.result;
+    db.createObjectStore("words", { keyPath: "id" });
+};
+request.onsuccess = (e) => {
+    db = e.target.result;
+    loadFromDB();
+};
 
-function shuffleArr(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
+function loadFromDB() {
+    const tx = db.transaction("words", "readonly");
+    const store = tx.objectStore("words");
+    const getReq = store.get("allWords");
+    getReq.onsuccess = () => {
+        if (getReq.result) {
+            wordData = getReq.result.data;
+            currentIndex = parseInt(localStorage.getItem('wf_index') || 0);
+            startApp();
+        }
+    };
 }
 
-function getCard() { return deck[idx]; }
+// 2. Handle File Upload & Parsing
+document.getElementById('csvFileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-function renderCard() {
-  const c = getCard();
-  const stage = document.getElementById('stage');
-  const isLast = idx === deck.length - 1;
-  const isFirst = idx === 0;
+    Papa.parse(file, {
+        header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+            wordData = results.data;
+            const tx = db.transaction("words", "readwrite");
+            tx.objectStore("words").put({ id: "allWords", data: wordData });
+            tx.oncomplete = () => startApp();
+        }
+    });
+});
 
-  document.getElementById('counter').textContent = `${idx + 1} / ${deck.length}`;
-  document.getElementById('progress').style.width = `${((idx + 1) / deck.length) * 100}%`;
-  document.getElementById('prevBtn').disabled = isFirst;
-  document.getElementById('nextBtn').disabled = false;
+function startApp() {
+    document.getElementById('setup-screen').style.opacity = '0';
+    setTimeout(() => {
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        document.getElementById('app-header').style.display = 'flex';
+        updateCard();
+    }, 500);
+}
 
-  const examplesHTML = c.examples.map((ex, i) =>
-    `<div class="example-item"><span class="example-num">${String(i+1).padStart(2,'0')}.</span>${ex}</div>`
-  ).join('');
+// 3. UI Logic
+function updateCard() {
+    const item = wordData[currentIndex];
+    const card = document.getElementById('card');
+    card.classList.remove('is-flipped');
+    
+    document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
+    localStorage.setItem('wf_index', currentIndex);
 
-  stage.innerHTML = `
-    <div class="card-wrapper" id="cardWrapper">
-      <div class="card-inner" id="cardInner">
-        <div class="card-face card-front">
-          <div class="word-num">Word ${String(c.n).padStart(2,'0')}</div>
-          <div class="word-main">${c.word}</div>
-          <div class="word-raw">${c.phonetic} / ${c.ipa} /</div>
-          <div class="flip-hint">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-            tap to flip
-          </div>
-        </div>
-        <div class="card-face card-back">
-          <div class="back-header">
-            <div class="back-word">${c.word}</div>
-            <div class="back-meta">
-              <span class="tag tag-type">${c.type}</span>
-              <span class="tag tag-ipa">${c.ipa}</span>
-              <span class="tag tag-phonetic">${c.phonetic}</span>
-            </div>
-          </div>
-          <div class="back-body">
-            <div class="meaning-label">Meaning</div>
-            <div class="meaning-text">${c.meaning}</div>
-            <div class="examples-label">Examples</div>
-            ${examplesHTML}
-          </div>
-        </div>
-      </div>
-    </div>`;
+    setTimeout(() => {
+        // Front
+        document.getElementById('f-word').textContent = item.WORD || "";
+        document.getElementById('f-ipa').textContent = item.IPA || "";
+        document.getElementById('f-phonetic').textContent = `[${item.PHONETIC}]` || "";
 
-  isFlipped = false;
-  document.getElementById('flipBtn').textContent = '⇄ Flip';
+        // Back
+        document.getElementById('b-type').textContent = item.Type || "";
+        document.getElementById('b-meaning').textContent = item.MEANING || "";
+        document.getElementById('b-pron').textContent = `${item.IPA} • ${item.PHONETIC}`;
 
-  // attach touch events
-  const wrapper = document.getElementById('cardWrapper');
-  wrapper.addEventListener('click', flipCard);
-  wrapper.addEventListener('touchstart', onTouchStart, {passive: true});
-  wrapper.addEventListener('touchend', onTouchEnd, {passive: true});
+        // Examples (Columns 1-50)
+        const list = document.getElementById('example-list');
+        list.innerHTML = "";
+        for (let i = 1; i <= 50; i++) {
+            const ex = item[i];
+            if (ex && ex.toString().trim().length > 1) {
+                const div = document.createElement('div');
+                div.className = 'example-item';
+                div.textContent = ex;
+                list.appendChild(div);
+            }
+        }
+        document.querySelector('.scroll-area').scrollTop = 0;
+    }, 150);
 }
 
 function flipCard() {
-  const inner = document.getElementById('cardInner');
-  if (!inner) return;
-  isFlipped = !isFlipped;
-  inner.classList.toggle('flipped', isFlipped);
-  document.getElementById('flipBtn').textContent = isFlipped ? '⇄ Word' : '⇄ Flip';
+    document.getElementById('card').classList.toggle('is-flipped');
 }
 
-function nav(dir) {
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= deck.length) return;
-  idx = newIdx;
-  renderCard();
+function nextCard(e) {
+    e.stopPropagation();
+    currentIndex = (currentIndex + 1) % wordData.length;
+    updateCard();
 }
 
-function toggleShuffle() {
-  shuffleOn = !shuffleOn;
-  const btn = document.getElementById('shuffleBtn');
-  btn.classList.toggle('active', shuffleOn);
-  if (shuffleOn) {
-    deck = shuffleArr([...RAW_WORDS]);
-  } else {
-    deck = [...RAW_WORDS];
-  }
-  idx = 0;
-  renderCard();
+function prevCard(e) {
+    e.stopPropagation();
+    currentIndex = (currentIndex - 1 + wordData.length) % wordData.length;
+    updateCard();
 }
 
-function restartDeck() {
-  idx = 0;
-  if (shuffleOn) deck = shuffleArr([...RAW_WORDS]);
-  else deck = [...RAW_WORDS];
-  renderCard();
+function playAudio(e) {
+    e.stopPropagation();
+    const word = wordData[currentIndex].WORD;
+    const audio = new Audio(`audio-file/${word}.mp3`);
+    audio.play().catch(err => console.log("Audio not found: " + word));
 }
 
-// Swipe support
-function onTouchStart(e) {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
+function jumpToWord() {
+    const val = parseInt(document.getElementById('indexInput').value);
+    if (val > 0 && val <= wordData.length) {
+        currentIndex = val - 1;
+        updateCard();
+        toggleSearch();
+    }
 }
 
-function onTouchEnd(e) {
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  const dy = e.changedTouches[0].clientY - touchStartY;
-  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-    if (dx < 0 && idx < deck.length - 1) nav(1);
-    else if (dx > 0 && idx > 0) nav(-1);
-  }
+function toggleSearch() {
+    const bar = document.getElementById('search-bar');
+    bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
 }
 
-// Keyboard support
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight') nav(1);
-  else if (e.key === 'ArrowLeft') nav(-1);
-  else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipCard(); }
+function clearData() {
+    if(confirm("This will clear all 3500 words. Continue?")) {
+        localStorage.clear();
+        const tx = db.transaction("words", "readwrite");
+        tx.objectStore("words").delete("allWords");
+        location.reload();
+    }
+}
+
+// 4. Gesture Support (Swipe left/right)
+let touchstartX = 0;
+let touchendX = 0;
+
+document.addEventListener('touchstart', e => touchstartX = e.changedTouches[0].screenX);
+document.addEventListener('touchend', e => {
+    touchendX = e.changedTouches[0].screenX;
+    handleGesture();
 });
 
-// init
-renderCard();
+function handleGesture() {
+    if (touchendX < touchstartX - 70) nextCard({stopPropagation:()=>{}});
+    if (touchendX > touchstartX + 70) prevCard({stopPropagation:()=>{}});
+}
 </script>
 </body>
 </html>
