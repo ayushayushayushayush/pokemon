@@ -29,26 +29,25 @@
             margin: 0; padding: 0;
             width: 100%; height: 100%;
             background-color: var(--bg);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             display: flex; flex-direction: column;
             overflow: hidden;
         }
 
-        /* Setup Screen */
-        #setup-screen {
+        /* Loading Overlay */
+        #loading-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 1000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 40px; text-align: center; transition: opacity 0.5s ease;
         }
 
-        .btn-upload {
-            background: var(--primary); color: white; padding: 20px 40px;
-            border-radius: 18px; font-weight: 700; font-size: 1.1rem;
-            box-shadow: 0 10px 20px rgba(0,122,255,0.2); border: none;
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #d1d1d6; border-top: 4px solid var(--primary);
+            border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
         }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Header & Progress */
+        /* Header */
         header {
             padding: calc(var(--safe-top) + 15px) 20px 10px;
             display: flex; justify-content: space-between; align-items: center;
@@ -56,10 +55,8 @@
 
         .counter { font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); background: #e5e5ea; padding: 4px 12px; border-radius: 20px; }
 
-        /* Flashcard Scene */
-        .app-container {
-            flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center;
-        }
+        /* Flashcard Area */
+        .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
 
         .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 20px; }
         .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; }
@@ -68,101 +65,71 @@
         .card-face {
             position: absolute; width: 100%; height: 100%;
             -webkit-backface-visibility: hidden; backface-visibility: hidden;
-            border-radius: 35px; box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            border-radius: 35px; box-shadow: 0 15px 35px rgba(0,0,0,0.1);
             background: var(--card-bg); display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* Audio Button */
         .audio-btn {
             position: absolute; top: 25px; right: 25px; width: 44px; height: 44px;
             background: #f2f2f7; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            border: none; font-size: 1.2rem; cursor: pointer; z-index: 10;
+            border: none; font-size: 1.2rem; z-index: 10;
         }
 
         /* Front Face */
         .card-front { justify-content: center; align-items: center; text-align: center; padding: 30px; }
-        .word-display { font-size: 3.5rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: -1px; }
-        .phonetic-display { font-size: 1.1rem; color: var(--text-secondary); margin-top: 15px; font-family: "SF Mono", monospace; }
+        .word-display { font-size: 3.5rem; font-weight: 800; color: var(--text-main); margin: 0; }
+        .ipa-sub { font-size: 1.1rem; color: var(--text-secondary); margin-top: 10px; font-family: monospace; }
 
         /* Back Face */
         .card-back { transform: rotateY(180deg); }
         .scroll-area { height: 100%; overflow-y: auto; padding: 30px; -webkit-overflow-scrolling: touch; }
         
-        .meaning-box { margin-bottom: 25px; }
-        .type-tag { font-size: 0.8rem; text-transform: uppercase; color: var(--primary); font-weight: 800; letter-spacing: 1px; display: block; margin-bottom: 6px; }
-        .meaning-text { font-size: 1.4rem; font-weight: 700; color: var(--text-main); line-height: 1.3; }
+        .type-tag { font-size: 0.75rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px; }
+        .meaning-text { font-size: 1.3rem; font-weight: 700; color: var(--text-main); margin-bottom: 20px; line-height: 1.3; }
         
         .example-item { 
             background: #f8f9ff; padding: 16px; border-left: 4px solid var(--primary); 
-            border-radius: 12px; margin-bottom: 12px; font-size: 1rem; line-height: 1.5; color: #3a3a3c; 
+            border-radius: 12px; margin-bottom: 12px; font-size: 0.95rem; line-height: 1.5; color: #3a3a3c; 
         }
 
-        /* Bottom Controls */
-        .controls {
-            padding: 0 20px calc(var(--safe-bottom) + 20px);
-            display: flex; gap: 12px; width: 100%; max-width: 420px;
-        }
+        .section-label { font-size: 0.7rem; font-weight: 800; color: #bbb; text-transform: uppercase; margin-bottom: 10px; display: block; border-bottom: 1px solid #eee; padding-bottom: 5px; }
 
-        .nav-btn {
-            flex: 1; height: 65px; border-radius: 20px; border: none;
-            background: #ffffff; color: var(--text-main); font-weight: 700; font-size: 1rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center;
-        }
+        /* Controls */
+        .controls { padding: 0 20px calc(var(--safe-bottom) + 20px); display: flex; gap: 12px; width: 100%; max-width: 420px; }
+        .nav-btn { flex: 1; height: 60px; border-radius: 18px; border: none; background: white; font-weight: 700; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .nav-btn.primary { background: var(--primary); color: white; }
-        .nav-btn:active { transform: scale(0.95); opacity: 0.8; }
-
-        /* Jump Bar */
-        .jump-container { padding: 0 20px 15px; width: 100%; display: flex; gap: 8px; }
-        #indexInput { 
-            flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #ddd; 
-            font-size: 1rem; text-align: center; -webkit-appearance: none;
-        }
-
-        .section-label { font-size: 0.7rem; font-weight: 800; color: #8e8e93; text-transform: uppercase; margin: 20px 0 10px; display: block; }
     </style>
 </head>
 <body>
 
-<div id="setup-screen">
-    <h1 style="margin-bottom:10px;">WordFlow Pro</h1>
-    <p style="color: var(--text-secondary); margin-bottom: 40px; padding: 0 30px;">This app will process 3500 words. Please select your <b>BARRONS FINAL</b> CSV file to begin.</p>
-    <label class="btn-upload">
-        Select CSV File
-        <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
-    </label>
+<div id="loading-screen">
+    <div class="spinner"></div>
+    <p style="color: var(--text-secondary); font-weight: 500;">Loading 3500 Words...</p>
 </div>
 
 <header id="app-header" style="display:none;">
-    <div onclick="clearData()" style="color:var(--primary); font-weight:600; font-size:0.9rem;">Reset</div>
+    <div style="width: 40px;"></div>
     <div id="counter" class="counter">0 / 0</div>
-    <div onclick="toggleSearch()" style="color:var(--primary); font-weight:600; font-size:0.9rem;">Jump</div>
+    <div onclick="jumpPrompt()" style="color:var(--primary); font-weight:600; font-size:0.9rem;">Jump</div>
 </header>
 
 <div class="app-container" id="app">
-    <div class="jump-container" id="search-bar" style="display:none;">
-        <input type="number" id="indexInput" placeholder="Go to word # (1-3500)">
-        <button onclick="jumpToWord()" class="nav-btn" style="flex:0.3; height:auto; padding:10px;">Go</button>
-    </div>
-
     <div class="scene">
-        <div class="card" id="card" onclick="flipCard()">
+        <div class="card" id="card" onclick="this.classList.toggle('is-flipped')">
             <div class="card-face card-front">
                 <button class="audio-btn" onclick="playAudio(event)">🔊</button>
                 <h1 id="f-word" class="word-display">...</h1>
-                <div class="phonetic-display">
-                    <span id="f-ipa"></span><br>
-                    <span id="f-phonetic" style="opacity: 0.6;"></span>
-                </div>
+                <div class="ipa-sub"><span id="f-ipa"></span> • <span id="f-phonetic"></span></div>
             </div>
             <div class="card-face card-back">
-                <button class="audio-btn" onclick="playAudio(event)">🔊</button>
                 <div class="scroll-area">
-                    <div class="meaning-box">
-                        <span id="b-type" class="type-tag"></span>
-                        <div id="b-meaning" class="meaning-text">...</div>
-                    </div>
-                    <div id="b-pron" style="font-size:0.9rem; color:#888; margin-bottom:20px;"></div>
+                    <span id="b-type" class="type-tag"></span>
+                    <div id="b-meaning" class="meaning-text">...</div>
                     
+                    <div style="color:#8e8e93; font-size:0.9rem; margin-bottom:20px;">
+                        <span id="b-ipa"></span> • <span id="b-phonetic"></span>
+                    </div>
+
                     <span class="section-label">Usage Examples</span>
                     <div id="example-list"></div>
                 </div>
@@ -178,86 +145,60 @@
 
 <script>
 let wordData = [];
-let currentIndex = 0;
-let db;
+let currentIndex = parseInt(localStorage.getItem('wf_index_v5') || 0);
 
-// 1. Initialize IndexedDB (to handle large 3500+ word dataset)
-const request = indexedDB.open("WordFlowDB", 1);
-request.onupgradeneeded = (e) => {
-    db = e.target.result;
-    db.createObjectStore("words", { keyPath: "id" });
-};
-request.onsuccess = (e) => {
-    db = e.target.result;
-    loadFromDB();
-};
-
-function loadFromDB() {
-    const tx = db.transaction("words", "readonly");
-    const store = tx.objectStore("words");
-    const getReq = store.get("allWords");
-    getReq.onsuccess = () => {
-        if (getReq.result) {
-            wordData = getReq.result.data;
-            currentIndex = parseInt(localStorage.getItem('wf_index') || 0);
-            startApp();
-        }
-    };
-}
-
-// 2. Handle File Upload & Parsing
-document.getElementById('csvFileInput').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    Papa.parse(file, {
+// Auto-load words.csv from the same folder
+window.onload = () => {
+    Papa.parse("words.csv", {
+        download: true,
         header: true,
         dynamicTyping: true,
         skipEmptyLines: true,
         complete: function(results) {
             wordData = results.data;
-            const tx = db.transaction("words", "readwrite");
-            tx.objectStore("words").put({ id: "allWords", data: wordData });
-            tx.oncomplete = () => startApp();
+            if (wordData.length > 0) {
+                startApp();
+            } else {
+                document.getElementById('loading-screen').innerHTML = "<p>Error: words.csv is empty or missing.</p>";
+            }
+        },
+        error: function() {
+            document.getElementById('loading-screen').innerHTML = "<p>Error: Could not find words.csv beside index.html.</p>";
         }
     });
-});
+};
 
 function startApp() {
-    document.getElementById('setup-screen').style.opacity = '0';
-    setTimeout(() => {
-        document.getElementById('setup-screen').style.display = 'none';
-        document.getElementById('app').style.display = 'flex';
-        document.getElementById('app-header').style.display = 'flex';
-        updateCard();
-    }, 500);
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('app-header').style.display = 'flex';
+    updateCard();
 }
 
-// 3. UI Logic
 function updateCard() {
     const item = wordData[currentIndex];
     const card = document.getElementById('card');
     card.classList.remove('is-flipped');
     
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
-    localStorage.setItem('wf_index', currentIndex);
+    localStorage.setItem('wf_index_v5', currentIndex);
 
     setTimeout(() => {
-        // Front
+        // Shared Front/Back Content
         document.getElementById('f-word').textContent = item.WORD || "";
         document.getElementById('f-ipa').textContent = item.IPA || "";
-        document.getElementById('f-phonetic').textContent = `[${item.PHONETIC}]` || "";
-
-        // Back
+        document.getElementById('f-phonetic').textContent = item.PHONETIC || "";
+        
+        document.getElementById('b-ipa').textContent = item.IPA || "";
+        document.getElementById('b-phonetic').textContent = item.PHONETIC || "";
         document.getElementById('b-type').textContent = item.Type || "";
         document.getElementById('b-meaning').textContent = item.MEANING || "";
-        document.getElementById('b-pron').textContent = `${item.IPA} • ${item.PHONETIC}`;
 
-        // Examples (Columns 1-50)
+        // Process Examples (Check all numerical columns 1-50)
         const list = document.getElementById('example-list');
         list.innerHTML = "";
         for (let i = 1; i <= 50; i++) {
-            const ex = item[i];
+            const ex = item[i.toString()];
             if (ex && ex.toString().trim().length > 1) {
                 const div = document.createElement('div');
                 div.className = 'example-item';
@@ -267,10 +208,6 @@ function updateCard() {
         }
         document.querySelector('.scroll-area').scrollTop = 0;
     }, 150);
-}
-
-function flipCard() {
-    document.getElementById('card').classList.toggle('is-flipped');
 }
 
 function nextCard(e) {
@@ -288,47 +225,31 @@ function prevCard(e) {
 function playAudio(e) {
     e.stopPropagation();
     const word = wordData[currentIndex].WORD;
+    // Standard relative path for audio files
     const audio = new Audio(`audio-file/${word}.mp3`);
-    audio.play().catch(err => console.log("Audio not found: " + word));
+    audio.play().catch(err => alert("Audio file not found for: " + word));
 }
 
-function jumpToWord() {
-    const val = parseInt(document.getElementById('indexInput').value);
-    if (val > 0 && val <= wordData.length) {
-        currentIndex = val - 1;
-        updateCard();
-        toggleSearch();
+function jumpPrompt() {
+    const target = prompt(`Enter word number (1-${wordData.length}):`, currentIndex + 1);
+    if (target && !isNaN(target)) {
+        const idx = parseInt(target) - 1;
+        if (idx >= 0 && idx < wordData.length) {
+            currentIndex = idx;
+            updateCard();
+        }
     }
 }
 
-function toggleSearch() {
-    const bar = document.getElementById('search-bar');
-    bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
-}
-
-function clearData() {
-    if(confirm("This will clear all 3500 words. Continue?")) {
-        localStorage.clear();
-        const tx = db.transaction("words", "readwrite");
-        tx.objectStore("words").delete("allWords");
-        location.reload();
-    }
-}
-
-// 4. Gesture Support (Swipe left/right)
+// Swipe Support
 let touchstartX = 0;
 let touchendX = 0;
-
 document.addEventListener('touchstart', e => touchstartX = e.changedTouches[0].screenX);
 document.addEventListener('touchend', e => {
     touchendX = e.changedTouches[0].screenX;
-    handleGesture();
-});
-
-function handleGesture() {
     if (touchendX < touchstartX - 70) nextCard({stopPropagation:()=>{}});
     if (touchendX > touchstartX + 70) prevCard({stopPropagation:()=>{}});
-}
+});
 </script>
 </body>
 </html>
