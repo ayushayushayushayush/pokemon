@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro - Clean Dark</title>
+    <title>WordFlow Pro - Multi-Folder Audio</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -81,7 +81,6 @@
 
         .card-front { justify-content: center; align-items: center; text-align: center; padding: 30px; }
         
-        /* Interactive word display */
         .word-container {
             cursor: pointer;
             padding: 20px;
@@ -238,11 +237,9 @@ function updateCard() {
 function createExampleElement(text, id, container) {
     const wrapper = document.createElement('div');
     wrapper.className = 'example-container';
-    
     const hint = document.createElement('div');
     hint.className = 'delete-hint';
     hint.innerText = "DELETING...";
-
     const item = document.createElement('div');
     item.className = 'example-item';
     item.innerText = text;
@@ -250,10 +247,7 @@ function createExampleElement(text, id, container) {
     let startX = 0;
     let currentX = 0;
 
-    item.addEventListener('touchstart', (e) => {
-        startX = e.touches[0].clientX;
-    }, {passive: true});
-
+    item.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, {passive: true});
     item.addEventListener('touchmove', (e) => {
         currentX = e.touches[0].clientX;
         const diff = currentX - startX;
@@ -268,10 +262,7 @@ function createExampleElement(text, id, container) {
         if (diff > 150) {
             item.style.transition = 'transform 0.3s ease-out';
             item.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                deleteExample(id);
-                wrapper.remove();
-            }, 300);
+            setTimeout(() => { deleteExample(id); wrapper.remove(); }, 300);
         } else {
             item.style.transition = 'transform 0.2s ease-out';
             item.style.transform = 'translateX(0)';
@@ -302,9 +293,22 @@ function nextCard() { currentIndex = (currentIndex + 1) % wordData.length; updat
 function prevCard() { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; updateCard(); }
 
 function playAudio(e) {
-    e.stopPropagation(); // Prevents flipping the card when clicking the word
+    e.stopPropagation();
     const word = wordData[currentIndex].WORD;
-    new Audio(`audio-file/${word}.mp3`).play().catch(err => console.log("Audio not found: " + word));
+    const wordNum = currentIndex + 1; // Human readable 1-based index
+    
+    let folder = "audio-file"; // Default 1-1018
+    
+    if (wordNum >= 1019 && wordNum <= 2026) {
+        folder = "audio-file-1";
+    } else if (wordNum >= 2027 && wordNum <= 3034) {
+        folder = "audio-file-3";
+    } else if (wordNum >= 3035) {
+        folder = "audio-file-4";
+    }
+
+    const audioPath = `${folder}/${word}.mp3`;
+    new Audio(audioPath).play().catch(err => console.log("Audio not found at: " + audioPath));
 }
 
 function jumpPrompt() {
