@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro - UI Refined</title>
+    <title>WordFlow Pro - Shuffle</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -137,7 +137,6 @@
         .example-item { 
             background: var(--example-bg); 
             padding: 16px; 
-            /* Blue frame removed here */
             font-size: 0.95rem; 
             line-height: 1.5; 
             color: #E5E5EA;
@@ -146,14 +145,14 @@
         }
 
         .ex-num {
-            /* Changed to white */
             color: #FFFFFF;
             font-weight: 800;
             margin-right: 8px;
         }
 
-        .controls { padding: 0 20px calc(var(--safe-bottom) + 20px); display: flex; gap: 12px; width: 100%; max-width: 420px; }
-        .nav-btn { flex: 1; height: 60px; border-radius: 18px; border: none; background: #2C2C2E; color: white; font-weight: 700; }
+        /* Controls adjusted for 3 buttons */
+        .controls { padding: 0 20px calc(var(--safe-bottom) + 20px); display: flex; gap: 10px; width: 100%; max-width: 420px; }
+        .nav-btn { flex: 1; height: 60px; border-radius: 18px; border: none; background: #2C2C2E; color: white; font-weight: 700; font-size: 0.9rem; }
         .nav-btn.primary { background: var(--primary); color: white; }
     </style>
 </head>
@@ -195,6 +194,7 @@
 
     <div class="controls">
         <button class="nav-btn" onclick="prevCard()">Back</button>
+        <button class="nav-btn" onclick="shuffleCard()">Shuffle</button>
         <button class="nav-btn primary" onclick="nextCard()">Next</button>
     </div>
 </div>
@@ -254,6 +254,16 @@ function updateCard() {
 function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
 function nextCard() { currentIndex = (currentIndex + 1) % wordData.length; updateCard(); }
 function prevCard() { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; updateCard(); }
+
+function shuffleCard() {
+    if (wordData.length <= 1) return;
+    let newIndex;
+    do {
+        newIndex = Math.floor(Math.random() * wordData.length);
+    } while (newIndex === currentIndex); // Ensure it actually moves to a new word
+    currentIndex = newIndex;
+    updateCard();
+}
 
 function playAudio(e) {
     e.stopPropagation();
