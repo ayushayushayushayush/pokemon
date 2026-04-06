@@ -2,360 +2,256 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#111827">
-    <title>Barron's 50 • Flashcards</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="apple-mobile-web-app-title" content="WordFlow">
+    
+    <title>Flashcards Pro</title>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
-        
-        .card-container {
-            perspective: 1200px;
-            height: 440px;
+        :root {
+            --primary: #007AFF; /* iOS Blue */
+            --bg: #f2f2f7;
+            --card-bg: #ffffff;
+            --text-main: #1c1c1e;
+            --text-secondary: #8e8e93;
         }
-        
-        .card-inner {
-            position: relative;
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        .app-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: env(safe-area-inset-top);
+        }
+
+        /* Flashcard Container */
+        .scene {
+            width: 90%;
+            max-width: 400px;
+            height: 65vh;
+            perspective: 1000px;
+        }
+
+        .card {
             width: 100%;
             height: 100%;
-            text-align: center;
-            transition: transform 0.75s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             transform-style: preserve-3d;
-            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-            cursor: pointer;
-            border-radius: 24px;
         }
-        
-        .card.flipped .card-inner {
-            transform: rotateY(180deg);
-        }
-        
+
+        .card.is-flipped { transform: rotateY(180deg); }
+
         .card-face {
             position: absolute;
             width: 100%;
             height: 100%;
+            -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
-            border-radius: 24px;
+            border-radius: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
             display: flex;
             flex-direction: column;
-            padding: 32px 24px;
-            -webkit-tap-highlight-color: transparent;
+            background: var(--card-bg);
         }
-        
+
+        /* FRONT */
         .card-front {
-            background: linear-gradient(145deg, #1e2937, #111827);
-            color: white;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
         }
-        
+
+        .word-display { font-size: 3.2rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: -1px; }
+        .type-display { font-size: 1.1rem; color: var(--primary); font-weight: 600; margin-top: 5px; text-transform: uppercase; }
+
+        /* BACK */
         .card-back {
-            background: linear-gradient(145deg, #f8fafc, #e2e8f0);
-            color: #0f172a;
             transform: rotateY(180deg);
+            padding: 25px;
         }
-        
-        .word-text {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 3.4rem;
-            font-weight: 600;
-            letter-spacing: -2px;
-            line-height: 1;
-        }
-        
-        .example-list {
-            max-height: 260px;
+
+        .scroll-area {
             overflow-y: auto;
-            scrollbar-width: thin;
+            flex: 1;
+            -webkit-overflow-scrolling: touch;
+            padding-right: 8px;
         }
+
+        .meaning-header { font-size: 1.3rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
+        .phonetic-sub { font-family: monospace; color: var(--text-secondary); margin-bottom: 20px; font-size: 1rem; }
+        
+        .examples-label { 
+            font-size: 0.8rem; 
+            font-weight: 800; 
+            color: var(--text-secondary); 
+            text-transform: uppercase; 
+            margin-bottom: 12px;
+            display: block;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .example-item {
+            background: #f8f9ff;
+            padding: 14px;
+            border-left: 4px solid var(--primary);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #3a3a3c;
+        }
+
+        /* Controls */
+        .controls {
+            padding: 30px 0 calc(30px + env(safe-area-inset-bottom));
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            padding: 16px 32px;
+            border-radius: 18px;
+            border: none;
+            background: #ffffff;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 1rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        button.primary-btn { background: var(--primary); color: white; }
+        button:active { transform: scale(0.96); opacity: 0.8; }
+
+        /* Scrollbar */
+        .scroll-area::-webkit-scrollbar { width: 4px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: #d1d1d6; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-slate-950 text-white min-h-screen flex flex-col">
-    <div class="max-w-xl mx-auto w-full flex-1 flex flex-col">
+<body>
+
+<div class="app-container">
+    <div class="scene">
+        <div class="card" id="card" onclick="this.classList.toggle('is-flipped')">
+            <div class="card-face card-front">
+                <div class="type-display" id="f-type"></div>
+                <h1 id="f-word" class="word-display"></h1>
+                <p style="color: #c7c7cc; font-size: 0.8rem; margin-top: 20px;">Tap to Flip</p>
+            </div>
+
+            <div class="card-face card-back">
+                <div class="scroll-area">
+                    <div class="meaning-header" id="b-meaning"></div>
+                    <div class="phonetic-sub">
+                        <span id="b-ipa"></span> • <span id="b-phonetic"></span>
+                    </div>
+                    
+                    <span class="examples-label">Usage Examples</span>
+                    <div id="example-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="prevCard(event)">Previous</button>
+        <button class="primary-btn" onclick="nextCard(event)">Next Word</button>
+    </div>
+</div>
+
+<script>
+    // Example of how your CSV data should be structured in the array
+    const wordData = [
+        { 
+            word: "abase", 
+            type: "V.", 
+            meaning: "lower; humiliate", 
+            ipa: "əˈbeɪs", 
+            phonetic: "uh-BEYS",
+            // You can add up to 50 example fields here
+            example1: "He was unwilling to abase himself by pleading for mercy.",
+            example2: "The boss's goal was to abase his employees.",
+            example3: "The king was forced to abase himself before the conqueror.",
+            example4: "Do not abase yourself by engaging in such petty behavior."
+        },
+        { 
+            word: "abash", 
+            type: "V.", 
+            meaning: "to make ashamed or uneasy; disconcert", 
+            ipa: "əˈbæʃ", 
+            phonetic: "uh-BASH",
+            example1: "The student was abashed by the teacher's public correction.",
+            example2: "Nothing could abash the confident young performer."
+        }
+    ];
+
+    let currentIndex = 0;
+
+    function renderCard() {
+        const item = wordData[currentIndex];
+        const card = document.getElementById('card');
         
-        <!-- HEADER -->
-        <div class="px-6 pt-8 pb-4 flex items-center justify-between border-b border-slate-800">
-            <div class="flex items-center gap-x-3">
-                <div class="w-10 h-10 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-3xl">📇</div>
-                <div>
-                    <h1 class="text-2xl font-semibold tracking-tight">Barron's 50</h1>
-                    <p class="text-slate-400 text-sm -mt-1">Vocabulary Flashcards</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-x-4">
-                <div id="progress" class="text-right">
-                    <div class="text-xs text-slate-400">CARD <span id="current-num" class="text-amber-400 text-xl font-semibold">1</span>/50</div>
-                    <div class="h-2 bg-slate-800 rounded-full w-28 mt-1 overflow-hidden">
-                        <div id="progress-bar" class="h-full bg-gradient-to-r from-amber-400 to-orange-500 w-2"></div>
-                    </div>
-                </div>
-                <button onclick="showInstallHint()" class="w-9 h-9 flex items-center justify-center bg-amber-500/10 text-amber-400 rounded-2xl text-2xl">📲</button>
-                <button onclick="toggleMenu()" class="w-9 h-9 flex items-center justify-center text-3xl">☰</button>
-            </div>
-        </div>
+        // Reset rotation for new word
+        card.classList.remove('is-flipped');
 
-        <!-- CARD AREA -->
-        <div class="flex-1 flex items-center justify-center px-6 py-8">
-            <div id="card" class="card-container w-full max-w-[340px]">
-                <div id="card-inner" class="card-inner" onclick="flipCard(event)">
-                    
-                    <!-- FRONT -->
-                    <div class="card-face card-front flex flex-col items-center justify-center">
-                        <div id="front-word" class="word-text text-center"></div>
-                        <div id="front-raw" class="mt-6 text-amber-300 font-mono text-xl tracking-widest"></div>
-                        
-                        <div class="mt-auto pt-12">
-                            <div class="inline-flex items-center gap-2 bg-slate-800/70 px-6 py-2 rounded-3xl text-sm">
-                                <span>TAP ANYWHERE TO FLIP</span>
-                                <span class="text-xl">🔄</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- BACK -->
-                    <div class="card-face card-back flex flex-col">
-                        <div class="flex justify-between">
-                            <div id="back-type" class="px-4 h-8 bg-slate-200 text-slate-800 font-semibold text-sm rounded-3xl flex items-center"></div>
-                            <button onclick="event.stopImmediatePropagation(); flipCard(event)" class="text-3xl text-slate-400">🔄</button>
-                        </div>
-                        
-                        <div id="back-meaning" class="mt-4 text-3xl font-semibold text-slate-900 text-center leading-tight"></div>
-                        
-                        <div class="flex justify-center gap-8 mt-6 text-sm">
-                            <div class="text-center">
-                                <div class="text-slate-400 text-xs">IPA</div>
-                                <div id="back-ipa" class="font-mono text-lg"></div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-slate-400 text-xs">PHONETIC</div>
-                                <div id="back-phonetic" class="font-medium text-lg"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-6 flex-1 flex flex-col">
-                            <div class="text-xs font-medium text-slate-500 mb-2">EXAMPLES</div>
-                            <div id="examples-list" class="example-list flex-1 text-slate-700 text-[15px] leading-snug space-y-4 pr-2"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        setTimeout(() => {
+            // Front Content
+            document.getElementById('f-word').textContent = item.word;
+            document.getElementById('f-type').textContent = item.type;
 
-        <!-- CONTROLS -->
-        <div class="px-6 pb-10 flex justify-between items-center">
-            <button onclick="prevCard()" class="w-12 h-12 bg-slate-800 hover:bg-slate-700 rounded-2xl text-3xl active:scale-95">←</button>
+            // Back Content
+            document.getElementById('b-meaning').textContent = item.meaning;
+            document.getElementById('b-ipa').textContent = item.ipa;
+            document.getElementById('b-phonetic').textContent = item.phonetic;
+
+            // DYNAMIC EXAMPLE LOADER
+            const container = document.getElementById('example-container');
+            container.innerHTML = "";
             
-            <div class="flex gap-3">
-                <button onclick="shuffleDeck()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-6 h-12 rounded-3xl text-sm font-medium active:scale-95">
-                    <span>🔀</span> SHUFFLE
-                </button>
-                <button onclick="resetDeck()" class="w-12 h-12 bg-slate-800 hover:bg-slate-700 rounded-2xl text-2xl active:scale-95">⟳</button>
-            </div>
-            
-            <button onclick="nextCard()" class="w-12 h-12 bg-slate-800 hover:bg-slate-700 rounded-2xl text-3xl active:scale-95">→</button>
-        </div>
-
-        <!-- FOOTER -->
-        <div class="bg-slate-900 border-t border-slate-800 px-6 py-4 text-xs text-slate-400 flex justify-between">
-            <div>iOS Home Screen Ready</div>
-            <div onclick="window.location.reload()" class="cursor-pointer hover:text-white">Barron's Final 50</div>
-            <div class="font-mono">50 cards • Offline</div>
-        </div>
-    </div>
-
-    <!-- MENU -->
-    <div id="menu-modal" onclick="if(event.target.id==='menu-modal')toggleMenu()" class="hidden fixed inset-0 bg-black/70 z-50 flex items-end">
-        <div onclick="event.stopImmediatePropagation()" class="bg-slate-900 w-full rounded-t-3xl p-6">
-            <div class="flex justify-between mb-6">
-                <h2 class="text-xl font-semibold">Options</h2>
-                <button onclick="toggleMenu()" class="text-3xl">×</button>
-            </div>
-            <div onclick="markKnown();toggleMenu()" class="p-4 bg-slate-800 rounded-3xl mb-4 active:bg-slate-700">
-                <div class="flex items-center gap-3">
-                    <span class="text-3xl">✅</span>
-                    <div>
-                        <div class="font-medium">Mark as Known</div>
-                        <div class="text-xs text-slate-400">Remove from deck (saved in browser)</div>
-                    </div>
-                </div>
-            </div>
-            <div onclick="toggleMenu()" class="text-center text-slate-400 py-4">Close</div>
-        </div>
-    </div>
-
-    <!-- INSTALL HINT -->
-    <div id="install-hint" onclick="this.classList.add('hidden')" class="hidden fixed inset-0 bg-black/80 z-[100] flex items-center justify-center">
-        <div class="bg-white text-slate-900 rounded-3xl p-8 max-w-xs text-center">
-            <div class="text-6xl mb-4">📲</div>
-            <h3 class="text-xl font-semibold mb-2">Add to Home Screen</h3>
-            <p class="text-slate-600 mb-6">Tap the Share button in Safari → "Add to Home Screen" for a native app experience.</p>
-            <button onclick="event.stopImmediatePropagation();this.parentElement.parentElement.classList.add('hidden')" 
-                    class="w-full py-4 bg-slate-900 text-white rounded-2xl font-medium">Got it</button>
-        </div>
-    </div>
-
-    <script>
-        // ==================== ALL 50 CARDS ====================
-        const cards = [
-            {id:1, word:"abase", raw:"[uh-beys]/ əˈbeɪs /", phonetic:"uh-BEYS", ipa:"əˈbeɪs", type:"V.", meaning:"lower; humiliate.", examples:["Defeated, Queen Zenobia was forced to abase herself before the conquering Romans...","He abased his head.","Why do you need to abase and demean me?"]},
-            {id:2, word:"abash", raw:"[uh-bash]/ əˈbæʃ /", phonetic:"uh-BASH", ipa:"əˈbæʃ", type:"V.", meaning:"embarrass.", examples:["He was not at all abashed by her open admiration.","Her elder cousins abashed her by commenting on her shyness."]},
-            {id:3, word:"abate", raw:"[uh-beyt]/ əˈbeɪt /", phonetic:"uh-BEYT", ipa:"əˈbeɪt", type:"V.", meaning:"subside; decrease, lessen.", examples:["The storm has abated.","The pain in his shoulder finally abated.","Inflation is finally showing signs of abating."]},
-            {id:4, word:"abbreviate", raw:"[uh-bree-vee-eyt]/ əˈbri viˌeɪt /", phonetic:"uh-BREE-vee-eyt", ipa:"əˈbri viˌeɪt", type:"V.", meaning:"shorten.", examples:["The lecturer had to abbreviate her speech.","\"Chief Executive Officer\" is abbreviated as \"CEO.\""]},
-            {id:5, word:"abdicate", raw:"[ab-di-keyt]/ ˈæb dɪˌkeɪt /", phonetic:"AB-di-keyt", ipa:"ˈæb dɪˌkeɪt", type:"V.", meaning:"renounce; give up.", examples:["King Edward VIII abdicated the British throne in 1936.","She abdicated all responsibility for the project."]},
-            {id:6, word:"abduction", raw:"[ab-duhk-shuhn]/ æbˈdʌk ʃən /", phonetic:"ab-DUHK-shuhn", ipa:"æbˈdʌk ʃən", type:"N.", meaning:"kidnapping.", examples:["The movie Ransom describes the attempts to rescue a multimillionaire's son after the child's abduction."]},
-            {id:7, word:"aberrant", raw:"[uh-ber-uhnt]/ əˈbɛr ənt /", phonetic:"uh-BER-uhnt", ipa:"əˈbɛr ənt", type:"ADJ.", meaning:"abnormal or deviant.", examples:["Given the aberrant nature of the data..."]},
-            {id:8, word:"abet", raw:"[uh-bet]/ əˈbɛt /", phonetic:"uh-BET", ipa:"əˈbɛt", type:"V.", meaning:"aid, usually in doing something wrong.", examples:["She was unwilling to abet him in the swindle."]},
-            {id:9, word:"abeyance", raw:"[uh-bey-uhns]/ əˈbeɪ əns /", phonetic:"uh-BEY-uhns", ipa:"əˈbeɪ əns", type:"N.", meaning:"suspended action.", examples:["The deal was held in abeyance until her arrival."]},
-            {id:10, word:"abhor", raw:"[ab-hawr]/ æbˈhɔr /", phonetic:"ab-HAWR", ipa:"æbˈhɔr", type:"V.", meaning:"detest; hate.", examples:["She abhorred all forms of bigotry."]},
-            {id:11, word:"abject", raw:"[ab-jekt]/ ˈæb dʒɛkt /", phonetic:"AB-jekt", ipa:"ˈæb dʒɛkt", type:"ADJ.", meaning:"wretched; lacking pride.", examples:["They live in abject poverty."]},
-            {id:12, word:"abjure", raw:"[ab-joor]/ æbˈdʒʊər /", phonetic:"ab-JOOR", ipa:"æbˈdʒʊər", type:"V.", meaning:"renounce upon oath.", examples:["He abjured his allegiance to the king."]},
-            {id:13, word:"ablution", raw:"[uh-bloo-shuhn]/ əˈblu ʃən /", phonetic:"uh-BLOO-shuhn", ipa:"əˈblu ʃən", type:"N.", meaning:"washing.", examples:["His daily ablutions were accompanied by loud noises."]},
-            {id:14, word:"abnegation", raw:"[ab-ni-gey-shuhn]/ ˌæb nɪˈgeɪ ʃən /", phonetic:"ab-ni-GEY-shuhn", ipa:"ˌæb nɪˈgeɪ ʃən", type:"N.", meaning:"repudiation; self-sacrifice.", examples:["No act of abnegation was more pronounced..."]},
-            {id:15, word:"abolish", raw:"[uh-bol-ish]/ əˈbɒl ɪʃ /", phonetic:"uh-BOL-ish", ipa:"əˈbɒl ɪʃ", type:"V.", meaning:"cancel; put an end to.", examples:["Congress abolished the draft in 1973."]},
-            {id:16, word:"abominable", raw:"[uh-bom-uh-nuh-buhl]/ əˈbɒm ə nə bəl /", phonetic:"uh-BOM-uh-nuh-buhl", ipa:"əˈbɒm ə nə bəl", type:"ADJ.", meaning:"detestable; extremely unpleasant.", examples:["The weather was abominable last week."]},
-            {id:17, word:"aboriginal", raw:"[ab-uh-rij-uh-nl]/ ˌæb əˈrɪdʒ ə nl /", phonetic:"ab-uh-RIJ-uh-nl", ipa:"ˌæb əˈrɪdʒ ə nl", type:"ADJ., N.", meaning:"native; first of its kind.", examples:["the aboriginal people of Tahiti"]},
-            {id:18, word:"abortive", raw:"[uh-bawr-tiv]/ əˈbɔr tɪv /", phonetic:"uh-BAWR-tiv", ipa:"əˈbɔr tɪv", type:"ADJ.", meaning:"unsuccessful; fruitless.", examples:["an abortive rebellion"]},
-            {id:19, word:"abrade", raw:"[uh-breyd]/ əˈbreɪd /", phonetic:"uh-BREYD", ipa:"əˈbreɪd", type:"V.", meaning:"wear away by friction.", examples:["The sharp rocks abraded the skin on her legs."]},
-            {id:20, word:"abrasive", raw:"[uh-brey-siv]/ əˈbreɪ sɪv /", phonetic:"uh-BREY-siv", ipa:"əˈbreɪ sɪv", type:"ADJ.", meaning:"rubbing away; harsh.", examples:["an abrasive personality"]},
-            {id:21, word:"abridge", raw:"[uh-brij]/ əˈbrɪdʒ /", phonetic:"uh-BRIJ", ipa:"əˈbrɪdʒ", type:"V.", meaning:"condense or shorten.", examples:["They proceeded to abridge the novel."]},
-            {id:22, word:"abrogate", raw:"[ab-ruh-geyt]/ ˈæb rəˌgeɪt /", phonetic:"AB-ruh-geyt", ipa:"ˈæb rəˌgeɪt", type:"V.", meaning:"abolish.", examples:["to abrogate a law"]},
-            {id:23, word:"abscond", raw:"[ab-skond]/ æbˈskɒnd /", phonetic:"ab-SKOND", ipa:"æbˈskɒnd", type:"V.", meaning:"depart secretly and hide.", examples:["The cashier absconded with the money."]},
-            {id:24, word:"absolute", raw:"[ab-suh-loot]/ ˈæb səˌlut /", phonetic:"AB-suh-loot", ipa:"ˈæb səˌlut", type:"ADJ.", meaning:"complete; totally unlimited.", examples:["an absolute monarch"]},
-            {id:25, word:"absolve", raw:"[ab-zolv]/ æbˈzɒlv /", phonetic:"ab-ZOLV", ipa:"æbˈzɒlv", type:"V.", meaning:"pardon (an offense).", examples:["The court absolved her of guilt."]},
-            {id:26, word:"absorb", raw:"[ab-sawrb]/ æbˈsɔrb /", phonetic:"ab-SAWRB", ipa:"æbˈsɔrb", type:"V.", meaning:"assimilate or incorporate.", examples:["A sponge absorbs water."]},
-            {id:27, word:"abstain", raw:"[ab-steyn]/ æbˈsteɪn /", phonetic:"ab-STEYN", ipa:"æbˈsteɪn", type:"V.", meaning:"refrain from.", examples:["He decided to abstain from drinking."]},
-            {id:28, word:"abstemious", raw:"[ab-stee-mee-uhs]/ æbˈsti mi əs /", phonetic:"ab-STEE-mee-uhs", ipa:"æbˈsti mi əs", type:"ADJ.", meaning:"sparing in eating and drinking.", examples:["an abstemious diet"]},
-            {id:29, word:"abstinence", raw:"[ab-stuh-nuhns]/ ˈæb stə nəns /", phonetic:"AB-stuh-nuhns", ipa:"ˈæb stə nəns", type:"N.", meaning:"restraint from eating or drinking.", examples:["total abstinence from salted foods"]},
-            {id:30, word:"abstract", raw:"[ab-strakt]/ æbˈstrækt /", phonetic:"ab-STRAKT", ipa:"æbˈstrækt", type:"ADJ.", meaning:"theoretical; not concrete.", examples:["hunger was an abstract concept"]},
-            {id:31, word:"abstruse", raw:"[ab-stroos]/ æbˈstrus /", phonetic:"ab-STROOS", ipa:"æbˈstrus", type:"ADJ.", meaning:"obscure; difficult to understand.", examples:["abstruse theories"]},
-            {id:32, word:"abundant", raw:"[uh-buhn-duhnt]/ əˈbʌn dənt /", phonetic:"uh-BUHN-duhnt", ipa:"əˈbʌn dənt", type:"ADJ.", meaning:"plentiful.", examples:["an abundant supply of water"]},
-            {id:33, word:"abusive", raw:"[uh-byoo-siv]/ əˈbyu sɪv /", phonetic:"uh-BYOO-siv", ipa:"əˈbyu sɪv", type:"ADJ.", meaning:"coarsely insulting.", examples:["an abusive parent"]},
-            {id:34, word:"abut", raw:"[uh-buht]/ əˈbʌt /", phonetic:"uh-BUHT", ipa:"əˈbʌt", type:"V.", meaning:"border upon; adjoin.", examples:["Their backyard abuts forty acres of woods."]},
-            {id:35, word:"abysmal", raw:"[uh-biz-muhl]/ əˈbɪz məl /", phonetic:"uh-BIZ-muhl", ipa:"əˈbɪz məl", type:"ADJ.", meaning:"bottomless; extremely bad.", examples:["abysmal ignorance"]},
-            {id:36, word:"abyss", raw:"[uh-bis]/ əˈbɪs /", phonetic:"uh-BIS", ipa:"əˈbɪs", type:"N.", meaning:"enormous chasm.", examples:["plunging into an abyss of despair"]},
-            {id:37, word:"academic", raw:"[ak-uh-dem-ik]/ ˌæk əˈdɛm ɪk /", phonetic:"ak-uh-DEM-ik", ipa:"ˌæk əˈdɛm ɪk", type:"ADJ.", meaning:"related to school; theoretical.", examples:["an academic discussion"]},
-            {id:38, word:"accede", raw:"[ak-seed]/ ækˈsid /", phonetic:"ak-SEED", ipa:"ækˈsid", type:"V.", meaning:"agree.", examples:["to accede to the throne"]},
-            {id:39, word:"accelerate", raw:"[ak-sel-uh-reyt]/ ækˈsɛl əˌreɪt /", phonetic:"ak-SEL-uh-reyt", ipa:"ækˈsɛl əˌreɪt", type:"V.", meaning:"move faster.", examples:["falling bodies accelerate"]},
-            {id:40, word:"accentuate", raw:"[ak-sen-choo-eyt]/ ækˈsɛn tʃuˌeɪt /", phonetic:"ak-SEN-choo-eyt", ipa:"ækˈsɛn tʃuˌeɪt", type:"V.", meaning:"emphasize.", examples:["accentuate the positive"]},
-            {id:41, word:"accessible", raw:"[ak-ses-uh-buhl]/ ækˈsɛs ə bəl /", phonetic:"ak-SES-uh-buhl", ipa:"ækˈsɛs ə bəl", type:"ADJ.", meaning:"easy to approach.", examples:["The ruins were accessible on foot."]},
-            {id:42, word:"accessory", raw:"[ak-ses-uh-ree]/ ækˈsɛs ə ri /", phonetic:"ak-SES-uh-ree", ipa:"ækˈsɛs ə ri", type:"N.", meaning:"additional object.", examples:["handbag as an accessory"]},
-            {id:43, word:"acclaim", raw:"[uh-kleym]/ əˈkleɪm /", phonetic:"uh-KLEYM", ipa:"əˈkleɪm", type:"V.", meaning:"applaud.", examples:["published to great acclaim"]},
-            {id:44, word:"acclimate", raw:"[ak-luh-meyt]/ ˈæk ləˌmeɪt /", phonetic:"AK-luh-meyt", ipa:"ˈæk ləˌmeɪt", type:"V.", meaning:"adjust to climate.", examples:["acclimate to new environments"]},
-            {id:45, word:"acclivity", raw:"[uh-kliv-i-tee]/ əˈklɪv ɪ ti /", phonetic:"uh-KLIV-i-tee", ipa:"əˈklɪv ɪ ti", type:"N.", meaning:"sharp upslope of a hill.", examples:["The car would not go up the acclivity."]},
-            {id:46, word:"accolade", raw:"[ak-uh-leyd]/ ˈæk əˌleɪd /", phonetic:"AK-uh-leyd", ipa:"ˈæk əˌleɪd", type:"N.", meaning:"award of merit.", examples:["In Hollywood, an \"Oscar\" is the highest accolade."]},
-            {id:47, word:"accommodate", raw:"[uh-kom-uh-deyt]/ əˈkɒm əˌdeɪt /", phonetic:"uh-KOM-uh-deyt", ipa:"əˈkɒm əˌdeɪt", type:"V.", meaning:"oblige or help someone.", examples:["Mitch always tried to accommodate his relatives."]},
-            {id:48, word:"accomplice", raw:"[uh-kom-plis]/ əˈkɒm plɪs /", phonetic:"uh-KOM-plis", ipa:"əˈkɒm plɪs", type:"N.", meaning:"partner in crime.", examples:["arrested as an accomplice in the murder"]},
-            {id:49, word:"accord", raw:"[uh-kawrd]/ əˈkɔrd /", phonetic:"uh-KAWRD", ipa:"əˈkɔrd", type:"N.", meaning:"agreement.", examples:["She was in complete accord with the verdict."]},
-            {id:50, word:"accost", raw:"[uh-kawst]/ əˈkɔst /", phonetic:"uh-KAWST", ipa:"əˈkɔst", type:"V.", meaning:"approach and speak first.", examples:["The beggar accosted me for money."]}
-        ];
-
-        let currentIndex = 0;
-        let isFlipped = false;
-        let deck = [...cards];
-
-        function renderCard() {
-            const card = deck[currentIndex];
-            
-            document.getElementById('front-word').innerHTML = `<span class="text-amber-400">${card.word}</span>`;
-            document.getElementById('front-raw').textContent = card.raw;
-            
-            document.getElementById('back-type').textContent = card.type;
-            document.getElementById('back-meaning').textContent = card.meaning;
-            document.getElementById('back-ipa').textContent = card.ipa;
-            document.getElementById('back-phonetic').textContent = card.phonetic;
-            
-            const exList = document.getElementById('examples-list');
-            exList.innerHTML = '';
-            card.examples.forEach(example => {
-                const div = document.createElement('div');
-                div.className = 'border-l-2 border-amber-400 pl-4 text-sm';
-                div.textContent = example;
-                exList.appendChild(div);
+            // This loop checks every property in the object
+            // If the property name contains 'example' and has text, it creates a box
+            Object.keys(item).forEach(key => {
+                if (key.toLowerCase().includes('example') && item[key]) {
+                    const div = document.createElement('div');
+                    div.className = 'example-item';
+                    div.textContent = item[key];
+                    container.appendChild(div);
+                }
             });
-            
-            document.getElementById('current-num').textContent = currentIndex + 1;
-            document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / deck.length) * 100}%`;
-        }
+        }, 150);
+    }
 
-        function flipCard(e) {
-            if (e) e.stopImmediatePropagation();
-            const cardEl = document.getElementById('card');
-            isFlipped = !isFlipped;
-            if (isFlipped) cardEl.classList.add('flipped');
-            else cardEl.classList.remove('flipped');
-        }
+    function nextCard(e) {
+        e.stopPropagation();
+        currentIndex = (currentIndex + 1) % wordData.length;
+        renderCard();
+    }
 
-        function nextCard() {
-            currentIndex = (currentIndex + 1) % deck.length;
-            isFlipped = false;
-            document.getElementById('card').classList.remove('flipped');
-            renderCard();
-        }
+    function prevCard(e) {
+        e.stopPropagation();
+        currentIndex = (currentIndex - 1 + wordData.length) % wordData.length;
+        renderCard();
+    }
 
-        function prevCard() {
-            currentIndex = (currentIndex - 1 + deck.length) % deck.length;
-            isFlipped = false;
-            document.getElementById('card').classList.remove('flipped');
-            renderCard();
-        }
+    // Load initial card
+    renderCard();
+</script>
 
-        function shuffleDeck() {
-            deck = [...cards];
-            for (let i = deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [deck[i], deck[j]] = [deck[j], deck[i]];
-            }
-            currentIndex = 0;
-            isFlipped = false;
-            document.getElementById('card').classList.remove('flipped');
-            renderCard();
-        }
-
-        function resetDeck() {
-            deck = [...cards];
-            currentIndex = 0;
-            isFlipped = false;
-            document.getElementById('card').classList.remove('flipped');
-            renderCard();
-        }
-
-        function markKnown() {
-            const card = deck[currentIndex];
-            let known = JSON.parse(localStorage.getItem('barronKnown') || '[]');
-            if (!known.includes(card.id)) known.push(card.id);
-            localStorage.setItem('barronKnown', JSON.stringify(known));
-            
-            deck = deck.filter(c => c.id !== card.id);
-            if (deck.length === 0) deck = [...cards];
-            currentIndex = Math.min(currentIndex, deck.length - 1);
-            isFlipped = false;
-            document.getElementById('card').classList.remove('flipped');
-            renderCard();
-        }
-
-        function toggleMenu() {
-            document.getElementById('menu-modal').classList.toggle('hidden');
-        }
-
-        function showInstallHint() {
-            document.getElementById('install-hint').classList.remove('hidden');
-        }
-
-        // Touch swipe support
-        let touchStartX = 0;
-        window.onload = () => {
-            renderCard();
-            
-            const cardContainer = document.getElementById('card');
-            cardContainer.addEventListener('touchstart', e => {
-                touchStartX = e.changedTouches[0].screenX;
-            });
-            cardContainer.addEventListener('touchend', e => {
-                const diff = e.changedTouches[0].screenX - touchStartX;
-                if (diff < -80) nextCard();
-                if (diff > 80) prevCard();
-            });
-        };
-    </script>
 </body>
 </html>
