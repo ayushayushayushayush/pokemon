@@ -8,11 +8,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>Flashcards Pro</title>
+    <title>WordFlow Pro</title>
 
     <style>
         :root {
-            --primary: #007AFF; /* iOS Blue */
+            --primary: #007AFF; 
             --bg: #f2f2f7;
             --card-bg: #ffffff;
             --text-main: #1c1c1e;
@@ -30,228 +30,208 @@
             overflow: hidden;
         }
 
+        #setup-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; text-align: center;
+        }
+
+        .upload-btn {
+            background: var(--primary); color: white; padding: 20px 40px;
+            border-radius: 15px; font-weight: bold; font-size: 1.1rem;
+            box-shadow: 0 10px 20px rgba(0,122,255,0.2); cursor: pointer;
+        }
+
         .app-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            flex: 1; display: none; flex-direction: column;
+            align-items: center; justify-content: center;
             padding-top: env(safe-area-inset-top);
         }
 
-        /* Flashcard Container */
-        .scene {
-            width: 90%;
-            max-width: 400px;
-            height: 65vh;
-            perspective: 1000px;
-        }
+        .counter { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 15px; }
 
-        .card {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-style: preserve-3d;
-        }
-
+        .scene { width: 92%; max-width: 400px; height: 68vh; perspective: 1500px; }
+        .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
         .card.is-flipped { transform: rotateY(180deg); }
 
         .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-            border-radius: 30px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
-            display: flex;
-            flex-direction: column;
-            background: var(--card-bg);
+            position: absolute; width: 100%; height: 100%;
+            -webkit-backface-visibility: hidden; backface-visibility: hidden;
+            border-radius: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; background: var(--card-bg);
+            overflow: hidden;
         }
 
-        /* FRONT */
-        .card-front {
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
+        .card-front { justify-content: center; align-items: center; text-align: center; padding: 20px; }
+        .word-display { font-size: 3.2rem; font-weight: 800; color: var(--text-main); margin: 0; word-break: break-word; }
+        .type-tag { font-size: 1rem; color: var(--primary); font-weight: 700; margin-top: 10px; background: #eef7ff; padding: 4px 12px; border-radius: 20px; }
 
-        .word-display { font-size: 3.2rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: -1px; }
-        .type-display { font-size: 1.1rem; color: var(--primary); font-weight: 600; margin-top: 5px; text-transform: uppercase; }
-
-        /* BACK */
-        .card-back {
-            transform: rotateY(180deg);
-            padding: 25px;
-        }
-
-        .scroll-area {
-            overflow-y: auto;
-            flex: 1;
-            -webkit-overflow-scrolling: touch;
-            padding-right: 8px;
-        }
-
-        .meaning-header { font-size: 1.3rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
-        .phonetic-sub { font-family: monospace; color: var(--text-secondary); margin-bottom: 20px; font-size: 1rem; }
+        .card-back { transform: rotateY(180deg); padding: 20px; }
+        .scroll-area { overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; padding-right: 5px; }
+        .meaning-header { font-size: 1.3rem; font-weight: 700; color: var(--text-main); margin-bottom: 5px; line-height: 1.3; }
+        .phonetic-sub { font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 20px; }
         
-        .examples-label { 
-            font-size: 0.8rem; 
-            font-weight: 800; 
-            color: var(--text-secondary); 
-            text-transform: uppercase; 
-            margin-bottom: 12px;
-            display: block;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
+        .example-item { 
+            background: #f8f9ff; 
+            padding: 14px; 
+            border-left: 4px solid var(--primary); 
+            border-radius: 12px; 
+            margin-bottom: 12px; 
+            font-size: 0.95rem; 
+            line-height: 1.5; 
+            color: #3a3a3c; 
         }
 
-        .example-item {
-            background: #f8f9ff;
-            padding: 14px;
-            border-left: 4px solid var(--primary);
-            border-radius: 10px;
-            margin-bottom: 12px;
-            font-size: 0.95rem;
-            line-height: 1.5;
-            color: #3a3a3c;
+        .section-label {
+            font-size: 0.7rem; font-weight: 800; color: #8e8e93; 
+            text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 10px; display: block; border-bottom: 1px solid #eee; padding-bottom: 5px;
         }
 
-        /* Controls */
-        .controls {
-            padding: 30px 0 calc(30px + env(safe-area-inset-bottom));
-            display: flex;
-            gap: 15px;
-        }
-
-        button {
-            padding: 16px 32px;
-            border-radius: 18px;
-            border: none;
-            background: #ffffff;
-            color: var(--primary);
-            font-weight: 700;
-            font-size: 1rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-
+        .controls { padding: 25px 0 calc(25px + env(safe-area-inset-bottom)); display: flex; gap: 15px; width: 90%; max-width: 400px; }
+        button { flex: 1; padding: 18px; border-radius: 20px; border: none; background: #ffffff; color: var(--text-main); font-weight: 700; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         button.primary-btn { background: var(--primary); color: white; }
-        button:active { transform: scale(0.96); opacity: 0.8; }
-
-        /* Scrollbar */
-        .scroll-area::-webkit-scrollbar { width: 4px; }
-        .scroll-area::-webkit-scrollbar-thumb { background: #d1d1d6; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
+<div id="setup-screen">
+    <h1 style="margin-bottom:10px;">WordFlow</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 30px; padding:0 20px;">Upload your CSV to view all 50 words and their examples.</p>
+    <label class="upload-btn">
+        Upload Word List (CSV)
+        <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+    </label>
+</div>
+
+<div class="app-container" id="app">
+    <div id="counter" class="counter">0 / 0</div>
     <div class="scene">
         <div class="card" id="card" onclick="this.classList.toggle('is-flipped')">
             <div class="card-face card-front">
-                <div class="type-display" id="f-type"></div>
-                <h1 id="f-word" class="word-display"></h1>
-                <p style="color: #c7c7cc; font-size: 0.8rem; margin-top: 20px;">Tap to Flip</p>
+                <h1 id="f-word" class="word-display">...</h1>
+                <div id="f-type" class="type-tag">...</div>
+                <p style="color: #ccc; font-size: 0.7rem; margin-top: 30px;">TAP TO REVEAL</p>
             </div>
-
             <div class="card-face card-back">
                 <div class="scroll-area">
-                    <div class="meaning-header" id="b-meaning"></div>
-                    <div class="phonetic-sub">
-                        <span id="b-ipa"></span> • <span id="b-phonetic"></span>
-                    </div>
-                    
-                    <span class="examples-label">Usage Examples</span>
-                    <div id="example-container"></div>
+                    <div class="meaning-header" id="b-meaning">...</div>
+                    <div class="phonetic-sub"><span id="b-ipa"></span> • <span id="b-phonetic"></span></div>
+                    <span class="section-label">Usage Examples</span>
+                    <div id="example-list"></div>
                 </div>
             </div>
         </div>
     </div>
-
     <div class="controls">
-        <button onclick="prevCard(event)">Previous</button>
-        <button class="primary-btn" onclick="nextCard(event)">Next Word</button>
+        <button onclick="prevCard(event)">Back</button>
+        <button class="primary-btn" onclick="nextCard(event)">Next</button>
     </div>
+    <p onclick="clearData()" style="font-size: 0.7rem; color: #ccc; margin-top: 5px;">Upload New File</p>
 </div>
 
 <script>
-    // Example of how your CSV data should be structured in the array
-    const wordData = [
-        { 
-            word: "abase", 
-            type: "V.", 
-            meaning: "lower; humiliate", 
-            ipa: "əˈbeɪs", 
-            phonetic: "uh-BEYS",
-            // You can add up to 50 example fields here
-            example1: "He was unwilling to abase himself by pleading for mercy.",
-            example2: "The boss's goal was to abase his employees.",
-            example3: "The king was forced to abase himself before the conqueror.",
-            example4: "Do not abase yourself by engaging in such petty behavior."
-        },
-        { 
-            word: "abash", 
-            type: "V.", 
-            meaning: "to make ashamed or uneasy; disconcert", 
-            ipa: "əˈbæʃ", 
-            phonetic: "uh-BASH",
-            example1: "The student was abashed by the teacher's public correction.",
-            example2: "Nothing could abash the confident young performer."
-        }
-    ];
+let wordData = [];
+let currentIndex = 0;
 
-    let currentIndex = 0;
+window.onload = () => {
+    const savedData = localStorage.getItem('wordFlowData');
+    if (savedData) {
+        wordData = JSON.parse(savedData);
+        startApp();
+    }
+};
 
-    function renderCard() {
-        const item = wordData[currentIndex];
-        const card = document.getElementById('card');
+document.getElementById('csvFileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        wordData = parseCSV(event.target.result);
+        if (wordData.length > 0) {
+            localStorage.setItem('wordFlowData', JSON.stringify(wordData));
+            startApp();
+        } else { alert("Error parsing CSV. Please check formatting."); }
+    };
+    reader.readAsText(file);
+});
+
+function startApp() {
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    updateCard();
+}
+
+function parseCSV(str) {
+    const rows = [];
+    let quote = false;
+    let currRow = 0, currCol = 0;
+    
+    for (let i = 0; i < str.length; i++) {
+        let char = str[i], next = str[i+1];
+        rows[currRow] = rows[currRow] || [];
+        rows[currRow][currCol] = rows[currRow][currCol] || '';
         
-        // Reset rotation for new word
-        card.classList.remove('is-flipped');
-
-        setTimeout(() => {
-            // Front Content
-            document.getElementById('f-word').textContent = item.word;
-            document.getElementById('f-type').textContent = item.type;
-
-            // Back Content
-            document.getElementById('b-meaning').textContent = item.meaning;
-            document.getElementById('b-ipa').textContent = item.ipa;
-            document.getElementById('b-phonetic').textContent = item.phonetic;
-
-            // DYNAMIC EXAMPLE LOADER
-            const container = document.getElementById('example-container');
-            container.innerHTML = "";
-            
-            // This loop checks every property in the object
-            // If the property name contains 'example' and has text, it creates a box
-            Object.keys(item).forEach(key => {
-                if (key.toLowerCase().includes('example') && item[key]) {
-                    const div = document.createElement('div');
-                    div.className = 'example-item';
-                    div.textContent = item[key];
-                    container.appendChild(div);
-                }
-            });
-        }, 150);
+        if (char === '"' && quote && next === '"') { rows[currRow][currCol] += char; i++; continue; }
+        if (char === '"') { quote = !quote; continue; }
+        if (char === ',' && !quote) { currCol++; continue; }
+        if ((char === '\n' || char === '\r') && !quote) { 
+            if (char === '\r' && next === '\n') i++;
+            currRow++; currCol = 0; continue; 
+        }
+        rows[currRow][currCol] += char;
     }
 
-    function nextCard(e) {
-        e.stopPropagation();
-        currentIndex = (currentIndex + 1) % wordData.length;
-        renderCard();
-    }
+    const headers = rows[0].map(h => h.trim().toLowerCase());
+    return rows.slice(1).filter(r => r.length > 1).map(row => {
+        let obj = {};
+        headers.forEach((h, i) => { obj[h] = row[i] ? row[i].trim() : ""; });
+        return obj;
+    });
+}
 
-    function prevCard(e) {
-        e.stopPropagation();
-        currentIndex = (currentIndex - 1 + wordData.length) % wordData.length;
-        renderCard();
-    }
+function updateCard() {
+    const item = wordData[currentIndex];
+    const card = document.getElementById('card');
+    card.classList.remove('is-flipped');
+    document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
 
-    // Load initial card
-    renderCard();
+    // Small delay to allow flip animation to reset before content change
+    setTimeout(() => {
+        document.getElementById('f-word').textContent = getVal(item, 'word');
+        document.getElementById('f-type').textContent = getVal(item, 'type');
+        document.getElementById('b-meaning').textContent = getVal(item, 'meaning');
+        document.getElementById('b-ipa').textContent = getVal(item, 'ipa');
+        document.getElementById('b-phonetic').textContent = getVal(item, 'phonetic');
+
+        const list = document.getElementById('example-list');
+        list.innerHTML = "";
+        
+        // FIND ALL EXAMPLES
+        // This looks for any key that contains the string 'example'
+        Object.keys(item).forEach(key => {
+            if (key.includes('example') && item[key]) {
+                const div = document.createElement('div');
+                div.className = 'example-item';
+                div.textContent = item[key];
+                list.appendChild(div);
+            }
+        });
+        
+        document.querySelector('.scroll-area').scrollTop = 0;
+    }, 150);
+}
+
+// Helper to find key even if case is different or has spaces
+function getVal(obj, target) {
+    const key = Object.keys(obj).find(k => k.includes(target.toLowerCase()));
+    return key ? obj[key] : "";
+}
+
+function nextCard(e) { e.stopPropagation(); currentIndex = (currentIndex + 1) % wordData.length; updateCard(); }
+function prevCard(e) { e.stopPropagation(); currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; updateCard(); }
+function clearData() { localStorage.removeItem('wordFlowData'); location.reload(); }
 </script>
-
 </body>
 </html>
