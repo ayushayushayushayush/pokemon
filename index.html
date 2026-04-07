@@ -130,14 +130,12 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 800;
-            cursor: pointer;
         }
 
         .fav-group-ipa {
             color: var(--text-secondary);
             font-size: 0.85rem;
             font-family: monospace;
-            cursor: pointer;
         }
 
         .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
@@ -221,7 +219,6 @@
             background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; transition: opacity 0.3s; -webkit-user-select: none;
         }
 
-        /* Styling for favorited examples - Non-Bold */
         .example-item.is-fav { 
             font-weight: 400; 
             border-left: 4px solid var(--fav-indicator); 
@@ -453,13 +450,13 @@ function openFavs() {
         const title = document.createElement('div');
         title.className = 'fav-group-title';
         title.textContent = word;
-        // Clicking Word plays audio + jumps to card
-        title.onclick = () => { playAudioByIndex(organized[word].index); closeFavs(); jumpToWord(word); };
+        // CLICK ONLY PLAYS AUDIO
+        title.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
 
         const ipaSpan = document.createElement('div');
         ipaSpan.className = 'fav-group-ipa';
         ipaSpan.textContent = organized[word].ipa;
-        // Clicking IPA plays audio only
+        // CLICK ONLY PLAYS AUDIO
         ipaSpan.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
 
         header.appendChild(title);
