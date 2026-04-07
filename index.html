@@ -218,13 +218,11 @@
             background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; transition: opacity 0.3s; -webkit-user-select: none;
         }
 
-        /* Logic: Favorites ON THE CARD BACK = Bold */
         #example-list .example-item.is-fav { 
             font-weight: 800; 
             border-left: 4px solid var(--fav-indicator); 
         }
 
-        /* Logic: Favorites ON THE FAVORITES PAGE = Regular Weight */
         #fav-list .example-item.is-fav { 
             font-weight: 400; 
             border-left: 4px solid var(--fav-indicator); 
@@ -394,7 +392,11 @@ function handleMoreClick(e) {
 function renderExamples(item) {
     const list = document.getElementById('example-list');
     list.innerHTML = "";
-    let count = 1;
+    
+    const favorites = [];
+    const others = [];
+
+    // Filter and collect examples first
     for (let i = 1; i <= 50; i++) {
         const text = item[i.toString()];
         if (text && text.trim().length > 1) {
@@ -402,27 +404,40 @@ function renderExamples(item) {
             if (deletedExamples.includes(exId)) continue;
 
             const isFav = favExamples.includes(exId);
-            const exDiv = document.createElement('div');
-            exDiv.className = `example-item ${isFav ? 'is-fav' : ''}`;
-            exDiv.innerHTML = `<span class="ex-num">${count}.</span>${text}`;
-            
-            let lastTap = 0;
-            exDiv.addEventListener('touchend', (e) => {
-                const currentTime = new Date().getTime();
-                if (currentTime - lastTap < 300) { toggleFav(exId, exDiv); e.preventDefault(); }
-                lastTap = currentTime;
-            });
-
-            let pressTimer;
-            exDiv.addEventListener('touchstart', () => {
-                pressTimer = setTimeout(() => { if (confirm("Delete?")) deleteEx(exId, exDiv); }, 750);
-            }, {passive: true});
-            exDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
-
-            list.appendChild(exDiv);
-            count++;
+            if (isFav) {
+                favorites.push({ text: text.trim(), id: exId, isFav: true });
+            } else {
+                others.push({ text: text.trim(), id: exId, isFav: false });
+            }
         }
     }
+
+    // Combine sorted list
+    const sortedList = [...favorites, ...others];
+
+    sortedList.forEach((exObj, index) => {
+        const exDiv = document.createElement('div');
+        exDiv.className = `example-item ${exObj.isFav ? 'is-fav' : ''}`;
+        exDiv.innerHTML = `<span class="ex-num">${index + 1}.</span>${exObj.text}`;
+        
+        let lastTap = 0;
+        exDiv.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            if (currentTime - lastTap < 300) { 
+                toggleFav(exObj.id, exDiv); 
+                e.preventDefault(); 
+            }
+            lastTap = currentTime;
+        });
+
+        let pressTimer;
+        exDiv.addEventListener('touchstart', () => {
+            pressTimer = setTimeout(() => { if (confirm("Delete?")) deleteEx(exObj.id, exDiv); }, 750);
+        }, {passive: true});
+        exDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
+
+        list.appendChild(exDiv);
+    });
 }
 
 function openFavs() {
@@ -503,6 +518,10 @@ function toggleFav(id, el) {
     }
     localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
     pushSync();
+    
+    // Refresh to re-sort if we are on the card back
+    const item = wordData[currentIndex];
+    renderExamples(item);
 }
 
 function deleteEx(id, el) {
