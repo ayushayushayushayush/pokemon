@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro - Fav Management</title>
+    <title>WordFlow Pro</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -82,11 +82,14 @@
             cursor: pointer;
         }
 
+        /* Star Button Styling */
         .fav-btn {
             background: #2C2C2E;
             color: var(--text-main);
             border: 1px solid #3a3a3c;
-            font-weight: 800;
+            font-size: 1.2rem; /* Make the star prominent */
+            padding: 4px 14px;
+            line-height: 1;
         }
 
         .counter { 
@@ -232,7 +235,7 @@
 
 <header id="app-header" style="display:none;">
     <div onclick="resetDeleted()" class="header-btn" style="color:var(--delete-red);">Restore</div> 
-    <div class="header-btn fav-btn" onclick="openFavs()">FAV</div>
+    <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
 </header>
 
@@ -434,7 +437,6 @@ function openFavs() {
             item.className = 'example-item is-fav';
             item.textContent = itemObj.text;
             
-            // Long press to remove from favorites
             let favPressTimer;
             item.addEventListener('touchstart', () => {
                 favPressTimer = setTimeout(() => {
@@ -443,7 +445,6 @@ function openFavs() {
                         localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
                         pushSync();
                         item.remove();
-                        // If that was the last item for this word, title will stay but that's okay for now.
                     }
                 }, 750);
             }, {passive: true});
