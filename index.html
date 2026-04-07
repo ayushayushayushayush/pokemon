@@ -588,12 +588,13 @@ function jumpPrompt() {
         if (!isNaN(num)) { currentIndex = Math.max(0, Math.min(wordData.length - 1, num - 1)); updateCard(); }
     }
 }
+
 function resetDeleted() {
-    if (confirm("Restore all (deleted & favorites)?")) {
-        deletedExamples = []; favExamples = [];
-        localStorage.removeItem('wf_deleted_log'); localStorage.removeItem('wf_fav_log');
-        updateCard(); pushSync();
-        closeFavs();
+    if (confirm("Restore all deleted examples? (Favorites will be kept)")) {
+        deletedExamples = [];
+        localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
+        updateCard(); 
+        pushSync();
     }
 }
 </script>
