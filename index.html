@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro - Multi-Meaning</title>
+    <title>WordFlow Pro - Multi-Meaning & Audio Fix</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -140,8 +140,10 @@
             padding: 30px 30px 15px; 
             border-bottom: 1px solid #38383a;
             flex-shrink: 0;
-            user-select: none;
+            /* Prevent text selection during long press */
             -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
         
         .back-word {
@@ -158,18 +160,15 @@
             font-weight: 700; 
             color: var(--text-main); 
             line-height: 1.3; 
-            margin: 0;
-            min-height: 1.6em;
-            transition: color 0.2s ease;
+            margin: 0; 
         }
 
-        .meaning-hint {
+        .meaning-indicator {
             font-size: 0.7rem;
             color: var(--primary);
-            margin-top: 4px;
-            text-transform: uppercase;
+            margin-top: 5px;
             font-weight: 600;
-            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
         
         #example-list { 
@@ -230,10 +229,10 @@
             </div>
             
             <div class="card-face card-back">
-                <div class="back-header" id="back-header-touch">
+                <div class="back-header" id="meaning-container">
                     <p id="b-word" class="back-word">...</p>
                     <p id="b-meaning" class="meaning-text">...</p>
-                    <div id="meaning-nav-hint" class="meaning-hint"></div>
+                    <div id="meaning-indicator" class="meaning-indicator" style="display:none;">Long Press for More</div>
                 </div>
                 <div id="example-list"></div>
             </div>
@@ -257,8 +256,8 @@ const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 let wordData = [];
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
+let currentMeaningIdx = 0; // Tracks which extra meaning is shown
 let syncTimeout = null;
-let currentMeaningIdx = 0;
 
 // ─── SYNC UI ───
 function showSync(state, message) {
@@ -306,83 +305,67 @@ window.onload = () => {
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('app').style.display = 'flex';
             document.getElementById('app-header').style.display = 'flex';
-            setupDoubleTap();
+            setupMeaningLongPress();
             updateCard();
         }
     });
 };
 
-// ─── DOUBLE TAP LOGIC ───
-function setupDoubleTap() {
-    const header = document.getElementById('back-header-touch');
-    let lastTap = 0;
-    
-    header.addEventListener('touchend', (e) => {
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTap;
-        
-        if (tapLength < 300 && tapLength > 0) {
-            // Double Tap Detected
-            cycleMeaning();
-            e.preventDefault();
-        } else {
-            // Single Tap -> Flip Back
-            // We use a small timeout to ensure it wasn't the first half of a double tap
-            this.singleTapTimeout = setTimeout(() => {
-                if (new Date().getTime() - lastTap >= 300) {
-                    flipCard();
-                }
-            }, 300);
-        }
-        lastTap = currentTime;
-    });
+// ─── MEANING CYCLE LOGIC ───
+function setupMeaningLongPress() {
+    const container = document.getElementById('meaning-container');
+    let pressTimer;
 
-    // Handle standard clicks for non-touch
-    header.addEventListener('dblclick', cycleMeaning);
+    const start = (e) => {
+        // Prevent default flip behavior if we are long-pressing the header
+        pressTimer = setTimeout(() => {
+            cycleMeaning();
+        }, 750);
+    };
+
+    const end = () => clearTimeout(pressTimer);
+
+    container.addEventListener('touchstart', start, {passive: true});
+    container.addEventListener('touchend', end);
+    container.addEventListener('touchmove', end);
+    container.addEventListener('mousedown', start);
+    container.addEventListener('mouseup', end);
+    
+    // Header click still flips back
+    container.addEventListener('click', (e) => {
+        if (e.detail === 1) { // Normal single click
+            flipCard();
+        }
+    });
 }
 
 function cycleMeaning() {
     const item = wordData[currentIndex];
-    const meanings = getAvailableMeanings(item);
-    if (meanings.length <= 1) return;
-
-    currentMeaningIdx = (currentMeaningIdx + 1) % meanings.length;
-    displayCurrentMeaning(meanings);
-}
-
-function getAvailableMeanings(item) {
-    // Collect the main MEANING plus meaning1 through meaning10
-    const list = [item.MEANING];
-    for (let i = 1; i <= 10; i++) {
-        const val = item[`meaning${i}`];
-        if (val && val.trim().length > 0) {
-            list.push(val.trim());
-        }
-    }
-    return list;
-}
-
-function displayCurrentMeaning(meanings) {
-    const mText = document.getElementById('b-meaning');
-    const mHint = document.getElementById('meaning-nav-hint');
+    // List of keys to check
+    const meaningKeys = ["MEANING", "meaning1", "meaning2", "meaning3", "meaning4", "meaning5", "meaning6", "meaning7", "meaning8", "meaning9", "meaning10"];
     
-    mText.style.opacity = '0';
+    // Filter out empty meanings
+    const availableMeanings = meaningKeys.filter(k => item[k] && item[k].trim().length > 0);
+    
+    if (availableMeanings.length <= 1) return;
+
+    currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
+    const nextKey = availableMeanings[currentMeaningIdx];
+    
+    const meaningEl = document.getElementById('b-meaning');
+    meaningEl.style.opacity = "0";
+    
     setTimeout(() => {
-        mText.textContent = meanings[currentMeaningIdx];
-        mText.style.opacity = '1';
-        
-        if (meanings.length > 1) {
-            mHint.textContent = `Meaning ${currentMeaningIdx + 1} of ${meanings.length} • Double tap for more`;
-        } else {
-            mHint.textContent = "";
-        }
+        meaningEl.textContent = item[nextKey];
+        meaningEl.style.opacity = "1";
+        document.getElementById('meaning-indicator').textContent = `Meaning ${currentMeaningIdx + 1} of ${availableMeanings.length}`;
     }, 150);
 }
 
 // ─── RENDER ───
 function updateCard() {
     const item = wordData[currentIndex];
-    currentMeaningIdx = 0; // Reset meaning index for new card
+    currentMeaningIdx = 0; // Reset meaning index for new word
     
     document.getElementById('card').classList.remove('is-flipped');
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
@@ -392,9 +375,12 @@ function updateCard() {
     document.getElementById('f-ipa').textContent = item.IPA;
     document.getElementById('f-phonetic').textContent = item.PHONETIC;
     document.getElementById('b-word').textContent = item.WORD;
-    
-    const meanings = getAvailableMeanings(item);
-    displayCurrentMeaning(meanings);
+    document.getElementById('b-meaning').textContent = item.MEANING;
+
+    // Check if extra meanings exist to show indicator
+    const hasExtras = ["meaning1", "meaning2"].some(k => item[k] && item[k].trim().length > 0);
+    document.getElementById('meaning-indicator').style.display = hasExtras ? 'block' : 'none';
+    document.getElementById('meaning-indicator').textContent = "Long Press for More";
 
     const list = document.getElementById('example-list');
     list.innerHTML = "";
@@ -409,15 +395,15 @@ function updateCard() {
                 exDiv.className = 'example-item';
                 exDiv.innerHTML = `<span class="ex-num">${exampleCounter}.</span>${text}`;
                 
-                let pressTimer;
-                const start = () => pressTimer = setTimeout(() => {
+                let exPressTimer;
+                const exStart = () => exPressTimer = setTimeout(() => {
                     if (confirm("Delete example?")) deleteEx(exId, exDiv);
                 }, 750);
-                const end = () => clearTimeout(pressTimer);
+                const exEnd = () => clearTimeout(exPressTimer);
 
-                exDiv.addEventListener('touchstart', start, {passive: true});
-                exDiv.addEventListener('touchend', end);
-                exDiv.addEventListener('touchmove', end);
+                exDiv.addEventListener('touchstart', exStart, {passive: true});
+                exDiv.addEventListener('touchend', exEnd);
+                exDiv.addEventListener('touchmove', exEnd);
                 exDiv.addEventListener('contextmenu', (e) => e.preventDefault());
 
                 list.appendChild(exDiv);
