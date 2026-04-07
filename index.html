@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro - Final Smooth Fix</title>
+    <title>WordFlow Pro - Meaning Logic Fix</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -168,7 +168,7 @@
         }
 
         .meaning-container {
-            min-height: 80px;
+            min-height: 60px;
             display: block;
         }
 
@@ -178,8 +178,10 @@
             color: var(--text-main); 
             line-height: 1.4; 
             margin: 0; 
-            transition: opacity 0.15s ease-in-out;
+            transition: opacity 0.1s ease-in-out;
             overflow-wrap: break-word;
+            display: block;
+            width: 100%;
         }
         
         #example-list { 
@@ -266,6 +268,7 @@ let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
 let availableMeanings = [];
 let currentMeaningIdx = 0;
 let syncTimeout = null;
+let transitionTimer = null;
 
 function showSync(state, message) {
     const el = document.getElementById('sync-status');
@@ -289,8 +292,12 @@ window.onload = () => {
 
 function updateCard() {
     const item = wordData[currentIndex];
+    clearTimeout(transitionTimer);
     
-    // Clear and build available meanings
+    // Hard reset meaning text and building the array
+    const meaningEl = document.getElementById('b-meaning');
+    meaningEl.textContent = ""; 
+    
     availableMeanings = [];
     if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING.trim());
     for(let i=1; i<=10; i++) {
@@ -308,8 +315,7 @@ function updateCard() {
     document.getElementById('f-phonetic').textContent = item.PHONETIC;
     document.getElementById('b-word').textContent = item.WORD;
     
-    // Initial display of the first meaning
-    const meaningEl = document.getElementById('b-meaning');
+    // Set initial text
     meaningEl.textContent = availableMeanings[0] || "";
     meaningEl.style.opacity = 1;
     
@@ -331,20 +337,25 @@ function handleMoreClick(e) {
     const meaningEl = document.getElementById('b-meaning');
     const moreBtn = document.getElementById('more-btn');
 
-    // Fade out
+    // 1. Immediately hide and CLEAR the text to prevent ghosting
     meaningEl.style.opacity = 0;
+    
+    // Clear any existing timer from a fast double-click
+    clearTimeout(transitionTimer);
 
-    setTimeout(() => {
-        // Move to next index
+    transitionTimer = setTimeout(() => {
+        // 2. Wipe the element content completely before adding new text
+        meaningEl.innerHTML = ""; 
+        
         currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
         
-        // Update content
+        // 3. Inject new text and update button
         meaningEl.textContent = availableMeanings[currentMeaningIdx];
         moreBtn.textContent = `More ${currentMeaningIdx + 1}/${availableMeanings.length}`;
         
-        // Fade in
+        // 4. Fade back in
         meaningEl.style.opacity = 1;
-    }, 150);
+    }, 110); // Matches the 0.1s transition in CSS
 }
 
 function renderExamples(item) {
