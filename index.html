@@ -230,7 +230,15 @@
 
         .ex-num { color: #FFFFFF; font-weight: 800; margin-right: 8px; }
 
-        .controls { padding: 0 20px calc(var(--safe-bottom) + 20px); display: flex; gap: 10px; width: 100%; max-width: 420px; }
+        /* Updated: Added space above buttons and pushed them down slightly */
+        .controls { 
+            padding: 20px 20px calc(var(--safe-bottom) + 30px); 
+            margin-top: 10px;
+            display: flex; 
+            gap: 10px; 
+            width: 100%; 
+            max-width: 420px; 
+        }
         .nav-btn { flex: 1; height: 60px; border-radius: 18px; border: none; background: #2C2C2E; color: white; font-weight: 700; font-size: 0.9rem; }
         .nav-btn.primary { background: var(--primary); color: white; }
     </style>
@@ -396,7 +404,6 @@ function renderExamples(item) {
     const favorites = [];
     const others = [];
 
-    // Filter and collect examples first
     for (let i = 1; i <= 50; i++) {
         const text = item[i.toString()];
         if (text && text.trim().length > 1) {
@@ -412,7 +419,6 @@ function renderExamples(item) {
         }
     }
 
-    // Combine sorted list
     const sortedList = [...favorites, ...others];
 
     sortedList.forEach((exObj, index) => {
@@ -519,7 +525,6 @@ function toggleFav(id, el) {
     localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
     pushSync();
     
-    // Refresh to re-sort if we are on the card back
     const item = wordData[currentIndex];
     renderExamples(item);
 }
