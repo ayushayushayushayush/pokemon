@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro - Refined Favorites</title>
+    <title>WordFlow Pro - Fav Management</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -19,7 +19,7 @@
             --text-main: #FFFFFF; 
             --text-secondary: #AEAEB2;
             --delete-red: #FF453A;
-            --fav-indicator: #2C2C2E; /* Matches Back Button */
+            --fav-indicator: #2C2C2E; 
             --example-bg: #2C2C2E;
             --safe-top: env(safe-area-inset-top);
             --safe-bottom: env(safe-area-inset-bottom);
@@ -98,7 +98,6 @@
             border-radius: 20px;
         }
 
-        /* Favorites Overlay */
         #fav-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -117,7 +116,7 @@
         }
 
         .fav-group-title {
-            color: var(--delete-red); /* Word in Red */
+            color: var(--delete-red); 
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -160,9 +159,7 @@
             color: var(--text-secondary); 
             margin-top: 15px; 
             font-family: monospace; 
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            display: flex; flex-direction: column; gap: 8px;
         }
 
         .flip-hint {
@@ -185,37 +182,20 @@
         }
 
         .back-top-row {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 12px;
-            margin-bottom: 12px;
+            display: flex; align-items: center; justify-content: flex-start; gap: 12px; margin-bottom: 12px;
         }
         
         .back-word {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: var(--delete-red);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin: 0;
+            font-size: 1.2rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.5px; margin: 0;
         }
 
         .more-btn {
-            background: var(--primary);
-            color: white;
-            font-size: 0.65rem;
-            font-weight: 800;
-            padding: 6px 12px;
-            border-radius: 12px;
-            text-transform: uppercase;
-            white-space: nowrap;
+            background: var(--primary); color: white; font-size: 0.65rem; font-weight: 800; padding: 6px 12px; border-radius: 12px; text-transform: uppercase; white-space: nowrap;
         }
 
         .meaning-container { min-height: 60px; }
         .meaning-text { 
-            font-size: 1.2rem; font-weight: 700; color: var(--text-main); line-height: 1.4; margin: 0; 
-            transition: opacity 0.1s; overflow-wrap: break-word;
+            font-size: 1.2rem; font-weight: 700; color: var(--text-main); line-height: 1.4; margin: 0; transition: opacity 0.1s; overflow-wrap: break-word;
         }
         
         #example-list { 
@@ -223,13 +203,11 @@
         }
 
         .example-item { 
-            background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA;
-            margin-bottom: 12px; border-radius: 12px; transition: opacity 0.3s; -webkit-user-select: none;
+            background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; transition: opacity 0.3s; -webkit-user-select: none;
         }
 
         .example-item.is-fav { 
-            font-weight: 800; 
-            border-left: 4px solid var(--fav-indicator); /* Matches Back Button color */
+            font-weight: 800; border-left: 4px solid var(--fav-indicator); 
         }
         .ex-num { color: #FFFFFF; font-weight: 800; margin-right: 8px; }
 
@@ -441,7 +419,7 @@ function openFavs() {
     favExamples.forEach(id => {
         const [word, text] = id.split('|');
         if (!organized[word]) organized[word] = [];
-        organized[word].push(text);
+        organized[word].push({id, text});
     });
 
     Object.keys(organized).forEach(word => {
@@ -451,16 +429,32 @@ function openFavs() {
         title.onclick = () => { closeFavs(); jumpToWord(word); };
         list.appendChild(title);
 
-        organized[word].forEach(text => {
+        organized[word].forEach(itemObj => {
             const item = document.createElement('div');
             item.className = 'example-item is-fav';
-            item.textContent = text;
+            item.textContent = itemObj.text;
+            
+            // Long press to remove from favorites
+            let favPressTimer;
+            item.addEventListener('touchstart', () => {
+                favPressTimer = setTimeout(() => {
+                    if (confirm("Remove from favorites?")) {
+                        favExamples = favExamples.filter(x => x !== itemObj.id);
+                        localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
+                        pushSync();
+                        item.remove();
+                        // If that was the last item for this word, title will stay but that's okay for now.
+                    }
+                }, 750);
+            }, {passive: true});
+            item.addEventListener('touchend', () => clearTimeout(favPressTimer));
+
             list.appendChild(item);
         });
     });
 }
 
-function closeFavs() { document.getElementById('fav-overlay').style.display = 'none'; }
+function closeFavs() { document.getElementById('fav-overlay').style.display = 'none'; updateCard(); }
 
 function jumpToWord(wordText) {
     const idx = wordData.findIndex(item => item.WORD.toLowerCase() === wordText.toLowerCase());
