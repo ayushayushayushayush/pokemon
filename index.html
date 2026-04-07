@@ -174,16 +174,15 @@
             display: flex; flex-direction: column; gap: 8px;
         }
 
-        /* Updated: Slightly bigger flip button */
         .flip-hint {
             position: absolute;
             bottom: 40px;
-            font-size: 1.15rem; /* Increased size */
+            font-size: 1.15rem;
             color: var(--primary);
-            font-weight: 800; /* Extra bold */
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 2px;
-            padding: 20px; /* Larger hit area */
+            padding: 20px;
         }
 
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
@@ -219,10 +218,18 @@
             background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; transition: opacity 0.3s; -webkit-user-select: none;
         }
 
-        .example-item.is-fav { 
+        /* Logic: Favorites ON THE CARD BACK = Bold */
+        #example-list .example-item.is-fav { 
+            font-weight: 800; 
+            border-left: 4px solid var(--fav-indicator); 
+        }
+
+        /* Logic: Favorites ON THE FAVORITES PAGE = Regular Weight */
+        #fav-list .example-item.is-fav { 
             font-weight: 400; 
             border-left: 4px solid var(--fav-indicator); 
         }
+
         .ex-num { color: #FFFFFF; font-weight: 800; margin-right: 8px; }
 
         .controls { padding: 0 20px calc(var(--safe-bottom) + 20px); display: flex; gap: 10px; width: 100%; max-width: 420px; }
@@ -485,11 +492,6 @@ function openFavs() {
 }
 
 function closeFavs() { document.getElementById('fav-overlay').style.display = 'none'; updateCard(); }
-
-function jumpToWord(wordText) {
-    const idx = wordData.findIndex(item => item.WORD.toLowerCase() === wordText.toLowerCase());
-    if (idx !== -1) { currentIndex = idx; updateCard(); }
-}
 
 function toggleFav(id, el) {
     if (favExamples.includes(id)) {
