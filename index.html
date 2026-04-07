@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro - Race Condition Fix</title>
+    <title>WordFlow Pro</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -77,8 +77,13 @@
             font-weight: 700;
             color: var(--text-main); 
             background: #3a3a3c; 
-            padding: 4px 12px; 
-            border-radius: 20px; 
+            padding: 6px 14px; 
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .counter:active {
+            background: var(--primary);
         }
 
         .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
@@ -218,9 +223,8 @@
 <div id="loading-screen"><p>Loading...</p></div>
 
 <header id="app-header" style="display:none;">
-    <div onclick="resetDeleted()" style="color:var(--delete-red); font-weight:600; font-size:0.8rem;">Restore</div> 
-    <div id="counter" class="counter">0 / 0</div>
-    <div onclick="jumpPrompt()" style="color:var(--primary); font-weight:600; font-size:0.9rem;">Jump</div>
+    <div onclick="resetDeleted()" style="color:var(--delete-red); font-weight:600; font-size:0.8rem; padding: 10px 0;">Restore</div> 
+    <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
 </header>
 
 <div class="app-container" id="app">
@@ -270,7 +274,7 @@ let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
 let availableMeanings = [];
 let currentMeaningIdx = 0;
 let syncTimeout = null;
-let isTransitioning = false; // LOCK to prevent multiple rapid taps
+let isTransitioning = false;
 
 function showSync(state, message) {
     const el = document.getElementById('sync-status');
@@ -297,7 +301,7 @@ function updateCard() {
     isTransitioning = false;
     
     const meaningEl = document.getElementById('b-meaning');
-    meaningEl.innerText = ""; // Clear immediately
+    meaningEl.innerText = ""; 
     
     availableMeanings = [];
     if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING.trim());
@@ -335,7 +339,7 @@ function handleMoreClick(e) {
     if (e) e.stopPropagation();
     if (availableMeanings.length <= 1 || isTransitioning) return;
 
-    isTransitioning = true; // Set Lock
+    isTransitioning = true;
     const meaningEl = document.getElementById('b-meaning');
     const moreBtn = document.getElementById('more-btn');
 
@@ -343,18 +347,12 @@ function handleMoreClick(e) {
     meaningEl.style.opacity = 0;
 
     setTimeout(() => {
-        // Hard wipe innerText to ensure no leftover lines
         meaningEl.innerText = ""; 
-        
         currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
-        
-        // Update content using innerText for better multi-line handling
         meaningEl.innerText = availableMeanings[currentMeaningIdx];
         moreBtn.textContent = `More ${currentMeaningIdx + 1}/${availableMeanings.length}`;
-        
         meaningEl.style.opacity = 1;
         
-        // Short delay before allowing the next tap
         setTimeout(() => {
             isTransitioning = false; 
             moreBtn.classList.remove('busy');
@@ -426,10 +424,18 @@ function flipCard() { document.getElementById('card').classList.toggle('is-flipp
 function nextCard() { currentIndex = (currentIndex + 1) % wordData.length; updateCard(); }
 function prevCard() { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; updateCard(); }
 function shuffleCard() { currentIndex = Math.floor(Math.random() * wordData.length); updateCard(); }
+
 function jumpPrompt() {
-    const val = prompt("Jump to #:");
-    if (val) { currentIndex = Math.max(0, Math.min(wordData.length - 1, parseInt(val) - 1)); updateCard(); }
+    const val = prompt(`Jump to (1 - ${wordData.length}):`);
+    if (val) {
+        const num = parseInt(val);
+        if (!isNaN(num)) {
+            currentIndex = Math.max(0, Math.min(wordData.length - 1, num - 1));
+            updateCard();
+        }
+    }
 }
+
 function resetDeleted() {
     if (confirm("Restore all?")) {
         deletedExamples = [];
