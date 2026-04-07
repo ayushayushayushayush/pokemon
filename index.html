@@ -230,6 +230,7 @@
 
         .ex-num { color: #FFFFFF; font-weight: 800; margin-right: 8px; }
 
+        /* Updated: Added space above buttons and pushed them down slightly */
         .controls { 
             padding: 20px 20px calc(var(--safe-bottom) + 30px); 
             margin-top: 10px;
@@ -360,11 +361,10 @@ function updateCard() {
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
     localStorage.setItem('wf_index_v6', currentIndex);
 
-    const cleanWord = item.WORD.trim();
-    document.getElementById('f-word').textContent = cleanWord;
+    document.getElementById('f-word').textContent = item.WORD;
     document.getElementById('f-ipa').textContent = item.IPA;
     document.getElementById('f-phonetic').textContent = item.PHONETIC;
-    document.getElementById('b-word').textContent = cleanWord;
+    document.getElementById('b-word').textContent = item.WORD;
     
     meaningEl.innerText = availableMeanings[0] || "";
     meaningEl.style.opacity = 1;
@@ -404,11 +404,10 @@ function renderExamples(item) {
     const favorites = [];
     const others = [];
 
-    const cleanWord = item.WORD.trim();
     for (let i = 1; i <= 50; i++) {
         const text = item[i.toString()];
         if (text && text.trim().length > 1) {
-            const exId = `${cleanWord}|${text.trim()}`;
+            const exId = `${item.WORD}|${text.trim()}`;
             if (deletedExamples.includes(exId)) continue;
 
             const isFav = favExamples.includes(exId);
@@ -462,8 +461,7 @@ function openFavs() {
     favExamples.forEach(id => {
         const [word, text] = id.split('|');
         if (!organized[word]) {
-            // Updated: Lookup logic uses .trim() to ensure matches with dirty CSV data
-            const masterEntry = wordData.find(w => w.WORD.trim().toLowerCase() === word.toLowerCase());
+            const masterEntry = wordData.find(w => w.WORD.toLowerCase() === word.toLowerCase());
             organized[word] = {
                 index: wordData.indexOf(masterEntry),
                 ipa: masterEntry ? masterEntry.IPA : '',
@@ -561,7 +559,7 @@ function playAudioFromEvent(e) {
 function playAudioByIndex(idx) {
     if (idx < 0 || idx >= wordData.length) return;
     const wordNum = idx + 1;
-    const wordText = wordData[idx].WORD.trim(); 
+    const wordText = wordData[idx].WORD;
     let folder = "audio-file";
     if (wordNum >= 1019 && wordNum <= 2026) folder = "audio-file-2";
     else if (wordNum >= 2027 && wordNum <= 3034) folder = "audio-file-3";
