@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro - Updated</title>
+    <title>WordFlow Pro - Smooth Meanings</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -137,21 +137,20 @@
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
         
         .back-header { 
-            padding: 30px 30px 15px; 
+            padding: 25px 25px 15px; 
             border-bottom: 1px solid #38383a;
             flex-shrink: 0;
-            position: relative;
         }
 
         .back-top-row {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            gap: 12px;
+            margin-bottom: 12px;
         }
         
         .back-word {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 800;
             color: var(--delete-red);
             text-transform: uppercase;
@@ -162,20 +161,29 @@
         .more-btn {
             background: var(--primary);
             color: white;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 800;
-            padding: 5px 12px;
-            border-radius: 15px;
+            padding: 6px 12px;
+            border-radius: 20px;
             text-transform: uppercase;
-            box-shadow: 0 4px 10px rgba(10,132,255,0.3);
+            box-shadow: 0 4px 8px rgba(10,132,255,0.2);
+            white-space: nowrap;
         }
 
-        .meaning-text { font-size: 1.3rem; font-weight: 700; color: var(--text-main); line-height: 1.3; margin: 0; min-height: 1.3em; transition: opacity 0.2s ease;}
+        .meaning-text { 
+            font-size: 1.25rem; 
+            font-weight: 700; 
+            color: var(--text-main); 
+            line-height: 1.4; 
+            margin: 0; 
+            transition: opacity 0.2s ease;
+            overflow-wrap: break-word;
+        }
         
         #example-list { 
             flex-grow: 1; 
             overflow-y: auto; 
-            padding: 15px 30px 30px; 
+            padding: 15px 25px 30px; 
             -webkit-overflow-scrolling: touch;
         }
 
@@ -273,18 +281,7 @@ function showSync(state, message) {
 }
 
 // ─── CLOUD SYNC ───
-async function fetchDeletedFromCloud() {
-    try {
-        const res = await fetch(BIN_URL + "/latest", { headers: { "X-Master-Key": API_KEY } });
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        const cloudList = data.record?.deleted || [];
-        deletedExamples = Array.from(new Set([...cloudList, ...deletedExamples]));
-        localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
-    } catch (e) { console.warn("Cloud fetch failed."); }
-}
-
-function pushDeletedToCloud() {
+async function pushDeletedToCloud() {
     clearTimeout(syncTimeout);
     showSync('syncing', '↑ Syncing…');
     syncTimeout = setTimeout(async () => {
@@ -295,7 +292,7 @@ function pushDeletedToCloud() {
                 body: JSON.stringify({ deleted: deletedExamples })
             });
             showSync('synced', '✓ Synced');
-        } catch (e) { showSync('error', '⚠ Sync error'); }
+        } catch { showSync('error', '⚠ Sync error'); }
     }, 1000);
 }
 
@@ -305,7 +302,14 @@ window.onload = () => {
         download: true, header: true,
         complete: async function(results) {
             wordData = results.data.filter(row => row.WORD);
-            await fetchDeletedFromCloud();
+            // Fetch cloud data silently
+            fetch(BIN_URL + "/latest", { headers: { "X-Master-Key": API_KEY } })
+                .then(r => r.json())
+                .then(d => {
+                    deletedExamples = Array.from(new Set([...(d.record?.deleted || []), ...deletedExamples]));
+                    localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
+                }).catch(() => {});
+            
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('app').style.display = 'flex';
             document.getElementById('app-header').style.display = 'flex';
@@ -318,14 +322,12 @@ window.onload = () => {
 function updateCard() {
     const item = wordData[currentIndex];
     
-    // Setup available meanings for this word
+    // Process meanings (Check capitalized keys from CSV)
     availableMeanings = [];
     if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING);
     for(let i=1; i<=10; i++) {
-        let mKey = `Meaning${i}`; // Match exact CSV case
-        if(item[mKey] && item[mKey].trim()) {
-            availableMeanings.push(item[mKey]);
-        }
+        let val = item[`Meaning${i}`];
+        if(val && val.trim()) availableMeanings.push(val.trim());
     }
     currentMeaningIndex = 0;
 
@@ -338,7 +340,7 @@ function updateCard() {
     document.getElementById('f-phonetic').textContent = item.PHONETIC;
     document.getElementById('b-word').textContent = item.WORD;
     
-    updateMeaningUI();
+    updateMeaningUI(false);
 
     const list = document.getElementById('example-list');
     list.innerHTML = "";
@@ -354,16 +356,11 @@ function updateCard() {
                 exDiv.innerHTML = `<span class="ex-num">${exampleCounter}.</span>${text}`;
                 
                 let pressTimer;
-                const start = (e) => {
-                    pressTimer = setTimeout(() => {
-                        if (confirm("Delete example?")) deleteEx(exId, exDiv);
-                    }, 750);
-                };
-                const end = () => clearTimeout(pressTimer);
-
-                exDiv.addEventListener('touchstart', start, {passive: true});
-                exDiv.addEventListener('touchend', end);
-                exDiv.addEventListener('touchmove', end);
+                exDiv.addEventListener('touchstart', () => {
+                    pressTimer = setTimeout(() => { if (confirm("Delete example?")) deleteEx(exId, exDiv); }, 750);
+                }, {passive: true});
+                exDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
+                exDiv.addEventListener('touchmove', () => clearTimeout(pressTimer));
                 exDiv.addEventListener('contextmenu', (e) => e.preventDefault());
 
                 list.appendChild(exDiv);
@@ -373,31 +370,33 @@ function updateCard() {
     }
 }
 
-// ─── MEANING CYCLING ───
-function updateMeaningUI() {
+function updateMeaningUI(animate = true) {
     const meaningEl = document.getElementById('b-meaning');
     const moreBtn = document.getElementById('more-btn');
     
-    meaningEl.textContent = availableMeanings[currentMeaningIndex];
-    
-    if (availableMeanings.length > 1) {
-        moreBtn.style.visibility = 'visible';
-        moreBtn.textContent = `More (${currentMeaningIndex + 1}/${availableMeanings.length})`;
+    const updateText = () => {
+        meaningEl.textContent = availableMeanings[currentMeaningIndex];
+        if (availableMeanings.length > 1) {
+            moreBtn.style.display = 'block';
+            moreBtn.textContent = `More ${currentMeaningIndex + 1}/${availableMeanings.length}`;
+        } else {
+            moreBtn.style.display = 'none';
+        }
+    };
+
+    if (animate) {
+        meaningEl.style.opacity = 0;
+        setTimeout(() => { updateText(); meaningEl.style.opacity = 1; }, 150);
     } else {
-        moreBtn.style.visibility = 'hidden';
+        updateText();
+        meaningEl.style.opacity = 1;
     }
 }
 
 function nextMeaning(e) {
     if (e) e.stopPropagation();
     currentMeaningIndex = (currentMeaningIndex + 1) % availableMeanings.length;
-    
-    const meaningEl = document.getElementById('b-meaning');
-    meaningEl.style.opacity = 0;
-    setTimeout(() => {
-        updateMeaningUI();
-        meaningEl.style.opacity = 1;
-    }, 150);
+    updateMeaningUI(true);
 }
 
 function deleteEx(id, el) {
@@ -411,29 +410,19 @@ function deleteEx(id, el) {
     }, 200);
 }
 
-// ─── AUDIO LOGIC (UPDATED RANGES) ───
 function playAudio(e) {
     if (e) e.stopPropagation();
     const wordNum = currentIndex + 1;
     const wordText = wordData[currentIndex].WORD;
     let folder = "audio-file";
 
-    if (wordNum >= 1 && wordNum <= 1018) {
-        folder = "audio-file";
-    } else if (wordNum >= 1019 && wordNum <= 2026) {
-        folder = "audio-file-2"; // Word 1401 "felicitous" is here
-    } else if (wordNum >= 2027 && wordNum <= 3034) {
-        folder = "audio-file-3";
-    } else if (wordNum >= 3035) {
-        folder = "audio-file-4";
-    }
+    if (wordNum >= 1019 && wordNum <= 2026) folder = "audio-file-2";
+    else if (wordNum >= 2027 && wordNum <= 3034) folder = "audio-file-3";
+    else if (wordNum >= 3035) folder = "audio-file-4";
 
-    const audioPath = `${folder}/${wordText}.mp3`;
-    const audio = new Audio(audioPath);
-    audio.play().catch(err => console.error("Audio Load Error:", audioPath));
+    new Audio(`${folder}/${wordText}.mp3`).play().catch(() => {});
 }
 
-// ─── NAVIGATION ───
 function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
 function nextCard() { currentIndex = (currentIndex + 1) % wordData.length; updateCard(); }
 function prevCard() { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; updateCard(); }
@@ -442,12 +431,13 @@ function jumpPrompt() {
     const val = prompt("Jump to word #:");
     if (val) { currentIndex = Math.max(0, Math.min(wordData.length - 1, parseInt(val) - 1)); updateCard(); }
 }
-async function resetDeleted() {
-    if (!confirm("Restore all?")) return;
-    deletedExamples = [];
-    localStorage.removeItem('wf_deleted_log');
-    pushDeletedToCloud();
-    updateCard();
+function resetDeleted() {
+    if (confirm("Restore all deleted examples?")) {
+        deletedExamples = [];
+        localStorage.removeItem('wf_deleted_log');
+        pushDeletedToCloud();
+        updateCard();
+    }
 }
 </script>
 </body>
