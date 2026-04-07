@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro - Multi-Meaning & Audio Fix</title>
+    <title>WordFlow Pro - Multi-Meaning Update</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -140,36 +140,36 @@
             padding: 30px 30px 15px; 
             border-bottom: 1px solid #38383a;
             flex-shrink: 0;
-            /* Prevent text selection during long press */
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
+            position: relative;
+        }
+
+        .back-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
         }
         
         .back-word {
             font-size: 1.3rem;
             font-weight: 800;
             color: var(--delete-red);
-            margin: 0 0 8px 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin: 0;
         }
 
-        .meaning-text { 
-            font-size: 1.3rem; 
-            font-weight: 700; 
-            color: var(--text-main); 
-            line-height: 1.3; 
-            margin: 0; 
-        }
-
-        .meaning-indicator {
-            font-size: 0.7rem;
+        .more-btn {
+            background: #3a3a3c;
             color: var(--primary);
-            margin-top: 5px;
-            font-weight: 600;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
             text-transform: uppercase;
         }
+
+        .meaning-text { font-size: 1.3rem; font-weight: 700; color: var(--text-main); line-height: 1.3; margin: 0; min-height: 1.3em; }
         
         #example-list { 
             flex-grow: 1; 
@@ -229,10 +229,12 @@
             </div>
             
             <div class="card-face card-back">
-                <div class="back-header" id="meaning-container">
-                    <p id="b-word" class="back-word">...</p>
-                    <p id="b-meaning" class="meaning-text">...</p>
-                    <div id="meaning-indicator" class="meaning-indicator" style="display:none;">Long Press for More</div>
+                <div class="back-header">
+                    <div class="back-top-row">
+                        <p id="b-word" class="back-word" onclick="flipCard()">...</p>
+                        <div id="more-btn" class="more-btn" onclick="nextMeaning(event)">More</div>
+                    </div>
+                    <p id="b-meaning" class="meaning-text" onclick="flipCard()">...</p>
                 </div>
                 <div id="example-list"></div>
             </div>
@@ -256,7 +258,7 @@ const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 let wordData = [];
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
-let currentMeaningIdx = 0; // Tracks which extra meaning is shown
+let currentMeaningIndex = 0; // 0 is primary 'MEANING', 1-10 are 'meaning1'-'meaning10'
 let syncTimeout = null;
 
 // ─── SYNC UI ───
@@ -305,67 +307,15 @@ window.onload = () => {
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('app').style.display = 'flex';
             document.getElementById('app-header').style.display = 'flex';
-            setupMeaningLongPress();
             updateCard();
         }
     });
 };
 
-// ─── MEANING CYCLE LOGIC ───
-function setupMeaningLongPress() {
-    const container = document.getElementById('meaning-container');
-    let pressTimer;
-
-    const start = (e) => {
-        // Prevent default flip behavior if we are long-pressing the header
-        pressTimer = setTimeout(() => {
-            cycleMeaning();
-        }, 750);
-    };
-
-    const end = () => clearTimeout(pressTimer);
-
-    container.addEventListener('touchstart', start, {passive: true});
-    container.addEventListener('touchend', end);
-    container.addEventListener('touchmove', end);
-    container.addEventListener('mousedown', start);
-    container.addEventListener('mouseup', end);
-    
-    // Header click still flips back
-    container.addEventListener('click', (e) => {
-        if (e.detail === 1) { // Normal single click
-            flipCard();
-        }
-    });
-}
-
-function cycleMeaning() {
-    const item = wordData[currentIndex];
-    // List of keys to check
-    const meaningKeys = ["MEANING", "meaning1", "meaning2", "meaning3", "meaning4", "meaning5", "meaning6", "meaning7", "meaning8", "meaning9", "meaning10"];
-    
-    // Filter out empty meanings
-    const availableMeanings = meaningKeys.filter(k => item[k] && item[k].trim().length > 0);
-    
-    if (availableMeanings.length <= 1) return;
-
-    currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
-    const nextKey = availableMeanings[currentMeaningIdx];
-    
-    const meaningEl = document.getElementById('b-meaning');
-    meaningEl.style.opacity = "0";
-    
-    setTimeout(() => {
-        meaningEl.textContent = item[nextKey];
-        meaningEl.style.opacity = "1";
-        document.getElementById('meaning-indicator').textContent = `Meaning ${currentMeaningIdx + 1} of ${availableMeanings.length}`;
-    }, 150);
-}
-
 // ─── RENDER ───
 function updateCard() {
     const item = wordData[currentIndex];
-    currentMeaningIdx = 0; // Reset meaning index for new word
+    currentMeaningIndex = 0; // Reset meaning to primary when changing words
     
     document.getElementById('card').classList.remove('is-flipped');
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
@@ -377,10 +327,15 @@ function updateCard() {
     document.getElementById('b-word').textContent = item.WORD;
     document.getElementById('b-meaning').textContent = item.MEANING;
 
-    // Check if extra meanings exist to show indicator
-    const hasExtras = ["meaning1", "meaning2"].some(k => item[k] && item[k].trim().length > 0);
-    document.getElementById('meaning-indicator').style.display = hasExtras ? 'block' : 'none';
-    document.getElementById('meaning-indicator').textContent = "Long Press for More";
+    // Check if extra meanings exist to show/hide "More" button
+    let hasExtra = false;
+    for(let i=1; i<=10; i++) {
+        if(item[`meaning${i}`] && item[`meaning${i}`].trim()) {
+            hasExtra = true;
+            break;
+        }
+    }
+    document.getElementById('more-btn').style.visibility = hasExtra ? 'visible' : 'hidden';
 
     const list = document.getElementById('example-list');
     list.innerHTML = "";
@@ -395,15 +350,15 @@ function updateCard() {
                 exDiv.className = 'example-item';
                 exDiv.innerHTML = `<span class="ex-num">${exampleCounter}.</span>${text}`;
                 
-                let exPressTimer;
-                const exStart = () => exPressTimer = setTimeout(() => {
+                let pressTimer;
+                const start = () => pressTimer = setTimeout(() => {
                     if (confirm("Delete example?")) deleteEx(exId, exDiv);
                 }, 750);
-                const exEnd = () => clearTimeout(exPressTimer);
+                const end = () => clearTimeout(pressTimer);
 
-                exDiv.addEventListener('touchstart', exStart, {passive: true});
-                exDiv.addEventListener('touchend', exEnd);
-                exDiv.addEventListener('touchmove', exEnd);
+                exDiv.addEventListener('touchstart', start, {passive: true});
+                exDiv.addEventListener('touchend', end);
+                exDiv.addEventListener('touchmove', end);
                 exDiv.addEventListener('contextmenu', (e) => e.preventDefault());
 
                 list.appendChild(exDiv);
@@ -411,6 +366,33 @@ function updateCard() {
             }
         }
     }
+}
+
+// ─── MEANING CYCLING ───
+function nextMeaning(e) {
+    if (e) e.stopPropagation();
+    const item = wordData[currentIndex];
+    const meanings = ['MEANING'];
+    
+    // Build list of existing meanings
+    for(let i=1; i<=10; i++) {
+        let mKey = `meaning${i}`;
+        if(item[mKey] && item[mKey].trim()) {
+            meanings.push(mKey);
+        }
+    }
+
+    // Cycle to next
+    currentMeaningIndex = (currentMeaningIndex + 1) % meanings.length;
+    const selectedKey = meanings[currentMeaningIndex];
+    
+    // Update UI with a small fade effect
+    const meaningEl = document.getElementById('b-meaning');
+    meaningEl.style.opacity = 0;
+    setTimeout(() => {
+        meaningEl.textContent = item[selectedKey];
+        meaningEl.style.opacity = 1;
+    }, 100);
 }
 
 function deleteEx(id, el) {
@@ -442,7 +424,8 @@ function playAudio(e) {
     }
 
     const audioPath = `${folder}/${wordText}.mp3`;
-    new Audio(audioPath).play().catch(err => console.error("Missing:", audioPath));
+    const audio = new Audio(audioPath);
+    audio.play().catch(err => console.error("Missing:", audioPath));
 }
 
 // ─── NAV ───
