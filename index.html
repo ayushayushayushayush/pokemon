@@ -255,13 +255,12 @@
     <header>
         <div onclick="closeFavs()" class="header-btn" style="color:var(--primary); font-size: 0.9rem; padding-left: 0;">← Back</div>
         <div style="font-weight:800; font-size:1rem;">Favorites</div>
-        <div style="width:60px;"></div>
+        <div onclick="resetDeleted()" class="header-btn" style="color:var(--delete-red); padding-right: 0;">Restore</div>
     </header>
     <div id="fav-list"></div>
 </div>
 
 <header id="app-header" style="display:none;">
-    <div onclick="resetDeleted()" class="header-btn" style="color:var(--delete-red); padding-left: 0;">Restore</div> 
     <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
 </header>
@@ -590,10 +589,11 @@ function jumpPrompt() {
     }
 }
 function resetDeleted() {
-    if (confirm("Restore all?")) {
+    if (confirm("Restore all (deleted & favorites)?")) {
         deletedExamples = []; favExamples = [];
         localStorage.removeItem('wf_deleted_log'); localStorage.removeItem('wf_fav_log');
         updateCard(); pushSync();
+        closeFavs();
     }
 }
 </script>
