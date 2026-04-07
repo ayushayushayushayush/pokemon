@@ -230,7 +230,6 @@
 
         .ex-num { color: #FFFFFF; font-weight: 800; margin-right: 8px; }
 
-        /* Updated: Added space above buttons and pushed them down slightly */
         .controls { 
             padding: 20px 20px calc(var(--safe-bottom) + 30px); 
             margin-top: 10px;
@@ -404,13 +403,18 @@ function renderExamples(item) {
     const favorites = [];
     const others = [];
 
+    // Use trimmed WORD for building IDs to ensure matches with clean CSV
+    const cleanWord = item.WORD.trim();
+
     for (let i = 1; i <= 50; i++) {
         const text = item[i.toString()];
         if (text && text.trim().length > 1) {
-            const exId = `${item.WORD}|${text.trim()}`;
-            if (deletedExamples.includes(exId)) continue;
+            const exId = `${cleanWord}|${text.trim()}`;
+            
+            // Legacy check: matches even if stored with spaces in JSONBin
+            if (deletedExamples.some(d => d.trim() === exId)) continue;
+            const isFav = favExamples.some(f => f.trim() === exId);
 
-            const isFav = favExamples.includes(exId);
             if (isFav) {
                 favorites.push({ text: text.trim(), id: exId, isFav: true });
             } else {
@@ -459,9 +463,15 @@ function openFavs() {
 
     const organized = {};
     favExamples.forEach(id => {
-        const [word, text] = id.split('|');
+        const parts = id.split('|');
+        if (parts.length < 2) return;
+        
+        const word = parts[0].trim();
+        const text = parts[1].trim();
+
         if (!organized[word]) {
-            const masterEntry = wordData.find(w => w.WORD.toLowerCase() === word.toLowerCase());
+            // Find in current cleaned CSV data
+            const masterEntry = wordData.find(w => w.WORD.trim().toLowerCase() === word.toLowerCase());
             organized[word] = {
                 index: wordData.indexOf(masterEntry),
                 ipa: masterEntry ? masterEntry.IPA : '',
@@ -559,6 +569,7 @@ function playAudioFromEvent(e) {
 function playAudioByIndex(idx) {
     if (idx < 0 || idx >= wordData.length) return;
     const wordNum = idx + 1;
+    // Word is already trimmed in CSV now
     const wordText = wordData[idx].WORD;
     let folder = "audio-file";
     if (wordNum >= 1019 && wordNum <= 2026) folder = "audio-file-2";
