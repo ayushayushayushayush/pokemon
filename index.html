@@ -69,7 +69,6 @@
         #sync-status.synced  { background: #1c3a1c; color: #30d158; }
 
         header {
-            /* Standardized header positioning */
             padding: calc(var(--safe-top) + 15px) 20px 10px;
             display: flex; justify-content: space-between; align-items: center;
             gap: 10px;
@@ -108,7 +107,6 @@
             z-index: 2000;
             display: none;
             flex-direction: column;
-            /* Remove fixed padding-top to let header handle alignment */
         }
 
         #fav-list {
@@ -176,15 +174,16 @@
             display: flex; flex-direction: column; gap: 8px;
         }
 
+        /* Updated: Slightly bigger flip button */
         .flip-hint {
             position: absolute;
             bottom: 40px;
-            font-size: 1rem;
+            font-size: 1.15rem; /* Increased size */
             color: var(--primary);
-            font-weight: 700;
+            font-weight: 800; /* Extra bold */
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            padding: 15px;
+            letter-spacing: 2px;
+            padding: 20px; /* Larger hit area */
         }
 
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
