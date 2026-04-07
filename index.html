@@ -82,12 +82,11 @@
             cursor: pointer;
         }
 
-        /* Star Button Styling */
         .fav-btn {
             background: #2C2C2E;
             color: var(--text-main);
             border: 1px solid #3a3a3c;
-            font-size: 1.2rem; /* Make the star prominent */
+            font-size: 1.2rem;
             padding: 4px 14px;
             line-height: 1;
         }
@@ -118,14 +117,25 @@
             -webkit-overflow-scrolling: touch;
         }
 
+        .fav-group-header {
+            margin: 25px 0 12px 5px;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
         .fav-group-title {
             color: var(--delete-red); 
-            font-size: 0.9rem;
+            font-size: 1rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin: 25px 0 12px 5px;
             font-weight: 800;
-            display: inline-block;
+        }
+
+        .fav-group-ipa {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-family: monospace;
         }
 
         .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
@@ -421,18 +431,35 @@ function openFavs() {
     const organized = {};
     favExamples.forEach(id => {
         const [word, text] = id.split('|');
-        if (!organized[word]) organized[word] = [];
-        organized[word].push({id, text});
+        if (!organized[word]) {
+            // Find IPA for this word from master data
+            const masterEntry = wordData.find(w => w.WORD.toLowerCase() === word.toLowerCase());
+            organized[word] = {
+                ipa: masterEntry ? masterEntry.IPA : '',
+                items: []
+            };
+        }
+        organized[word].items.push({id, text});
     });
 
     Object.keys(organized).forEach(word => {
+        const header = document.createElement('div');
+        header.className = 'fav-group-header';
+        header.onclick = () => { closeFavs(); jumpToWord(word); };
+
         const title = document.createElement('div');
         title.className = 'fav-group-title';
         title.textContent = word;
-        title.onclick = () => { closeFavs(); jumpToWord(word); };
-        list.appendChild(title);
 
-        organized[word].forEach(itemObj => {
+        const ipaSpan = document.createElement('div');
+        ipaSpan.className = 'fav-group-ipa';
+        ipaSpan.textContent = organized[word].ipa;
+
+        header.appendChild(title);
+        header.appendChild(ipaSpan);
+        list.appendChild(header);
+
+        organized[word].items.forEach(itemObj => {
             const item = document.createElement('div');
             item.className = 'example-item is-fav';
             item.textContent = itemObj.text;
