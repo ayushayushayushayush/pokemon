@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="WordFlow">
+    <meta name="apple-mobile-web-app-title" content="WordFlow Pro">
     
     <title>WordFlow Pro</title>
 
@@ -130,12 +130,14 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 800;
+            cursor: pointer;
         }
 
         .fav-group-ipa {
             color: var(--text-secondary);
             font-size: 0.85rem;
             font-family: monospace;
+            cursor: pointer;
         }
 
         .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
@@ -219,8 +221,10 @@
             background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; transition: opacity 0.3s; -webkit-user-select: none;
         }
 
+        /* Styling for favorited examples - Non-Bold */
         .example-item.is-fav { 
-            font-weight: 800; border-left: 4px solid var(--fav-indicator); 
+            font-weight: 400; 
+            border-left: 4px solid var(--fav-indicator); 
         }
         .ex-num { color: #FFFFFF; font-weight: 800; margin-right: 8px; }
 
@@ -253,7 +257,7 @@
     <div class="scene">
         <div class="card" id="card">
             <div class="card-face card-front">
-                <div class="word-container" onclick="playAudio(event)">
+                <div class="word-container" onclick="playAudioFromEvent(event)">
                     <h1 id="f-word" class="word-display">...</h1>
                     <div class="ipa-sub">
                         <span id="f-ipa"></span>
@@ -432,9 +436,9 @@ function openFavs() {
     favExamples.forEach(id => {
         const [word, text] = id.split('|');
         if (!organized[word]) {
-            // Find IPA for this word from master data
             const masterEntry = wordData.find(w => w.WORD.toLowerCase() === word.toLowerCase());
             organized[word] = {
+                index: wordData.indexOf(masterEntry),
                 ipa: masterEntry ? masterEntry.IPA : '',
                 items: []
             };
@@ -445,15 +449,18 @@ function openFavs() {
     Object.keys(organized).forEach(word => {
         const header = document.createElement('div');
         header.className = 'fav-group-header';
-        header.onclick = () => { closeFavs(); jumpToWord(word); };
 
         const title = document.createElement('div');
         title.className = 'fav-group-title';
         title.textContent = word;
+        // Clicking Word plays audio + jumps to card
+        title.onclick = () => { playAudioByIndex(organized[word].index); closeFavs(); jumpToWord(word); };
 
         const ipaSpan = document.createElement('div');
         ipaSpan.className = 'fav-group-ipa';
         ipaSpan.textContent = organized[word].ipa;
+        // Clicking IPA plays audio only
+        ipaSpan.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
 
         header.appendChild(title);
         header.appendChild(ipaSpan);
@@ -523,10 +530,15 @@ async function pushSync() {
     }, 1000);
 }
 
-function playAudio(e) {
+function playAudioFromEvent(e) {
     e.stopPropagation();
-    const wordNum = currentIndex + 1;
-    const wordText = wordData[currentIndex].WORD;
+    playAudioByIndex(currentIndex);
+}
+
+function playAudioByIndex(idx) {
+    if (idx < 0 || idx >= wordData.length) return;
+    const wordNum = idx + 1;
+    const wordText = wordData[idx].WORD;
     let folder = "audio-file";
     if (wordNum >= 1019 && wordNum <= 2026) folder = "audio-file-2";
     else if (wordNum >= 2027 && wordNum <= 3034) folder = "audio-file-3";
