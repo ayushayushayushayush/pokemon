@@ -360,7 +360,6 @@ function updateCard() {
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
     localStorage.setItem('wf_index_v6', currentIndex);
 
-    // Updated: Trimming spaces for display
     const cleanWord = item.WORD.trim();
     document.getElementById('f-word').textContent = cleanWord;
     document.getElementById('f-ipa').textContent = item.IPA;
@@ -405,7 +404,6 @@ function renderExamples(item) {
     const favorites = [];
     const others = [];
 
-    // Filter and collect examples first
     const cleanWord = item.WORD.trim();
     for (let i = 1; i <= 50; i++) {
         const text = item[i.toString()];
@@ -464,6 +462,7 @@ function openFavs() {
     favExamples.forEach(id => {
         const [word, text] = id.split('|');
         if (!organized[word]) {
+            // Updated: Lookup logic uses .trim() to ensure matches with dirty CSV data
             const masterEntry = wordData.find(w => w.WORD.trim().toLowerCase() === word.toLowerCase());
             organized[word] = {
                 index: wordData.indexOf(masterEntry),
@@ -559,7 +558,6 @@ function playAudioFromEvent(e) {
     playAudioByIndex(currentIndex);
 }
 
-// Updated: Account for trailing spaces in audio filename
 function playAudioByIndex(idx) {
     if (idx < 0 || idx >= wordData.length) return;
     const wordNum = idx + 1;
