@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro</title>
+    <title>WordFlow Pro - Favorites</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -19,6 +19,7 @@
             --text-main: #FFFFFF; 
             --text-secondary: #AEAEB2;
             --delete-red: #FF453A;
+            --fav-yellow: #FFD60A;
             --example-bg: #2C2C2E;
             --safe-top: env(safe-area-inset-top);
             --safe-bottom: env(safe-area-inset-bottom);
@@ -70,6 +71,24 @@
         header {
             padding: calc(var(--safe-top) + 15px) 20px 10px;
             display: flex; justify-content: space-between; align-items: center;
+            gap: 10px;
+        }
+
+        .header-btn {
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 6px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .fav-toggle {
+            background: #2C2C2E;
+            color: var(--text-secondary);
+        }
+        .fav-toggle.active {
+            background: var(--primary);
+            color: white;
         }
 
         .counter { 
@@ -79,11 +98,6 @@
             background: #3a3a3c; 
             padding: 6px 14px; 
             border-radius: 20px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .counter:active {
-            background: var(--primary);
         }
 
         .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
@@ -206,8 +220,14 @@
             color: #E5E5EA;
             margin-bottom: 12px;
             border-radius: 12px;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.3s ease, background 0.2s;
             -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .example-item.is-fav {
+            font-weight: 800;
+            border-left: 4px solid var(--fav-yellow);
         }
 
         .ex-num { color: #FFFFFF; font-weight: 800; margin-right: 8px; }
@@ -223,7 +243,8 @@
 <div id="loading-screen"><p>Loading...</p></div>
 
 <header id="app-header" style="display:none;">
-    <div onclick="resetDeleted()" style="color:var(--delete-red); font-weight:600; font-size:0.8rem; padding: 10px 0;">Restore</div> 
+    <div onclick="resetDeleted()" class="header-btn" style="color:var(--delete-red);">Restore</div> 
+    <div id="fav-filter-btn" class="header-btn fav-toggle" onclick="toggleFavFilter()">FAV</div>
     <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
 </header>
 
@@ -270,11 +291,13 @@ const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 let wordData = [];
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
+let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
 let availableMeanings = [];
 let currentMeaningIdx = 0;
 let syncTimeout = null;
 let isTransitioning = false;
+let isFavFilterActive = false;
 
 function showSync(state, message) {
     const el = document.getElementById('sync-status');
@@ -288,6 +311,17 @@ window.onload = () => {
         download: true, header: true,
         complete: async function(results) {
             wordData = results.data.filter(row => row.WORD);
+            
+            // Sync from cloud
+            fetch(BIN_URL + "/latest", { headers: { "X-Master-Key": API_KEY } })
+                .then(r => r.json())
+                .then(d => {
+                    deletedExamples = Array.from(new Set([...(d.record?.deleted || []), ...deletedExamples]));
+                    favExamples = Array.from(new Set([...(d.record?.favs || []), ...favExamples]));
+                    localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
+                    localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
+                }).catch(() => {});
+
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('app').style.display = 'flex';
             document.getElementById('app-header').style.display = 'flex';
@@ -338,26 +372,26 @@ function updateCard() {
 function handleMoreClick(e) {
     if (e) e.stopPropagation();
     if (availableMeanings.length <= 1 || isTransitioning) return;
-
     isTransitioning = true;
     const meaningEl = document.getElementById('b-meaning');
     const moreBtn = document.getElementById('more-btn');
-
     moreBtn.classList.add('busy');
     meaningEl.style.opacity = 0;
-
     setTimeout(() => {
         meaningEl.innerText = ""; 
         currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
         meaningEl.innerText = availableMeanings[currentMeaningIdx];
         moreBtn.textContent = `More ${currentMeaningIdx + 1}/${availableMeanings.length}`;
         meaningEl.style.opacity = 1;
-        
-        setTimeout(() => {
-            isTransitioning = false; 
-            moreBtn.classList.remove('busy');
-        }, 50);
+        setTimeout(() => { isTransitioning = false; moreBtn.classList.remove('busy'); }, 50);
     }, 120); 
+}
+
+function toggleFavFilter() {
+    isFavFilterActive = !isFavFilterActive;
+    const btn = document.getElementById('fav-filter-btn');
+    btn.classList.toggle('active', isFavFilterActive);
+    renderExamples(wordData[currentIndex]);
 }
 
 function renderExamples(item) {
@@ -368,23 +402,56 @@ function renderExamples(item) {
         const text = item[i.toString()];
         if (text && text.trim().length > 1) {
             const exId = `${item.WORD}|${text.trim()}`;
-            if (!deletedExamples.includes(exId)) {
-                const exDiv = document.createElement('div');
-                exDiv.className = 'example-item';
-                exDiv.innerHTML = `<span class="ex-num">${count}.</span>${text}`;
-                
-                let pressTimer;
-                exDiv.addEventListener('touchstart', () => {
-                    pressTimer = setTimeout(() => { if (confirm("Delete?")) deleteEx(exId, exDiv); }, 750);
-                }, {passive: true});
-                exDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
-                exDiv.addEventListener('contextmenu', (e) => e.preventDefault());
+            const isFav = favExamples.includes(exId);
+            const isDeleted = deletedExamples.includes(exId);
 
-                list.appendChild(exDiv);
-                count++;
-            }
+            // Logic: Skip if deleted. If filter is on, skip if not favorite.
+            if (isDeleted) continue;
+            if (isFavFilterActive && !isFav) continue;
+
+            const exDiv = document.createElement('div');
+            exDiv.className = `example-item ${isFav ? 'is-fav' : ''}`;
+            exDiv.innerHTML = `<span class="ex-num">${count}.</span>${text}`;
+            
+            // Double Tap for Favorite
+            let lastTap = 0;
+            exDiv.addEventListener('touchend', (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                if (tapLength < 300 && tapLength > 0) {
+                    toggleFav(exId, exDiv);
+                    e.preventDefault();
+                }
+                lastTap = currentTime;
+            });
+
+            // Long Press for Delete
+            let pressTimer;
+            exDiv.addEventListener('touchstart', () => {
+                pressTimer = setTimeout(() => { if (confirm("Delete?")) deleteEx(exId, exDiv); }, 750);
+            }, {passive: true});
+            exDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
+            exDiv.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            list.appendChild(exDiv);
+            count++;
         }
     }
+    if (isFavFilterActive && count === 1) {
+        list.innerHTML = `<div style="text-align:center; color:var(--text-secondary); margin-top:40px; font-size:0.9rem;">No favorites for this word.</div>`;
+    }
+}
+
+function toggleFav(id, el) {
+    if (favExamples.includes(id)) {
+        favExamples = favExamples.filter(item => item !== id);
+        el.classList.remove('is-fav');
+    } else {
+        favExamples.push(id);
+        el.classList.add('is-fav');
+    }
+    localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
+    pushSync();
 }
 
 function deleteEx(id, el) {
@@ -402,7 +469,7 @@ async function pushSync() {
             await fetch(BIN_URL, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
-                body: JSON.stringify({ deleted: deletedExamples })
+                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples })
             });
             showSync('synced', 'Synced');
         } catch { }
@@ -424,22 +491,19 @@ function flipCard() { document.getElementById('card').classList.toggle('is-flipp
 function nextCard() { currentIndex = (currentIndex + 1) % wordData.length; updateCard(); }
 function prevCard() { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; updateCard(); }
 function shuffleCard() { currentIndex = Math.floor(Math.random() * wordData.length); updateCard(); }
-
 function jumpPrompt() {
-    const val = prompt(`Jump to (1 - ${wordData.length}):`);
+    const val = prompt(`Jump to #:`);
     if (val) {
         const num = parseInt(val);
-        if (!isNaN(num)) {
-            currentIndex = Math.max(0, Math.min(wordData.length - 1, num - 1));
-            updateCard();
-        }
+        if (!isNaN(num)) { currentIndex = Math.max(0, Math.min(wordData.length - 1, num - 1)); updateCard(); }
     }
 }
-
 function resetDeleted() {
     if (confirm("Restore all?")) {
         deletedExamples = [];
+        favExamples = [];
         localStorage.removeItem('wf_deleted_log');
+        localStorage.removeItem('wf_fav_log');
         updateCard();
         pushSync();
     }
