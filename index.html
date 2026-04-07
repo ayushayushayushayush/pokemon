@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow">
     
-    <title>WordFlow Pro - Smooth Meanings</title>
+    <title>WordFlow Pro - Final Smooth Fix</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -62,12 +62,10 @@
             opacity: 0;
             transition: opacity 0.3s ease;
             pointer-events: none;
-            white-space: nowrap;
         }
         #sync-status.show { opacity: 1; }
         #sync-status.syncing { background: #3a3a3c; color: var(--text-secondary); }
         #sync-status.synced  { background: #1c3a1c; color: #30d158; }
-        #sync-status.error   { background: #3a1c1c; color: var(--delete-red); }
 
         header {
             padding: calc(var(--safe-top) + 15px) 20px 10px;
@@ -131,7 +129,6 @@
             text-transform: uppercase;
             letter-spacing: 1.5px;
             padding: 15px;
-            cursor: pointer;
         }
 
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
@@ -145,6 +142,7 @@
         .back-top-row {
             display: flex;
             align-items: center;
+            justify-content: flex-start;
             gap: 12px;
             margin-bottom: 12px;
         }
@@ -163,20 +161,24 @@
             color: white;
             font-size: 0.65rem;
             font-weight: 800;
-            padding: 6px 12px;
-            border-radius: 20px;
+            padding: 5px 10px;
+            border-radius: 12px;
             text-transform: uppercase;
-            box-shadow: 0 4px 8px rgba(10,132,255,0.2);
             white-space: nowrap;
         }
 
+        .meaning-container {
+            min-height: 80px;
+            display: block;
+        }
+
         .meaning-text { 
-            font-size: 1.25rem; 
+            font-size: 1.2rem; 
             font-weight: 700; 
             color: var(--text-main); 
             line-height: 1.4; 
             margin: 0; 
-            transition: opacity 0.2s ease;
+            transition: opacity 0.15s ease-in-out;
             overflow-wrap: break-word;
         }
         
@@ -195,17 +197,11 @@
             color: #E5E5EA;
             margin-bottom: 12px;
             border-radius: 12px;
-            transition: opacity 0.3s ease, transform 0.2s ease;
+            transition: opacity 0.3s ease;
             -webkit-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
         }
 
-        .ex-num {
-            color: #FFFFFF;
-            font-weight: 800;
-            margin-right: 8px;
-        }
+        .ex-num { color: #FFFFFF; font-weight: 800; margin-right: 8px; }
 
         .controls { padding: 0 20px calc(var(--safe-bottom) + 20px); display: flex; gap: 10px; width: 100%; max-width: 420px; }
         .nav-btn { flex: 1; height: 60px; border-radius: 18px; border: none; background: #2C2C2E; color: white; font-weight: 700; font-size: 0.9rem; }
@@ -241,9 +237,11 @@
                 <div class="back-header">
                     <div class="back-top-row">
                         <p id="b-word" class="back-word" onclick="flipCard()">...</p>
-                        <div id="more-btn" class="more-btn" onclick="nextMeaning(event)">More</div>
+                        <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
                     </div>
-                    <p id="b-meaning" class="meaning-text" onclick="flipCard()">...</p>
+                    <div class="meaning-container" onclick="flipCard()">
+                        <p id="b-meaning" class="meaning-text">...</p>
+                    </div>
                 </div>
                 <div id="example-list"></div>
             </div>
@@ -258,58 +256,29 @@
 </div>
 
 <script>
-// ─── CONFIGURATION ───
 const BIN_ID  = "69d3dacfaaba882197cd5a0e";
 const API_KEY = "$2a$10$2XIWmqUVHyv39zmLplK6YOCLf07sb3WyJIxxleZUrKRb61lugMCu6";
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-// ─── STATE ───
 let wordData = [];
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
 let availableMeanings = [];
-let currentMeaningIndex = 0;
+let currentMeaningIdx = 0;
 let syncTimeout = null;
 
-// ─── SYNC UI ───
 function showSync(state, message) {
     const el = document.getElementById('sync-status');
     el.className = `show ${state}`;
     el.textContent = message;
-    clearTimeout(el._hideTimer);
-    if (state !== 'syncing') el._hideTimer = setTimeout(() => { el.className = ''; }, 2500);
+    setTimeout(() => { el.className = ''; }, 2000);
 }
 
-// ─── CLOUD SYNC ───
-async function pushDeletedToCloud() {
-    clearTimeout(syncTimeout);
-    showSync('syncing', '↑ Syncing…');
-    syncTimeout = setTimeout(async () => {
-        try {
-            await fetch(BIN_URL, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
-                body: JSON.stringify({ deleted: deletedExamples })
-            });
-            showSync('synced', '✓ Synced');
-        } catch { showSync('error', '⚠ Sync error'); }
-    }, 1000);
-}
-
-// ─── BOOT ───
 window.onload = () => {
     Papa.parse("words.csv", {
         download: true, header: true,
         complete: async function(results) {
             wordData = results.data.filter(row => row.WORD);
-            // Fetch cloud data silently
-            fetch(BIN_URL + "/latest", { headers: { "X-Master-Key": API_KEY } })
-                .then(r => r.json())
-                .then(d => {
-                    deletedExamples = Array.from(new Set([...(d.record?.deleted || []), ...deletedExamples]));
-                    localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
-                }).catch(() => {});
-            
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('app').style.display = 'flex';
             document.getElementById('app-header').style.display = 'flex';
@@ -318,18 +287,17 @@ window.onload = () => {
     });
 };
 
-// ─── RENDER ───
 function updateCard() {
     const item = wordData[currentIndex];
     
-    // Process meanings (Check capitalized keys from CSV)
+    // Clear and build available meanings
     availableMeanings = [];
-    if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING);
+    if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING.trim());
     for(let i=1; i<=10; i++) {
         let val = item[`Meaning${i}`];
         if(val && val.trim()) availableMeanings.push(val.trim());
     }
-    currentMeaningIndex = 0;
+    currentMeaningIdx = 0;
 
     document.getElementById('card').classList.remove('is-flipped');
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
@@ -340,12 +308,49 @@ function updateCard() {
     document.getElementById('f-phonetic').textContent = item.PHONETIC;
     document.getElementById('b-word').textContent = item.WORD;
     
-    updateMeaningUI(false);
+    // Initial display of the first meaning
+    const meaningEl = document.getElementById('b-meaning');
+    meaningEl.textContent = availableMeanings[0] || "";
+    meaningEl.style.opacity = 1;
+    
+    const moreBtn = document.getElementById('more-btn');
+    if (availableMeanings.length > 1) {
+        moreBtn.style.display = 'block';
+        moreBtn.textContent = `More 1/${availableMeanings.length}`;
+    } else {
+        moreBtn.style.display = 'none';
+    }
 
+    renderExamples(item);
+}
+
+function handleMoreClick(e) {
+    if (e) e.stopPropagation();
+    if (availableMeanings.length <= 1) return;
+
+    const meaningEl = document.getElementById('b-meaning');
+    const moreBtn = document.getElementById('more-btn');
+
+    // Fade out
+    meaningEl.style.opacity = 0;
+
+    setTimeout(() => {
+        // Move to next index
+        currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
+        
+        // Update content
+        meaningEl.textContent = availableMeanings[currentMeaningIdx];
+        moreBtn.textContent = `More ${currentMeaningIdx + 1}/${availableMeanings.length}`;
+        
+        // Fade in
+        meaningEl.style.opacity = 1;
+    }, 150);
+}
+
+function renderExamples(item) {
     const list = document.getElementById('example-list');
     list.innerHTML = "";
-    let exampleCounter = 1;
-
+    let count = 1;
     for (let i = 1; i <= 50; i++) {
         const text = item[i.toString()];
         if (text && text.trim().length > 1) {
@@ -353,61 +358,42 @@ function updateCard() {
             if (!deletedExamples.includes(exId)) {
                 const exDiv = document.createElement('div');
                 exDiv.className = 'example-item';
-                exDiv.innerHTML = `<span class="ex-num">${exampleCounter}.</span>${text}`;
+                exDiv.innerHTML = `<span class="ex-num">${count}.</span>${text}`;
                 
                 let pressTimer;
                 exDiv.addEventListener('touchstart', () => {
-                    pressTimer = setTimeout(() => { if (confirm("Delete example?")) deleteEx(exId, exDiv); }, 750);
+                    pressTimer = setTimeout(() => { if (confirm("Delete?")) deleteEx(exId, exDiv); }, 750);
                 }, {passive: true});
                 exDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
-                exDiv.addEventListener('touchmove', () => clearTimeout(pressTimer));
                 exDiv.addEventListener('contextmenu', (e) => e.preventDefault());
 
                 list.appendChild(exDiv);
-                exampleCounter++;
+                count++;
             }
         }
     }
 }
 
-function updateMeaningUI(animate = true) {
-    const meaningEl = document.getElementById('b-meaning');
-    const moreBtn = document.getElementById('more-btn');
-    
-    const updateText = () => {
-        meaningEl.textContent = availableMeanings[currentMeaningIndex];
-        if (availableMeanings.length > 1) {
-            moreBtn.style.display = 'block';
-            moreBtn.textContent = `More ${currentMeaningIndex + 1}/${availableMeanings.length}`;
-        } else {
-            moreBtn.style.display = 'none';
-        }
-    };
-
-    if (animate) {
-        meaningEl.style.opacity = 0;
-        setTimeout(() => { updateText(); meaningEl.style.opacity = 1; }, 150);
-    } else {
-        updateText();
-        meaningEl.style.opacity = 1;
-    }
-}
-
-function nextMeaning(e) {
-    if (e) e.stopPropagation();
-    currentMeaningIndex = (currentMeaningIndex + 1) % availableMeanings.length;
-    updateMeaningUI(true);
-}
-
 function deleteEx(id, el) {
-    el.style.opacity = '0';
-    el.style.transform = 'scale(0.95)';
-    setTimeout(() => {
-        deletedExamples.push(id);
-        localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
-        el.remove();
-        pushDeletedToCloud();
-    }, 200);
+    deletedExamples.push(id);
+    localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
+    el.remove();
+    pushSync();
+}
+
+async function pushSync() {
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(async () => {
+        showSync('syncing', 'Syncing...');
+        try {
+            await fetch(BIN_URL, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
+                body: JSON.stringify({ deleted: deletedExamples })
+            });
+            showSync('synced', 'Synced');
+        } catch { }
+    }, 1000);
 }
 
 function playAudio(e) {
@@ -415,11 +401,9 @@ function playAudio(e) {
     const wordNum = currentIndex + 1;
     const wordText = wordData[currentIndex].WORD;
     let folder = "audio-file";
-
     if (wordNum >= 1019 && wordNum <= 2026) folder = "audio-file-2";
     else if (wordNum >= 2027 && wordNum <= 3034) folder = "audio-file-3";
     else if (wordNum >= 3035) folder = "audio-file-4";
-
     new Audio(`${folder}/${wordText}.mp3`).play().catch(() => {});
 }
 
@@ -428,15 +412,15 @@ function nextCard() { currentIndex = (currentIndex + 1) % wordData.length; updat
 function prevCard() { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; updateCard(); }
 function shuffleCard() { currentIndex = Math.floor(Math.random() * wordData.length); updateCard(); }
 function jumpPrompt() {
-    const val = prompt("Jump to word #:");
+    const val = prompt("Jump to #:");
     if (val) { currentIndex = Math.max(0, Math.min(wordData.length - 1, parseInt(val) - 1)); updateCard(); }
 }
 function resetDeleted() {
-    if (confirm("Restore all deleted examples?")) {
+    if (confirm("Restore all?")) {
         deletedExamples = [];
         localStorage.removeItem('wf_deleted_log');
-        pushDeletedToCloud();
         updateCard();
+        pushSync();
     }
 }
 </script>
