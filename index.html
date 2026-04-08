@@ -84,14 +84,16 @@
 
         /* Quiz Styling */
         .quiz-container { padding: 20px; display: flex; flex-direction: column; gap: 20px; flex: 1; justify-content: center; }
-        .quiz-sentence { font-size: 1.4rem; font-weight: 600; line-height: 1.5; color: var(--text-main); text-align: center; background: var(--card-bg); padding: 30px 20px; border-radius: 25px; border: 1px solid #38383a; }
+        .quiz-sentence { font-size: 1.4rem; font-weight: 600; line-height: 1.5; color: var(--text-main); text-align: center; background: var(--card-bg); padding: 30px 20px; border-radius: 25px; border: 1px solid #38383a; min-height: 150px; display: flex; align-items: center; justify-content: center; }
         .quiz-sentence b { color: var(--primary); background: #2c2c2e; padding: 2px 10px; border-radius: 6px; }
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .option-btn { background: #2C2C2E; color: white; border: 1px solid #3a3a3c; padding: 18px 10px; border-radius: 15px; font-weight: 700; font-size: 1rem; text-align: center; }
-        .option-btn.selected { border-color: var(--primary); background: #003a70; }
-        .option-btn.correct { background: var(--success-green); border-color: var(--success-green); }
+        .option-btn { background: #2C2C2E; color: white; border: 1px solid #3a3a3c; padding: 18px 10px; border-radius: 15px; font-weight: 700; font-size: 1rem; text-align: center; transition: background 0.2s ease; }
+        .option-btn.correct { background: var(--success-green); border-color: var(--success-green); color: black; }
         .option-btn.wrong { background: var(--delete-red); border-color: var(--delete-red); }
-        .quiz-score { font-size: 1.1rem; font-weight: 800; color: var(--primary); text-align: center; margin-bottom: 10px; }
+        .quiz-header-info { display: flex; justify-content: space-between; align-items: center; background: #1C1C1E; padding: 12px 18px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #38383a; }
+        .quiz-stat { display: flex; flex-direction: column; align-items: center; }
+        .quiz-stat-val { font-size: 1.1rem; font-weight: 800; color: var(--text-main); }
+        .quiz-stat-label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
 
         .fav-group-header { margin: 20px 0 12px 5px; display: flex; align-items: baseline; gap: 10px; }
         .fav-group-title { color: var(--delete-red); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
@@ -182,10 +184,22 @@
         <div style="width: 60px;"></div>
     </header>
     <div class="quiz-container">
-        <div id="quiz-score-display" class="quiz-score">Score: 0</div>
+        <div class="quiz-header-info">
+            <div class="quiz-stat">
+                <span id="quiz-score-display" class="quiz-stat-val">0</span>
+                <span class="quiz-stat-label">Score</span>
+            </div>
+            <div class="quiz-stat">
+                <span id="quiz-total-display" class="quiz-stat-val">0</span>
+                <span class="quiz-stat-label">Total Favs</span>
+            </div>
+            <div class="quiz-stat">
+                <span id="quiz-remaining-display" class="quiz-stat-val">0</span>
+                <span class="quiz-stat-label">Left</span>
+            </div>
+        </div>
         <div id="quiz-question" class="quiz-sentence">Select a favorite to start...</div>
         <div id="quiz-options" class="options-grid"></div>
-        <button id="quiz-confirm" class="nav-btn primary" onclick="checkQuizAnswer()" style="display:none; margin-top:10px;">Confirm</button>
     </div>
 </div>
 
@@ -264,9 +278,12 @@ let wordData = [];
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
 let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
+
+// Quiz State
 let quizScore = 0;
 let currentQuizCorrect = "";
-let selectedQuizOption = null;
+let quizPool = []; 
+let isQuizLocked = false;
 
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
 let availableMeanings = [];
@@ -326,27 +343,37 @@ function updateCard() {
     renderExamples(item);
 }
 
-// QUIZ LOGIC
+// --- QUIZ LOGIC ---
 function startQuiz(e) {
     if(e) e.stopPropagation();
     if (favExamples.length < 1) {
         alert("Add some examples to Favorites first to play the quiz!");
         return;
     }
+    quizPool = [...favExamples]; 
     document.getElementById('quiz-overlay').style.display = 'flex';
+    document.getElementById('quiz-total-display').textContent = favExamples.length;
     nextQuizQuestion();
 }
 
 function nextQuizQuestion() {
-    selectedQuizOption = null;
-    document.getElementById('quiz-confirm').style.display = 'none';
+    if (quizPool.length === 0) {
+        alert("Well done! You've finished all your favorite examples. Restarting...");
+        quizPool = [...favExamples];
+    }
+
+    isQuizLocked = false;
+    document.getElementById('quiz-remaining-display').textContent = quizPool.length;
     
-    // Pick random favorite
-    const randomId = favExamples[Math.floor(Math.random() * favExamples.length)];
+    // Pick random from current session pool
+    const poolIdx = Math.floor(Math.random() * quizPool.length);
+    const randomId = quizPool[poolIdx];
+    quizPool.splice(poolIdx, 1); // Remove from pool so we don't repeat immediately
+
     const [word, sentence] = randomId.split('|');
     currentQuizCorrect = word.trim();
 
-    // Mask the word in the sentence
+    // Mask the word
     const regex = new RegExp(`\\b${currentQuizCorrect}\\b`, 'gi');
     const maskedSentence = sentence.replace(regex, "<b>_______</b>");
     document.getElementById('quiz-question').innerHTML = maskedSentence;
@@ -366,42 +393,35 @@ function nextQuizQuestion() {
         const btn = document.createElement('div');
         btn.className = 'option-btn';
         btn.textContent = opt;
-        btn.onclick = () => selectQuizOption(opt, btn);
+        btn.onclick = () => handleQuizTap(opt, btn);
         grid.appendChild(btn);
     });
 }
 
-function selectQuizOption(word, btn) {
-    document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    selectedQuizOption = word;
-    document.getElementById('quiz-confirm').style.display = 'block';
-}
+function handleQuizTap(selectedWord, btn) {
+    if (isQuizLocked) return;
+    isQuizLocked = true;
 
-function checkQuizAnswer() {
     const btns = document.querySelectorAll('.option-btn');
-    let correctBtn, selectedBtn;
+    let correctBtn;
+    btns.forEach(b => { if(b.textContent === currentQuizCorrect) correctBtn = b; });
 
-    btns.forEach(b => {
-        if(b.textContent === currentQuizCorrect) correctBtn = b;
-        if(b.textContent === selectedQuizOption) selectedBtn = b;
-    });
-
-    if(selectedQuizOption === currentQuizCorrect) {
-        selectedBtn.classList.add('correct');
+    if(selectedWord === currentQuizCorrect) {
+        btn.classList.add('correct');
         quizScore += 10;
     } else {
-        selectedBtn.classList.add('wrong');
+        btn.classList.add('wrong');
         correctBtn.classList.add('correct');
         quizScore = Math.max(0, quizScore - 5);
     }
 
-    document.getElementById('quiz-score-display').textContent = `Score: ${quizScore}`;
-    document.getElementById('quiz-confirm').style.display = 'none';
+    document.getElementById('quiz-score-display').textContent = quizScore;
     
-    setTimeout(nextQuizQuestion, 1500);
+    // Auto progress after a short pause
+    setTimeout(nextQuizQuestion, 1200);
 }
 
+// --- REST OF APP LOGIC ---
 function markAsKnown(e) {
     if(e) e.stopPropagation();
     const word = wordData[currentIndex].WORD.trim();
@@ -466,10 +486,7 @@ function openKnown() {
 
         const div = document.createElement('div');
         div.className = 'known-item';
-        div.innerHTML = `
-            <span class="known-word">${word}</span>
-            <span class="known-ipa">${ipaText}</span>
-        `;
+        div.innerHTML = `<span class="known-word">${word}</span><span class="known-ipa">${ipaText}</span>`;
         let pressTimer;
         div.addEventListener('touchstart', (e) => {
             if (e.touches[0].clientX < window.innerWidth / 2) {
