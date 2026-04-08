@@ -58,25 +58,33 @@
         #sync-status.syncing { background: #3a3a3c; color: var(--text-secondary); }
         #sync-status.synced  { background: #1c3a1c; color: var(--success-green); }
 
+        /* Header Layout */
         header {
             padding: calc(var(--safe-top) + 15px) 20px 10px;
-            display: flex; justify-content: space-between; align-items: center; gap: 10px;
+            display: flex; justify-content: space-between; align-items: center;
         }
 
-        .header-btn { font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 12px; cursor: pointer; }
-        .fav-btn { background: #2C2C2E; color: var(--text-main); border: 1px solid #3a3a3c; font-size: 1.2rem; padding: 4px 14px; line-height: 1; }
+        .header-btn { font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 12px; cursor: pointer; background: #2C2C2E; color: var(--text-main); border: 1px solid #3a3a3c; }
+        .fav-btn { font-size: 1.2rem; padding: 4px 14px; line-height: 1; }
         .counter { font-size: 0.85rem; font-weight: 700; color: var(--text-main); background: #3a3a3c; padding: 6px 14px; border-radius: 20px; }
 
-        #fav-overlay, #known-overlay {
+        #fav-overlay, #known-overlay, #settings-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 2000; display: none; flex-direction: column;
         }
 
         .list-container { flex: 1; overflow-y: auto; padding: 10px 20px 20px; -webkit-overflow-scrolling: touch; }
 
-        .fav-group-header {
-            margin: 20px 0 12px 5px; display: flex; align-items: baseline; gap: 10px;
+        /* Settings List Styling */
+        .settings-list { margin-top: 20px; }
+        .settings-item {
+            background: var(--card-bg); padding: 18px; margin-bottom: 10px; border-radius: 15px;
+            display: flex; justify-content: space-between; align-items: center; font-weight: 600;
         }
+        .settings-item:active { background: #2c2c2e; }
+        .chevron { color: var(--text-secondary); font-size: 1.2rem; }
+
+        .fav-group-header { margin: 20px 0 12px 5px; display: flex; align-items: baseline; gap: 10px; }
         .fav-group-title { color: var(--delete-red); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
         .fav-group-ipa { color: var(--text-secondary); font-size: 0.85rem; font-family: monospace; }
 
@@ -99,7 +107,6 @@
             position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%);
             display: flex; gap: 30px; align-items: center; z-index: 100; transition: opacity 0.3s ease;
         }
-        
         .card.is-flipped .mastery-controls { opacity: 0; pointer-events: none; }
 
         .mastery-btn {
@@ -110,73 +117,26 @@
         .mastery-btn.known { color: var(--success-green); }
         .mastery-btn.list { color: var(--primary); }
 
-        .flip-hint {
-            position: absolute; bottom: 40px; font-size: 1.15rem; color: var(--primary);
-            font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 20px;
-        }
+        .flip-hint { position: absolute; bottom: 40px; font-size: 1.15rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 20px; }
 
-        /* Back Face Enhancements */
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
-        .back-header { 
-            padding: 25px 25px 15px; 
-            border-bottom: 1px solid #38383a; 
-            flex-shrink: 0; 
-            position: relative;
-        }
-        
-        .back-top-row { 
-            display: flex; 
-            align-items: center; 
-            justify-content: flex-start; 
-            gap: 12px; 
-            margin-bottom: 12px;
-            position: relative;
-        }
-        
+        .back-header { padding: 25px 25px 15px; border-bottom: 1px solid #38383a; flex-shrink: 0; position: relative; }
+        .back-top-row { display: flex; align-items: center; justify-content: flex-start; gap: 12px; margin-bottom: 12px; position: relative; }
         .back-word { font-size: 1.6rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.5px; margin: 0; z-index: 5; }
         .more-btn { background: var(--primary); color: white; font-size: 0.65rem; font-weight: 800; padding: 6px 12px; border-radius: 12px; text-transform: uppercase; z-index: 5; }
-
-        .meaning-container { 
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            min-height: 60px;
-        }
-        
-        .meaning-text { 
-            flex: 1;
-            font-size: 1.2rem; 
-            font-weight: 700; 
-            color: var(--text-main); 
-            line-height: 1.4; 
-            margin: 0; 
-            z-index: 5;
-        }
-
-        /* The Invisible Flip Zones */
-        .flip-zone-right {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 40%; /* Covers the right 40% of the entire header area */
-            height: 100%;
-            z-index: 2;
-        }
+        .meaning-container { display: flex; align-items: flex-start; justify-content: space-between; min-height: 60px; }
+        .meaning-text { flex: 1; font-size: 1.2rem; font-weight: 700; color: var(--text-main); line-height: 1.4; margin: 0; z-index: 5; }
+        .flip-zone-right { position: absolute; top: 0; right: 0; width: 40%; height: 100%; z-index: 2; }
 
         #example-list { flex-grow: 1; overflow-y: auto; padding: 15px 25px 30px; -webkit-overflow-scrolling: touch; }
-        .example-item { 
-            background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; 
-            margin-bottom: 12px; border-radius: 12px;
-        }
+        .example-item { background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; }
         .example-item.is-fav { border-left: 4px solid var(--fav-indicator); }
 
         .controls { padding: 20px 20px calc(var(--safe-bottom) + 30px); margin-top: 10px; display: flex; gap: 10px; width: 100%; max-width: 420px; }
         .nav-btn { flex: 1; height: 60px; border-radius: 18px; border: none; background: #2C2C2E; color: white; font-weight: 700; font-size: 0.9rem; }
         .nav-btn.primary { background: var(--primary); }
 
-        .known-item {
-            padding: 18px; border-bottom: 1px solid #1c1c1e; display: flex; justify-content: space-between; align-items: center;
-        }
+        .known-item { padding: 18px; border-bottom: 1px solid #1c1c1e; display: flex; justify-content: space-between; align-items: center; }
         .known-word { font-weight: 700; font-size: 1.1rem; }
         .known-count { color: var(--text-secondary); font-size: 0.8rem; }
     </style>
@@ -186,25 +146,45 @@
 <div id="sync-status"></div>
 <div id="loading-screen"><p>Loading...</p></div>
 
+<div id="settings-overlay">
+    <header>
+        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Done</div>
+        <div style="font-weight:800;">Settings</div>
+        <div style="width: 60px;"></div> </header>
+    <div class="list-container">
+        <div class="settings-list">
+            <div class="settings-item" onclick="openKnown()">
+                <span>Mastered Words</span>
+                <span class="chevron">›</span>
+            </div>
+            <div class="settings-item" onclick="resetDeleted()">
+                <span style="color:var(--delete-red);">Restore Deleted Examples</span>
+                <span class="chevron">›</span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="fav-overlay">
     <header>
         <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
         <div style="font-weight:800;">Favorites</div>
-        <div onclick="resetDeleted()" class="header-btn" style="color:var(--delete-red);">Restore</div>
+        <div style="width: 60px;"></div>
     </header>
     <div id="fav-list" class="list-container"></div>
 </div>
 
 <div id="known-overlay">
     <header>
-        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
-        <div style="font-weight:800;">Mastered Words</div>
+        <div onclick="openSettings()" class="header-btn" style="color:var(--primary);">← Settings</div>
+        <div style="font-weight:800;">Mastered</div>
         <div onclick="clearKnown()" class="header-btn" style="color:var(--delete-red);">Reset</div>
     </header>
     <div id="known-list" class="list-container"></div>
 </div>
 
 <header id="app-header" style="display:none;">
+    <div class="header-btn" onclick="openSettings()">⚙️</div>
     <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
 </header>
@@ -225,13 +205,12 @@
             
             <div class="mastery-controls">
                 <div class="mastery-btn known" onclick="markAsKnown(event)">👍</div>
-                <div class="mastery-btn list" onclick="openKnown(event)">📋</div>
+                <div class="mastery-btn list" onclick="openSettings(event)">📋</div>
             </div>
 
             <div class="card-face card-back">
                 <div class="back-header">
                     <div class="flip-zone-right" onclick="flipCard()"></div>
-                    
                     <div class="back-top-row">
                         <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
                         <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
@@ -362,10 +341,15 @@ function renderExamples(item) {
     });
 }
 
-function openKnown(e) {
+function openSettings(e) {
     if(e) e.stopPropagation();
+    document.getElementById('settings-overlay').style.display = 'flex';
+}
+
+function openKnown() {
     const list = document.getElementById('known-list');
     list.innerHTML = "";
+    document.getElementById('settings-overlay').style.display = 'none';
     document.getElementById('known-overlay').style.display = 'flex';
     if (knownWords.length === 0) {
         list.innerHTML = `<p style="text-align:center; color:gray; margin-top:50px;">No words mastered yet.</p>`;
@@ -447,50 +431,15 @@ function openFavs() {
     });
 }
 
-function closeOverlays() { document.getElementById('fav-overlay').style.display = 'none'; document.getElementById('known-overlay').style.display = 'none'; updateCard(); }
-function nextCard() {
-    let start = currentIndex;
-    do { currentIndex = (currentIndex + 1) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
-    updateCard();
+function closeOverlays() { 
+    document.getElementById('fav-overlay').style.display = 'none'; 
+    document.getElementById('known-overlay').style.display = 'none'; 
+    document.getElementById('settings-overlay').style.display = 'none'; 
+    updateCard(); 
 }
-function prevCard() {
-    let start = currentIndex;
-    do { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
-    updateCard();
-}
-function shuffleCard() {
-    let attempts = 0; let newIdx;
-    do { newIdx = Math.floor(Math.random() * wordData.length); attempts++; } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
-    currentIndex = newIdx; updateCard();
-}
-function saveAndSync(shouldPush = true) {
-    localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
-    localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
-    localStorage.setItem('wf_known_words', JSON.stringify(knownWords));
-    if(shouldPush) pushSync();
-}
-async function pushSync() {
-    clearTimeout(syncTimeout);
-    syncTimeout = setTimeout(async () => {
-        showSync('syncing', 'Syncing...');
-        try {
-            await fetch(BIN_URL, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
-                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords })
-            });
-            showSync('synced', 'Synced');
-        } catch {}
-    }, 1000);
-}
-function toggleFav(id, el) {
-    if (favExamples.includes(id)) favExamples = favExamples.filter(x => x !== id);
-    else favExamples.push(id);
-    saveAndSync();
-    updateCard();
-}
-function deleteEx(id, el) { deletedExamples.push(id); saveAndSync(); el.remove(); }
-function clearKnown() { if(confirm("Reset all mastered words?")) { knownWords = []; saveAndSync(); closeOverlays(); updateCard(); } }
+
+function resetDeleted() { if(confirm("Restore all deleted examples?")) { deletedExamples = []; saveAndSync(); alert("Restored!"); } }
+function clearKnown() { if(confirm("Reset all mastered words?")) { knownWords = []; saveAndSync(); openKnown(); } }
 function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
 function playAudioFromEvent(e) { if(e) e.stopPropagation(); playAudioByIndex(currentIndex); }
 function playAudioByIndex(idx) {
@@ -513,6 +462,33 @@ function jumpPrompt() {
     const val = prompt(`Jump to #:`);
     if (val && !isNaN(val)) { currentIndex = Math.max(0, Math.min(wordData.length - 1, parseInt(val) - 1)); updateCard(); }
 }
+async function pushSync() {
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(async () => {
+        showSync('syncing', 'Syncing...');
+        try {
+            await fetch(BIN_URL, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
+                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords })
+            });
+            showSync('synced', 'Synced');
+        } catch {}
+    }, 1000);
+}
+function saveAndSync(shouldPush = true) {
+    localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
+    localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
+    localStorage.setItem('wf_known_words', JSON.stringify(knownWords));
+    if(shouldPush) pushSync();
+}
+function toggleFav(id, el) {
+    if (favExamples.includes(id)) favExamples = favExamples.filter(x => x !== id);
+    else favExamples.push(id);
+    saveAndSync();
+    updateCard();
+}
+function deleteEx(id, el) { deletedExamples.push(id); saveAndSync(); el.remove(); }
 </script>
 </body>
 </html>
