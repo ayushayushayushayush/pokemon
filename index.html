@@ -96,15 +96,25 @@
         .word-display { font-size: 3.5rem; font-weight: 800; color: var(--text-main); margin: 0; }
         .ipa-sub { font-size: 1.2rem; color: var(--text-secondary); margin-top: 15px; font-family: monospace; display: flex; flex-direction: column; gap: 8px; }
 
-        /* Updated Mastery Controls Position */
+        /* Mastery Controls - Now hidden on flip */
         .mastery-controls {
             position: absolute; 
-            bottom: 140px; /* Moved higher from bottom */
+            bottom: 140px; 
+            left: 50%;
+            transform: translateX(-50%);
             display: flex; 
             gap: 30px; 
             align-items: center;
-            z-index: 10;
+            z-index: 100;
+            transition: opacity 0.3s ease;
         }
+        
+        /* Hide buttons when card is flipped */
+        .card.is-flipped .mastery-controls {
+            opacity: 0;
+            pointer-events: none;
+        }
+
         .mastery-btn {
             background: #2C2C2E; width: 60px; height: 60px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
@@ -184,15 +194,14 @@
                         <span id="f-phonetic"></span>
                     </div>
                 </div>
-
-                <div class="mastery-controls">
-                    <div class="mastery-btn known" onclick="markAsKnown()">👍</div>
-                    <div class="mastery-btn list" onclick="openKnown()">📋</div>
-                </div>
-
                 <div class="flip-hint" onclick="flipCard()">Tap to Flip</div>
             </div>
             
+            <div class="mastery-controls">
+                <div class="mastery-btn known" onclick="markAsKnown(event)">👍</div>
+                <div class="mastery-btn list" onclick="openKnown(event)">📋</div>
+            </div>
+
             <div class="card-face card-back">
                 <div class="back-header">
                     <div class="back-top-row">
@@ -293,7 +302,8 @@ function updateCard() {
     renderExamples(item);
 }
 
-function markAsKnown() {
+function markAsKnown(e) {
+    if(e) e.stopPropagation();
     const word = wordData[currentIndex].WORD.trim();
     if(!knownWords.includes(word)) {
         knownWords.push(word);
@@ -339,7 +349,8 @@ function renderExamples(item) {
     });
 }
 
-function openKnown() {
+function openKnown(e) {
+    if(e) e.stopPropagation();
     const list = document.getElementById('known-list');
     list.innerHTML = "";
     document.getElementById('known-overlay').style.display = 'flex';
