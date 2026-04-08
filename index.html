@@ -82,22 +82,43 @@
         .settings-item:active { background: #2c2c2e; }
         .chevron { color: var(--text-secondary); font-size: 1.2rem; }
 
-        /* Quiz Styling */
-        .quiz-container { padding: 20px; display: flex; flex-direction: column; gap: 20px; flex: 1; justify-content: center; }
-        .quiz-sentence { font-size: 1.4rem; font-weight: 600; line-height: 1.5; color: var(--text-main); text-align: center; background: var(--card-bg); padding: 30px 20px; border-radius: 25px; border: 1px solid #38383a; min-height: 150px; display: flex; align-items: center; justify-content: center; }
+        /* Quiz Styling Fixed for iPhone */
+        .quiz-container { padding: 15px; display: flex; flex-direction: column; gap: 15px; flex: 1; justify-content: flex-start; margin-top: 10px; }
         
-        /* The underscore style */
-        .quiz-sentence b { color: var(--primary); font-weight: 800; background: transparent; padding: 0; }
+        .quiz-sentence { 
+            font-size: 1.15rem; 
+            font-weight: 500; 
+            line-height: 1.6; 
+            color: var(--text-main); 
+            text-align: left; /* Better for reading sentences */
+            background: var(--card-bg); 
+            padding: 25px 20px; 
+            border-radius: 20px; 
+            border: 1px solid #38383a; 
+            min-height: 140px; 
+            display: block; /* Changed from flex to block for natural wrapping */
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .quiz-sentence b { 
+            color: var(--primary); 
+            font-weight: 800; 
+            letter-spacing: 1px;
+            white-space: nowrap; /* Keep underscores together */
+        }
 
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .option-btn { background: #2C2C2E; color: white; border: 1px solid #3a3a3c; padding: 18px 10px; border-radius: 15px; font-weight: 700; font-size: 1rem; text-align: center; transition: background 0.2s ease; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .option-btn { background: #2C2C2E; color: white; border: 1px solid #3a3a3c; padding: 16px 8px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; text-align: center; transition: background 0.2s ease; overflow: hidden; text-overflow: ellipsis; }
         .option-btn.correct { background: var(--success-green); border-color: var(--success-green); color: black; }
         .option-btn.wrong { background: var(--delete-red); border-color: var(--delete-red); }
-        .quiz-header-info { display: flex; justify-content: space-between; align-items: center; background: #1C1C1E; padding: 12px 18px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #38383a; }
+        
+        .quiz-header-info { display: flex; justify-content: space-between; align-items: center; background: #1C1C1E; padding: 12px 18px; border-radius: 15px; margin-bottom: 5px; border: 1px solid #38383a; }
         .quiz-stat { display: flex; flex-direction: column; align-items: center; }
-        .quiz-stat-val { font-size: 1.1rem; font-weight: 800; color: var(--text-main); }
-        .quiz-stat-label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .quiz-stat-val { font-size: 1rem; font-weight: 800; color: var(--text-main); }
+        .quiz-stat-label { font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
 
+        /* Rest of Styles */
         .fav-group-header { margin: 20px 0 12px 5px; display: flex; align-items: baseline; gap: 10px; }
         .fav-group-title { color: var(--delete-red); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
         .fav-group-ipa { color: var(--text-secondary); font-size: 0.85rem; font-family: monospace; }
@@ -201,7 +222,7 @@
                 <span class="quiz-stat-label">Left</span>
             </div>
         </div>
-        <div id="quiz-question" class="quiz-sentence">Select a favorite to start...</div>
+        <div id="quiz-question" class="quiz-sentence">Select a favorite...</div>
         <div id="quiz-options" class="options-grid"></div>
     </div>
 </div>
@@ -282,7 +303,6 @@ let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]")
 let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
 let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
 
-// Quiz State
 let quizScore = 0;
 let currentQuizCorrect = "";
 let quizPool = []; 
@@ -350,7 +370,7 @@ function updateCard() {
 function startQuiz(e) {
     if(e) e.stopPropagation();
     if (favExamples.length < 1) {
-        alert("Add some examples to Favorites first to play the quiz!");
+        alert("Add some favorites first!");
         return;
     }
     quizPool = [...favExamples]; 
@@ -361,7 +381,7 @@ function startQuiz(e) {
 
 function nextQuizQuestion() {
     if (quizPool.length === 0) {
-        alert("Well done! You've finished all your favorite examples. Restarting...");
+        alert("Well done! Restarting...");
         quizPool = [...favExamples];
     }
 
@@ -375,8 +395,8 @@ function nextQuizQuestion() {
     const [word, sentence] = randomId.split('|');
     currentQuizCorrect = word.trim();
 
-    // Mask with a simple underscore string
     const regex = new RegExp(`\\b${currentQuizCorrect}\\b`, 'gi');
+    // Using simple underscores
     const maskedSentence = sentence.replace(regex, "<b>_________</b>");
     document.getElementById('quiz-question').innerHTML = maskedSentence;
 
@@ -419,7 +439,7 @@ function handleQuizTap(selectedWord, btn) {
     setTimeout(nextQuizQuestion, 1200);
 }
 
-// --- REST OF APP LOGIC ---
+// --- APP CORE ---
 function markAsKnown(e) {
     if(e) e.stopPropagation();
     const word = wordData[currentIndex].WORD.trim();
@@ -475,13 +495,12 @@ function openKnown() {
     document.getElementById('settings-overlay').style.display = 'none';
     document.getElementById('known-overlay').style.display = 'flex';
     if (knownWords.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:gray; margin-top:50px;">No words mastered yet.</p>`;
+        list.innerHTML = `<p style="text-align:center; color:gray; margin-top:50px;">No words mastered.</p>`;
         return;
     }
     knownWords.slice().reverse().forEach(word => {
         const masterItem = wordData.find(w => w.WORD.trim() === word);
         const ipaText = masterItem ? masterItem.IPA : '';
-
         const div = document.createElement('div');
         div.className = 'known-item';
         div.innerHTML = `<span class="known-word">${word}</span><span class="known-ipa">${ipaText}</span>`;
@@ -489,7 +508,7 @@ function openKnown() {
         div.addEventListener('touchstart', (e) => {
             if (e.touches[0].clientX < window.innerWidth / 2) {
                 pressTimer = setTimeout(() => {
-                    if(confirm(`Move "${word}" back to study list?`)) {
+                    if(confirm(`Restore "${word}"?`)) {
                         knownWords = knownWords.filter(w => w !== word);
                         saveAndSync();
                         openKnown();
@@ -507,7 +526,7 @@ function openFavs() {
     list.innerHTML = "";
     document.getElementById('fav-overlay').style.display = 'flex';
     if (favExamples.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:var(--text-secondary); margin-top:50px;">No favorites yet.</p>`;
+        list.innerHTML = `<p style="text-align:center; color:var(--text-secondary); margin-top:50px;">No favorites.</p>`;
         return;
     }
     const organized = {};
@@ -551,7 +570,7 @@ function openFavs() {
             item.addEventListener('touchstart', (e) => {
                 if (e.touches[0].clientX < window.innerWidth / 2) {
                     exTimer = setTimeout(() => {
-                        if (confirm("Remove favorite?")) { favExamples = favExamples.filter(x => x !== itemObj.id); saveAndSync(); item.remove(); }
+                        if (confirm("Unfavorite?")) { favExamples = favExamples.filter(x => x !== itemObj.id); saveAndSync(); item.remove(); }
                     }, 750);
                 }
             }, {passive: true});
@@ -569,7 +588,7 @@ function closeOverlays() {
     updateCard(); 
 }
 
-function resetDeleted() { if(confirm("Restore all deleted examples?")) { deletedExamples = []; saveAndSync(); alert("Restored!"); } }
+function resetDeleted() { if(confirm("Restore all?")) { deletedExamples = []; saveAndSync(); alert("Restored!"); } }
 function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
 function playAudioFromEvent(e) { if(e) e.stopPropagation(); playAudioByIndex(currentIndex); }
 function playAudioByIndex(idx) {
