@@ -32,7 +32,6 @@
         * { 
             box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent; 
-            /* Prevent default iOS callouts and selection globally for a cleaner app feel */
             -webkit-touch-callout: none;
         }
 
@@ -127,7 +126,6 @@
             display: flex;
             align-items: baseline;
             gap: 10px;
-            /* Disable selection here to prevent long-press conflict */
             -webkit-user-select: none;
             user-select: none;
         }
@@ -505,7 +503,6 @@ function openFavs() {
 
         let headerPressTimer;
         const startHeaderPress = (e) => {
-            // Preventing ghost selection on start
             headerPressTimer = setTimeout(() => {
                 const idx = organized[word].index;
                 if (idx !== -1) {
@@ -519,11 +516,12 @@ function openFavs() {
         };
         const endHeaderPress = () => clearTimeout(headerPressTimer);
 
-        [title, ipaSpan].forEach(el => {
-            el.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
-            el.addEventListener('touchstart', startHeaderPress, {passive: true});
-            el.addEventListener('touchend', endHeaderPress);
-        });
+        // IPA logic: Only play audio, no jumping
+        ipaSpan.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
+        
+        // Word logic: Long press to jump, click does nothing
+        title.addEventListener('touchstart', startHeaderPress, {passive: true});
+        title.addEventListener('touchend', endHeaderPress);
 
         header.appendChild(title);
         header.appendChild(ipaSpan);
