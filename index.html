@@ -806,7 +806,8 @@ function nextQuizQuestion() {
 
 
 
-    const regex = new RegExp(`\\b${currentQuizCorrect}\\b`, 'gi');
+    const escapedWord = currentQuizCorrect.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`\\b${escapedWord}\\w*`, 'gi');
 
     // Using simple underscores
 
