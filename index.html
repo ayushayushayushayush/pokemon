@@ -32,6 +32,8 @@
         * { 
             box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent; 
+            /* Prevent default iOS callouts and selection globally for a cleaner app feel */
+            -webkit-touch-callout: none;
         }
 
         body, html {
@@ -125,6 +127,9 @@
             display: flex;
             align-items: baseline;
             gap: 10px;
+            /* Disable selection here to prevent long-press conflict */
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         .fav-group-title {
@@ -203,6 +208,8 @@
         
         .back-word {
             font-size: 1.6rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.5px; margin: 0;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         .more-btn {
@@ -219,7 +226,9 @@
         }
 
         .example-item { 
-            background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; transition: opacity 0.3s; -webkit-user-select: none;
+            background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; transition: opacity 0.3s; 
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         #example-list .example-item.is-fav { 
@@ -494,15 +503,14 @@ function openFavs() {
         ipaSpan.className = 'fav-group-ipa';
         ipaSpan.textContent = organized[word].ipa;
 
-        // Long press logic for Word/IPA headers
         let headerPressTimer;
-        const startHeaderPress = () => {
+        const startHeaderPress = (e) => {
+            // Preventing ghost selection on start
             headerPressTimer = setTimeout(() => {
                 const idx = organized[word].index;
                 if (idx !== -1) {
                     currentIndex = idx;
                     closeFavs();
-                    // Set timeout to ensure card updates before flipping
                     setTimeout(() => {
                         document.getElementById('card').classList.add('is-flipped');
                     }, 50);
