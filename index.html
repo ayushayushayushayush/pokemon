@@ -113,7 +113,6 @@
             border: 1px solid #3a3a3c; box-shadow: 0 6px 15px rgba(0,0,0,0.4);
         }
         .mastery-btn.known { color: var(--success-green); }
-        .mastery-btn.list { color: var(--primary); }
 
         .flip-hint { position: absolute; bottom: 40px; font-size: 1.15rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 20px; }
 
@@ -136,7 +135,7 @@
 
         .known-item { padding: 18px; border-bottom: 1px solid #1c1c1e; display: flex; justify-content: space-between; align-items: center; }
         .known-word { font-weight: 700; font-size: 1.1rem; }
-        .known-count { color: var(--text-secondary); font-size: 0.8rem; }
+        .known-ipa { color: var(--text-secondary); font-size: 0.9rem; font-family: monospace; }
     </style>
 </head>
 <body>
@@ -146,7 +145,7 @@
 
 <div id="settings-overlay">
     <header>
-        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Done</div>
+        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
         <div style="font-weight:800;">Settings</div>
         <div style="width: 60px;"></div>
     </header>
@@ -204,7 +203,6 @@
             
             <div class="mastery-controls">
                 <div class="mastery-btn known" onclick="markAsKnown(event)">👍</div>
-                <div class="mastery-btn list" onclick="openSettings(event)">📋</div>
             </div>
 
             <div class="card-face card-back">
@@ -356,12 +354,18 @@ function openKnown() {
         return;
     }
     knownWords.slice().reverse().forEach(word => {
+        // Find the IPA for this word from the master wordData list
+        const masterItem = wordData.find(w => w.WORD.trim() === word);
+        const ipaText = masterItem ? masterItem.IPA : '';
+
         const div = document.createElement('div');
         div.className = 'known-item';
-        div.innerHTML = `<span class="known-word">${word}</span><span class="known-count">Mastered</span>`;
+        div.innerHTML = `
+            <span class="known-word">${word}</span>
+            <span class="known-ipa">${ipaText}</span>
+        `;
         let pressTimer;
         div.addEventListener('touchstart', (e) => {
-            // Only trigger on the left half of the screen
             if (e.touches[0].clientX < window.innerWidth / 2) {
                 pressTimer = setTimeout(() => {
                     if(confirm(`Move "${word}" back to study list?`)) {
@@ -493,6 +497,21 @@ function toggleFav(id, el) {
     updateCard();
 }
 function deleteEx(id, el) { deletedExamples.push(id); saveAndSync(); el.remove(); }
+function prevCard() {
+    let start = currentIndex;
+    do { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
+    updateCard();
+}
+function nextCard() {
+    let start = currentIndex;
+    do { currentIndex = (currentIndex + 1) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
+    updateCard();
+}
+function shuffleCard() {
+    let attempts = 0; let newIdx;
+    do { newIdx = Math.floor(Math.random() * wordData.length); attempts++; } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
+    currentIndex = newIdx; updateCard();
+}
 </script>
 </body>
 </html>
