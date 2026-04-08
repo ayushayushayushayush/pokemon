@@ -807,7 +807,8 @@ function nextQuizQuestion() {
 
 
     const escapedWord = currentQuizCorrect.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`\\b${escapedWord}\\w*`, 'gi');
+    const stem = escapedWord.endsWith('e') ? escapedWord.slice(0, -1) : escapedWord;
+    const regex = new RegExp(`\\b(?:${escapedWord}|${stem})\\w*`, 'gi');
 
     // Using simple underscores
 
