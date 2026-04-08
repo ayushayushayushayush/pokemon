@@ -202,7 +202,7 @@
         }
         
         .back-word {
-            font-size: 1.2rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.5px; margin: 0;
+            font-size: 1.6rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.5px; margin: 0;
         }
 
         .more-btn {
@@ -282,7 +282,7 @@
             <div class="card-face card-back">
                 <div class="back-header">
                     <div class="back-top-row">
-                        <p id="b-word" class="back-word" onclick="flipCard()">...</p>
+                        <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
                         <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
                     </div>
                     <div class="meaning-container" onclick="flipCard()">
@@ -442,9 +442,18 @@ function renderExamples(item) {
         });
 
         let pressTimer;
-        exDiv.addEventListener('touchstart', () => {
-            pressTimer = setTimeout(() => { if (confirm("Delete?")) deleteEx(exObj.id, exDiv); }, 750);
+        exDiv.addEventListener('touchstart', (e) => {
+            // Check if touch is on the left side of the screen (less than 50% width)
+            const touchX = e.touches[0].clientX;
+            const screenWidth = window.innerWidth;
+
+            if (touchX < screenWidth / 2) {
+                pressTimer = setTimeout(() => { 
+                    if (confirm("Delete?")) deleteEx(exObj.id, exDiv); 
+                }, 750);
+            }
         }, {passive: true});
+        
         exDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
 
         list.appendChild(exDiv);
@@ -562,7 +571,7 @@ async function pushSync() {
 }
 
 function playAudioFromEvent(e) {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     playAudioByIndex(currentIndex);
 }
 
