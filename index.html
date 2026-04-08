@@ -405,17 +405,14 @@ function renderExamples(item) {
     
     const favorites = [];
     const others = [];
-
     const cleanWord = item.WORD.trim();
 
     for (let i = 1; i <= 50; i++) {
         const text = item[i.toString()];
         if (text && text.trim().length > 1) {
             const exId = `${cleanWord}|${text.trim()}`;
-            
             if (deletedExamples.some(d => d.trim() === exId)) continue;
             const isFav = favExamples.some(f => f.trim() === exId);
-
             if (isFav) {
                 favorites.push({ text: text.trim(), id: exId, isFav: true });
             } else {
@@ -443,10 +440,8 @@ function renderExamples(item) {
 
         let pressTimer;
         exDiv.addEventListener('touchstart', (e) => {
-            // Check if touch is on the left side of the screen (less than 50% width)
             const touchX = e.touches[0].clientX;
             const screenWidth = window.innerWidth;
-
             if (touchX < screenWidth / 2) {
                 pressTimer = setTimeout(() => { 
                     if (confirm("Delete?")) deleteEx(exObj.id, exDiv); 
@@ -455,7 +450,6 @@ function renderExamples(item) {
         }, {passive: true});
         
         exDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
-
         list.appendChild(exDiv);
     });
 }
@@ -514,18 +508,24 @@ function openFavs() {
             item.textContent = itemObj.text;
             
             let favPressTimer;
-            item.addEventListener('touchstart', () => {
-                favPressTimer = setTimeout(() => {
-                    if (confirm("Remove from favorites?")) {
-                        favExamples = favExamples.filter(x => x !== itemObj.id);
-                        localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
-                        pushSync();
-                        item.remove();
-                    }
-                }, 750);
+            item.addEventListener('touchstart', (e) => {
+                const touchX = e.touches[0].clientX;
+                const screenWidth = window.innerWidth;
+                
+                // Restriction: only process long press on left half of screen
+                if (touchX < screenWidth / 2) {
+                    favPressTimer = setTimeout(() => {
+                        if (confirm("Remove from favorites?")) {
+                            favExamples = favExamples.filter(x => x !== itemObj.id);
+                            localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
+                            pushSync();
+                            item.remove();
+                        }
+                    }, 750);
+                }
             }, {passive: true});
+            
             item.addEventListener('touchend', () => clearTimeout(favPressTimer));
-
             list.appendChild(item);
         });
     });
