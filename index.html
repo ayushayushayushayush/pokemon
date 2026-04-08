@@ -3,49 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="WordFlow Pro">
-    
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-
     <title>WordFlow Pro</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
     <style>
         :root {
-            --primary: #0A84FF; 
-            --bg: #000000;      
-            --card-bg: #1C1C1E; 
-            --text-main: #FFFFFF; 
-            --text-secondary: #AEAEB2;
-            --delete-red: #FF453A;
-            --success-green: #30D158;
-            --fav-indicator: #2C2C2E; 
-            --example-bg: #2C2C2E;
+            --primary: #0A84FF; --bg: #000000; --card-bg: #1C1C1E; 
+            --text-main: #FFFFFF; --text-secondary: #AEAEB2;
+            --delete-red: #FF453A; --success-green: #30D158;
             --safe-top: env(safe-area-inset-top);
             --safe-bottom: env(safe-area-inset-bottom);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body, html {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            background-color: var(--bg);
-            color: var(--text-main);
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg); color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            display: flex; flex-direction: column;
-            overflow: hidden;
-            overscroll-behavior-y: none;
-        }
-
-        #loading-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); z-index: 3000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+            display: flex; flex-direction: column; overflow: hidden;
         }
 
         #sync-status {
@@ -58,106 +37,54 @@
         #sync-status.syncing { background: #3a3a3c; color: var(--text-secondary); }
         #sync-status.synced  { background: #1c3a1c; color: var(--success-green); }
 
-        header {
-            padding: calc(var(--safe-top) + 15px) 20px 10px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
+        header { padding: calc(var(--safe-top) + 15px) 20px 10px; display: flex; justify-content: space-between; align-items: center; }
+        .header-btn { font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 12px; background: #2C2C2E; color: var(--text-main); border: 1px solid #3a3a3c; }
+        .counter { font-size: 0.85rem; font-weight: 700; background: #3a3a3c; padding: 6px 14px; border-radius: 20px; }
 
-        .header-btn { font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 12px; cursor: pointer; background: #2C2C2E; color: var(--text-main); border: 1px solid #3a3a3c; }
-        .header-btn:active { background: #3a3a3c; }
-        .fav-btn { font-size: 1.2rem; padding: 4px 14px; line-height: 1; }
-        .counter { font-size: 0.85rem; font-weight: 700; color: var(--text-main); background: #3a3a3c; padding: 6px 14px; border-radius: 20px; }
-
-        #fav-overlay, #known-overlay, #settings-overlay, #quiz-overlay {
+        #quiz-overlay, #settings-overlay, #fav-overlay, #known-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 2000; display: none; flex-direction: column;
         }
 
-        .list-container { flex: 1; overflow-y: auto; padding: 10px 20px 20px; -webkit-overflow-scrolling: touch; }
+        /* Quiz Stats Dashboard */
+        .quiz-header-info { display: flex; justify-content: space-between; align-items: center; background: #1C1C1E; padding: 12px 18px; border-radius: 15px; margin: 10px 15px; border: 1px solid #38383a; }
+        .quiz-stat { display: flex; flex-direction: column; align-items: center; }
+        .quiz-stat-val { font-size: 1rem; font-weight: 800; }
+        .quiz-stat-label { font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; }
 
-        .settings-item {
-            background: var(--card-bg); padding: 18px; margin-bottom: 10px; border-radius: 15px;
-            display: flex; justify-content: space-between; align-items: center; font-weight: 600;
-        }
-        .settings-item:active { background: #2c2c2e; }
-
-        /* Quiz Styling */
-        .quiz-container { padding: 15px; display: flex; flex-direction: column; gap: 15px; flex: 1; justify-content: flex-start; margin-top: 10px; }
-        .quiz-sentence { 
-            font-size: 1.15rem; font-weight: 500; line-height: 1.6; color: var(--text-main); 
-            background: var(--card-bg); padding: 25px 20px; border-radius: 20px; border: 1px solid #38383a; 
-            min-height: 140px; display: block; word-wrap: break-word;
-        }
-        .quiz-sentence b { color: var(--primary); font-weight: 800; }
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .quiz-sentence { font-size: 1.15rem; line-height: 1.6; background: var(--card-bg); padding: 25px 20px; border-radius: 20px; margin: 0 15px; border: 1px solid #38383a; min-height: 140px; }
+        .quiz-sentence b { color: var(--primary); }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
         .option-btn { background: #2C2C2E; color: white; border: 1px solid #3a3a3c; padding: 16px 8px; border-radius: 12px; font-weight: 600; text-align: center; }
         .option-btn.correct { background: var(--success-green); color: black; }
         .option-btn.wrong { background: var(--delete-red); }
 
-        /* App Layout */
         .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 20px; }
+        .scene { width: 92%; max-width: 420px; height: 65vh; perspective: 1500px; }
         .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; }
         .card.is-flipped { transform: rotateY(180deg); }
-
-        .card-face {
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-            border-radius: 35px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-            background: var(--card-bg); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #38383a;
-        }
-
-        .card-front { justify-content: flex-start; align-items: center; text-align: center; padding: 60px 30px; }
-        .word-display { font-size: 3.5rem; font-weight: 800; color: var(--text-main); margin: 0; }
-        .ipa-sub { font-size: 1.2rem; color: var(--text-secondary); margin-top: 15px; font-family: monospace; display: flex; flex-direction: column; gap: 8px; }
-
-        /* Buttons on Card */
-        .mastery-controls {
-            position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 20px; align-items: center; z-index: 100; transition: opacity 0.3s ease;
-        }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 35px; background: var(--card-bg); border: 1px solid #38383a; display: flex; flex-direction: column; overflow: hidden; }
+        .card-front { justify-content: center; align-items: center; text-align: center; }
+        
+        .mastery-controls { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 100; transition: opacity 0.3s; }
         .card.is-flipped .mastery-controls { opacity: 0; pointer-events: none; }
+        .mastery-btn { background: #2C2C2E; width: 65px; height: 65px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; border: 1px solid #3a3a3c; }
 
-        .mastery-btn {
-            background: #2C2C2E; width: 65px; height: 65px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
-            border: 1px solid #3a3a3c; box-shadow: 0 6px 15px rgba(0,0,0,0.4);
-        }
-        .mastery-btn:active { transform: scale(0.92); background: #3a3a3c; }
+        .card-back { transform: rotateY(180deg); }
+        #example-list { flex-grow: 1; overflow-y: auto; padding: 15px 25px; -webkit-overflow-scrolling: touch; }
+        .example-item { background: #2C2C2E; padding: 16px; font-size: 0.95rem; margin-bottom: 12px; border-radius: 12px; }
+        .example-item.is-fav { border-left: 4px solid var(--primary); }
 
-        .flip-hint { position: absolute; bottom: 40px; font-size: 1.15rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
-
-        .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
-        .back-header { padding: 25px 25px 15px; border-bottom: 1px solid #38383a; flex-shrink: 0; position: relative; }
-        .back-top-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .back-word { font-size: 1.6rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; margin: 0; }
-        .more-btn { background: var(--primary); color: white; font-size: 0.65rem; font-weight: 800; padding: 6px 12px; border-radius: 12px; }
-        .meaning-text { font-size: 1.2rem; font-weight: 700; color: var(--text-main); line-height: 1.4; margin: 0; }
-
-        #example-list { flex-grow: 1; overflow-y: auto; padding: 15px 25px 30px; -webkit-overflow-scrolling: touch; }
-        .example-item { background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; }
-        .example-item.is-fav { border-left: 4px solid var(--fav-indicator); }
-
-        .controls { padding: 20px 20px calc(var(--safe-bottom) + 30px); display: flex; gap: 10px; width: 100%; max-width: 420px; }
+        .controls { padding: 20px 20px calc(var(--safe-bottom) + 20px); display: flex; gap: 10px; width: 100%; max-width: 420px; }
         .nav-btn { flex: 1; height: 60px; border-radius: 18px; border: none; background: #2C2C2E; color: white; font-weight: 700; }
         .nav-btn.primary { background: var(--primary); }
+        
+        .list-container { flex: 1; overflow-y: auto; padding: 20px; }
     </style>
 </head>
 <body>
 
 <div id="sync-status"></div>
-<div id="loading-screen"><p>Loading...</p></div>
-
-<div id="settings-overlay">
-    <header>
-        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
-        <div style="font-weight:800;">Settings</div>
-        <div style="width: 60px;"></div>
-    </header>
-    <div class="list-container">
-        <div class="settings-item" onclick="openKnown()"><span>Mastered Words</span><span>›</span></div>
-        <div class="settings-item" onclick="resetDeleted()"><span style="color:var(--delete-red);">Restore Deleted</span><span>›</span></div>
-    </div>
-</div>
 
 <div id="quiz-overlay">
     <header>
@@ -165,68 +92,46 @@
         <div style="font-weight:800;">Quiz Mode</div>
         <div style="width: 60px;"></div>
     </header>
-    <div class="quiz-container">
-        <div id="quiz-question" class="quiz-sentence">Select a favorite...</div>
-        <div id="quiz-options" class="options-grid"></div>
+    <div class="quiz-header-info">
+        <div class="quiz-stat"><span id="quiz-score-display" class="quiz-stat-val">0</span><span class="quiz-stat-label">Score</span></div>
+        <div class="quiz-stat"><span id="quiz-total-display" class="quiz-stat-val">0</span><span class="quiz-stat-label">Favs</span></div>
+        <div class="quiz-stat"><span id="quiz-remaining-display" class="quiz-stat-val">0</span><span class="quiz-stat-label">Left</span></div>
     </div>
-</div>
-
-<div id="fav-overlay">
-    <header>
-        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
-        <div style="font-weight:800;">Favorites</div>
-        <div style="width: 60px;"></div>
-    </header>
-    <div id="fav-list" class="list-container"></div>
-</div>
-
-<div id="known-overlay">
-    <header>
-        <div onclick="openSettings()" class="header-btn" style="color:var(--primary);">← Settings</div>
-        <div style="font-weight:800;">Mastered</div>
-        <div style="width: 60px;"></div>
-    </header>
-    <div id="known-list" class="list-container"></div>
+    <div id="quiz-question" class="quiz-sentence"></div>
+    <div id="quiz-options" class="options-grid"></div>
 </div>
 
 <header id="app-header" style="display:none;">
     <div class="header-btn" onclick="openSettings()">⚙️</div>
-    <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
+    <div class="header-btn" onclick="openFavs()">★</div>
 </header>
 
 <div class="app-container" id="app">
     <div class="scene">
         <div class="card" id="card">
-            <div class="card-face card-front">
-                <div onclick="playAudioByIndex(currentIndex)">
-                    <h1 id="f-word" class="word-display">...</h1>
-                    <div class="ipa-sub"><span id="f-ipa"></span><span id="f-phonetic"></span></div>
-                </div>
-                <div class="flip-hint" onclick="flipCard()">Tap to Flip</div>
+            <div class="card-face card-front" onclick="playAudioByIndex(currentIndex)">
+                <h1 id="f-word" style="font-size:3.5rem; margin:0;">...</h1>
+                <p id="f-ipa" style="color:var(--text-secondary); font-family:monospace;">...</p>
+                <p style="position:absolute; bottom:40px; color:var(--primary); font-weight:800;">TAP TO FLIP</p>
             </div>
-
+            
             <div class="mastery-controls">
                 <div class="mastery-btn" onclick="markAsKnown(event)" style="color:var(--success-green);">👍</div>
                 <div class="mastery-btn" onclick="startQuiz(event)" style="color:#FFD60A;">💡</div>
             </div>
 
             <div class="card-face card-back">
-                <div class="back-header" onclick="flipCard()">
-                    <div class="back-top-row">
-                        <p id="b-word" class="back-word" onclick="event.stopPropagation(); playAudioByIndex(currentIndex)">...</p>
-                        <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
-                    </div>
-                    <p id="b-meaning" class="meaning-text">...</p>
+                <div style="padding:25px; border-bottom:1px solid #38383a;" onclick="flipCard()">
+                    <h2 id="b-word" style="color:var(--delete-red); margin:0;">...</h2>
+                    <p id="b-meaning" style="font-weight:700; margin:10px 0 0;">...</p>
                 </div>
                 <div id="example-list"></div>
             </div>
         </div>
     </div>
-
     <div class="controls">
         <button class="nav-btn" onclick="prevCard()">Back</button>
-        <button class="nav-btn" onclick="shuffleCard()">Shuffle</button>
         <button class="nav-btn primary" onclick="nextCard()">Next</button>
     </div>
 </div>
@@ -236,12 +141,11 @@ const BIN_ID = "69d3dacfaaba882197cd5a0e";
 const API_KEY = "$2a$10$2XIWmqUVHyv39zmLplK6YOCLf07sb3WyJIxxleZUrKRb61lugMCu6";
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-let wordData = [], deletedExamples = [], favExamples = [], knownWords = [];
+let wordData = [], favExamples = [], knownWords = [], quizPool = [];
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
-let availableMeanings = [], currentMeaningIdx = 0, quizPool = [], isQuizLocked = false;
+let quizScore = 0, isQuizLocked = false, syncTimeout = null;
 
 window.onload = () => {
-    deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
     favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
     knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
 
@@ -249,7 +153,6 @@ window.onload = () => {
         download: true, header: true,
         complete: function(results) {
             wordData = results.data.filter(row => row.WORD);
-            document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('app').style.display = 'flex';
             document.getElementById('app-header').style.display = 'flex';
             updateCard();
@@ -259,124 +162,108 @@ window.onload = () => {
 
 function updateCard() {
     const item = wordData[currentIndex];
-    availableMeanings = [item.MEANING];
-    for(let i=1; i<=10; i++) if(item[`Meaning${i}`]) availableMeanings.push(item[`Meaning${i}`]);
-    availableMeanings = availableMeanings.filter(m => m && m.trim());
-    
     document.getElementById('card').classList.remove('is-flipped');
     document.getElementById('f-word').textContent = item.WORD;
     document.getElementById('f-ipa').textContent = item.IPA;
     document.getElementById('b-word').textContent = item.WORD;
-    document.getElementById('b-meaning').textContent = availableMeanings[0];
+    document.getElementById('b-meaning').textContent = item.MEANING;
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
     
-    const moreBtn = document.getElementById('more-btn');
-    moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none';
-    if(availableMeanings.length > 1) moreBtn.textContent = `More 1/${availableMeanings.length}`;
-    
-    renderExamples(item);
+    const list = document.getElementById('example-list');
+    list.innerHTML = "";
+    for(let i=1; i<=10; i++) {
+        const txt = item[i];
+        if(txt) {
+            const id = `${item.WORD}|${txt}`;
+            const div = document.createElement('div');
+            div.className = `example-item ${favExamples.includes(id) ? 'is-fav' : ''}`;
+            div.textContent = txt;
+            div.onclick = () => toggleFav(id);
+            list.appendChild(div);
+        }
+    }
     localStorage.setItem('wf_index_v6', currentIndex);
 }
 
 function startQuiz(e) {
-    if(e) e.stopPropagation();
-    if(favExamples.length < 1) return alert("Add some favorites first!");
+    e.stopPropagation();
+    if(!favExamples.length) return alert("No favorites!");
     quizPool = [...favExamples];
     document.getElementById('quiz-overlay').style.display = 'flex';
-    nextQuizQuestion();
+    document.getElementById('quiz-total-display').textContent = favExamples.length;
+    nextQuiz();
 }
 
-function nextQuizQuestion() {
-    if(!quizPool.length) quizPool = [...favExamples];
+function nextQuiz() {
+    if(!quizPool.length) { alert("Done!"); return closeOverlays(); }
     isQuizLocked = false;
-    const exId = quizPool.splice(Math.floor(Math.random() * quizPool.length), 1)[0];
-    const [word, sentence] = exId.split('|');
+    document.getElementById('quiz-remaining-display').textContent = quizPool.length;
+    const idx = Math.floor(Math.random()*quizPool.length);
+    const [word, sent] = quizPool.splice(idx, 1)[0].split('|');
     
-    const regex = new RegExp(`\\b${word}\\b`, 'gi');
-    document.getElementById('quiz-question').innerHTML = sentence.replace(regex, "<b>_________</b>");
-    
-    let options = [word];
-    while(options.length < 4) {
-        let r = wordData[Math.floor(Math.random()*wordData.length)].WORD.trim();
-        if(!options.includes(r)) options.push(r);
+    document.getElementById('quiz-question').innerHTML = sent.replace(new RegExp(word, 'gi'), "<b>_______</b>");
+    let opts = [word];
+    while(opts.length < 4) {
+        let r = wordData[Math.floor(Math.random()*wordData.length)].WORD;
+        if(!opts.includes(r)) opts.push(r);
     }
-    options.sort(() => Math.random() - 0.5);
+    opts.sort(() => Math.random()-0.5);
     
     const grid = document.getElementById('quiz-options');
     grid.innerHTML = "";
-    options.forEach(opt => {
+    opts.forEach(o => {
         const btn = document.createElement('div');
         btn.className = 'option-btn';
-        btn.textContent = opt;
+        btn.textContent = o;
         btn.onclick = () => {
             if(isQuizLocked) return;
             isQuizLocked = true;
-            btn.classList.add(opt === word ? 'correct' : 'wrong');
-            setTimeout(nextQuizQuestion, 1200);
+            if(o === word) { btn.classList.add('correct'); quizScore+=10; }
+            else { btn.classList.add('wrong'); quizScore = Math.max(0, quizScore-5); }
+            document.getElementById('quiz-score-display').textContent = quizScore;
+            setTimeout(nextQuiz, 1000);
         };
         grid.appendChild(btn);
     });
 }
 
 function markAsKnown(e) {
-    if(e) e.stopPropagation();
-    const word = wordData[currentIndex].WORD.trim();
-    if(!knownWords.includes(word)) {
-        knownWords.push(word);
-        save(); nextCard();
-    }
+    e.stopPropagation();
+    knownWords.push(wordData[currentIndex].WORD);
+    saveAndSync();
+    nextCard();
 }
 
-function renderExamples(item) {
-    const list = document.getElementById('example-list');
-    list.innerHTML = "";
-    const word = item.WORD.trim();
-    for(let i=1; i<=50; i++) {
-        const txt = item[i];
-        if(txt && txt.trim()) {
-            const id = `${word}|${txt.trim()}`;
-            if(deletedExamples.includes(id)) continue;
-            const div = document.createElement('div');
-            div.className = `example-item ${favExamples.includes(id) ? 'is-fav' : ''}`;
-            div.textContent = txt;
-            div.onclick = () => {
-                if(favExamples.includes(id)) favExamples = favExamples.filter(f => f !== id);
-                else favExamples.push(id);
-                save(); updateCard();
-            };
-            list.appendChild(div);
-        }
-    }
+function toggleFav(id) {
+    if(favExamples.includes(id)) favExamples = favExamples.filter(f => f !== id);
+    else favExamples.push(id);
+    saveAndSync(); updateCard();
 }
 
 function nextCard() { currentIndex = (currentIndex + 1) % wordData.length; updateCard(); }
 function prevCard() { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; updateCard(); }
-function shuffleCard() { currentIndex = Math.floor(Math.random()*wordData.length); updateCard(); }
 function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
-
-function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
 function closeOverlays() { document.querySelectorAll('[id$="-overlay"]').forEach(o => o.style.display='none'); }
 
-function save() {
+function saveAndSync() {
     localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
     localStorage.setItem('wf_known_words', JSON.stringify(knownWords));
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(async () => {
+        try {
+            await fetch(BIN_URL, {
+                method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
+                body: JSON.stringify({ favs: favExamples, known: knownWords })
+            });
+        } catch(e) {}
+    }, 2000);
 }
 
 function playAudioByIndex(idx) {
     const word = wordData[idx].WORD;
     const num = idx + 1;
-    let f = "audio-file";
-    if (num >= 1019 && num <= 2026) f = "audio-file-2";
-    else if (num >= 2027 && num <= 3034) f = "audio-file-3";
-    else if (num >= 3035) f = "audio-file-4";
+    let f = num >= 3035 ? "audio-file-4" : num >= 2027 ? "audio-file-3" : num >= 1019 ? "audio-file-2" : "audio-file";
     new Audio(`${f}/${word}.mp3`).play().catch(()=>{});
-}
-
-function handleMoreClick(e) {
-    if(e) e.stopPropagation();
-    currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
-    document.getElementById('b-meaning').innerText = availableMeanings[currentMeaningIdx];
-    document.getElementById('more-btn').textContent = `More ${currentMeaningIdx+1}/${availableMeanings.length}`;
 }
 </script>
 </body>
