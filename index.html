@@ -469,10 +469,8 @@ function openFavs() {
     favExamples.forEach(id => {
         const parts = id.split('|');
         if (parts.length < 2) return;
-        
         const word = parts[0].trim();
         const text = parts[1].trim();
-
         if (!organized[word]) {
             const masterEntry = wordData.find(w => w.WORD.trim().toLowerCase() === word.toLowerCase());
             organized[word] = {
@@ -491,121 +489,10 @@ function openFavs() {
         const title = document.createElement('div');
         title.className = 'fav-group-title';
         title.textContent = word;
-        title.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
 
         const ipaSpan = document.createElement('div');
         ipaSpan.className = 'fav-group-ipa';
         ipaSpan.textContent = organized[word].ipa;
-        ipaSpan.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
 
-        header.appendChild(title);
-        header.appendChild(ipaSpan);
-        list.appendChild(header);
-
-        organized[word].items.forEach(itemObj => {
-            const item = document.createElement('div');
-            item.className = 'example-item is-fav';
-            item.textContent = itemObj.text;
-            
-            let favPressTimer;
-            item.addEventListener('touchstart', (e) => {
-                const touchX = e.touches[0].clientX;
-                const screenWidth = window.innerWidth;
-                
-                // Restriction: only process long press on left half of screen
-                if (touchX < screenWidth / 2) {
-                    favPressTimer = setTimeout(() => {
-                        if (confirm("Remove from favorites?")) {
-                            favExamples = favExamples.filter(x => x !== itemObj.id);
-                            localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
-                            pushSync();
-                            item.remove();
-                        }
-                    }, 750);
-                }
-            }, {passive: true});
-            
-            item.addEventListener('touchend', () => clearTimeout(favPressTimer));
-            list.appendChild(item);
-        });
-    });
-}
-
-function closeFavs() { document.getElementById('fav-overlay').style.display = 'none'; updateCard(); }
-
-function toggleFav(id, el) {
-    if (favExamples.includes(id)) {
-        favExamples = favExamples.filter(x => x !== id);
-        el.classList.remove('is-fav');
-    } else {
-        favExamples.push(id);
-        el.classList.add('is-fav');
-    }
-    localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
-    pushSync();
-    
-    const item = wordData[currentIndex];
-    renderExamples(item);
-}
-
-function deleteEx(id, el) {
-    deletedExamples.push(id);
-    localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
-    el.remove();
-    pushSync();
-}
-
-async function pushSync() {
-    clearTimeout(syncTimeout);
-    syncTimeout = setTimeout(async () => {
-        showSync('syncing', 'Syncing...');
-        try {
-            await fetch(BIN_URL, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
-                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples })
-            });
-            showSync('synced', 'Synced');
-        } catch { }
-    }, 1000);
-}
-
-function playAudioFromEvent(e) {
-    if (e) e.stopPropagation();
-    playAudioByIndex(currentIndex);
-}
-
-function playAudioByIndex(idx) {
-    if (idx < 0 || idx >= wordData.length) return;
-    const wordNum = idx + 1;
-    const wordText = wordData[idx].WORD;
-    let folder = "audio-file";
-    if (wordNum >= 1019 && wordNum <= 2026) folder = "audio-file-2";
-    else if (wordNum >= 2027 && wordNum <= 3034) folder = "audio-file-3";
-    else if (wordNum >= 3035) folder = "audio-file-4";
-    new Audio(`${folder}/${wordText}.mp3`).play().catch(() => {});
-}
-
-function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
-function nextCard() { currentIndex = (currentIndex + 1) % wordData.length; updateCard(); }
-function prevCard() { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; updateCard(); }
-function shuffleCard() { currentIndex = Math.floor(Math.random() * wordData.length); updateCard(); }
-function jumpPrompt() {
-    const val = prompt(`Jump to #:`);
-    if (val) {
-        const num = parseInt(val);
-        if (!isNaN(num)) { currentIndex = Math.max(0, Math.min(wordData.length - 1, num - 1)); updateCard(); }
-    }
-}
-
-function resetDeleted() {
-    if (confirm("Restore all deleted examples? (Favorites will be kept)")) {
-        deletedExamples = [];
-        localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
-        updateCard(); 
-        pushSync();
-    }
-}
-</script>
-</body>
-</html>
+        // Long press logic for Word/IPA headers
+        let headerPressTimer;
