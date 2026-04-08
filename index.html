@@ -1,547 +1,1333 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    
+
     <meta name="apple-mobile-web-app-capable" content="yes">
+
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <meta name="apple-mobile-web-app-title" content="WordFlow Pro">
+
+    
+
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+
 
     <title>WordFlow Pro</title>
 
+
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
+
+
     <style>
+
         :root {
-            --primary: #0A84FF; --bg: #000000; --card-bg: #1C1C1E; 
-            --text-main: #FFFFFF; --text-secondary: #AEAEB2;
-            --delete-red: #FF453A; --success-green: #30D158;
-            --fav-indicator: #2C2C2E; --example-bg: #2C2C2E;
+
+            --primary: #0A84FF; 
+
+            --bg: #000000;      
+
+            --card-bg: #1C1C1E; 
+
+            --text-main: #FFFFFF; 
+
+            --text-secondary: #AEAEB2;
+
+            --delete-red: #FF453A;
+
+            --success-green: #30D158;
+
+            --fav-indicator: #2C2C2E; 
+
+            --example-bg: #2C2C2E;
+
             --safe-top: env(safe-area-inset-top);
+
             --safe-bottom: env(safe-area-inset-bottom);
+
         }
+
+
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 
+
+
         body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: var(--bg); color: var(--text-main);
+
+            margin: 0; padding: 0;
+
+            width: 100%; height: 100%;
+
+            background-color: var(--bg);
+
+            color: var(--text-main);
+
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            display: flex; flex-direction: column; overflow: hidden; overscroll-behavior-y: none;
+
+            display: flex; flex-direction: column;
+
+            overflow: hidden;
+
+            overscroll-behavior-y: none;
+
         }
+
+
 
         #loading-screen {
+
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+
             background: var(--bg); z-index: 3000;
+
             display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+
         }
+
+
 
         #sync-status {
+
             position: fixed; top: calc(var(--safe-top) + 8px); left: 50%;
+
             transform: translateX(-50%); font-size: 0.75rem; font-weight: 600;
+
             padding: 4px 12px; border-radius: 20px; z-index: 4000;
+
             opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+
         }
+
         #sync-status.show { opacity: 1; }
+
         #sync-status.syncing { background: #3a3a3c; color: var(--text-secondary); }
+
         #sync-status.synced  { background: #1c3a1c; color: var(--success-green); }
 
-        header { padding: calc(var(--safe-top) + 15px) 20px 10px; display: flex; justify-content: space-between; align-items: center; }
+
+
+        header {
+
+            padding: calc(var(--safe-top) + 15px) 20px 10px;
+
+            display: flex; justify-content: space-between; align-items: center;
+
+        }
+
+
+
         .header-btn { font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 12px; cursor: pointer; background: #2C2C2E; color: var(--text-main); border: 1px solid #3a3a3c; }
+
         .fav-btn { font-size: 1.2rem; padding: 4px 14px; line-height: 1; }
+
         .counter { font-size: 0.85rem; font-weight: 700; color: var(--text-main); background: #3a3a3c; padding: 6px 14px; border-radius: 20px; }
 
+
+
         #fav-overlay, #known-overlay, #settings-overlay, #quiz-overlay {
+
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+
             background: var(--bg); z-index: 2000; display: none; flex-direction: column;
+
         }
+
+
 
         .list-container { flex: 1; overflow-y: auto; padding: 10px 20px 20px; -webkit-overflow-scrolling: touch; }
+
+
+
         .settings-list { margin-top: 20px; }
-        .settings-item { background: var(--card-bg); padding: 18px; margin-bottom: 10px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+
+        .settings-item {
+
+            background: var(--card-bg); padding: 18px; margin-bottom: 10px; border-radius: 15px;
+
+            display: flex; justify-content: space-between; align-items: center; font-weight: 600;
+
+        }
+
         .settings-item:active { background: #2c2c2e; }
+
         .chevron { color: var(--text-secondary); font-size: 1.2rem; }
 
+
+
+        /* Quiz Styling Fixed for iPhone */
+
         .quiz-container { padding: 15px; display: flex; flex-direction: column; gap: 15px; flex: 1; justify-content: flex-start; margin-top: 10px; }
-        .quiz-sentence { font-size: 1.15rem; font-weight: 500; line-height: 1.6; color: var(--text-main); text-align: left; background: var(--card-bg); padding: 25px 20px; border-radius: 20px; border: 1px solid #38383a; min-height: 140px; display: block; word-wrap: break-word; overflow-wrap: break-word; }
-        .quiz-sentence b { color: var(--primary); font-weight: 800; letter-spacing: 1px; white-space: nowrap; }
+
+        
+
+        .quiz-sentence { 
+
+            font-size: 1.15rem; 
+
+            font-weight: 500; 
+
+            line-height: 1.6; 
+
+            color: var(--text-main); 
+
+            text-align: left; /* Better for reading sentences */
+
+            background: var(--card-bg); 
+
+            padding: 25px 20px; 
+
+            border-radius: 20px; 
+
+            border: 1px solid #38383a; 
+
+            min-height: 140px; 
+
+            display: block; /* Changed from flex to block for natural wrapping */
+
+            word-wrap: break-word;
+
+            overflow-wrap: break-word;
+
+        }
+
+        
+
+        .quiz-sentence b { 
+
+            color: var(--primary); 
+
+            font-weight: 800; 
+
+            letter-spacing: 1px;
+
+            white-space: nowrap; /* Keep underscores together */
+
+        }
+
+
+
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
         .option-btn { background: #2C2C2E; color: white; border: 1px solid #3a3a3c; padding: 16px 8px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; text-align: center; transition: background 0.2s ease; overflow: hidden; text-overflow: ellipsis; }
+
         .option-btn.correct { background: var(--success-green); border-color: var(--success-green); color: black; }
+
         .option-btn.wrong { background: var(--delete-red); border-color: var(--delete-red); }
-        .quiz-header-info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; align-items: center; background: #1C1C1E; padding: 12px 8px; border-radius: 15px; margin-bottom: 5px; border: 1px solid #38383a; }
+
+        
+
+        .quiz-header-info { display: flex; justify-content: space-between; align-items: center; background: #1C1C1E; padding: 12px 18px; border-radius: 15px; margin-bottom: 5px; border: 1px solid #38383a; }
+
         .quiz-stat { display: flex; flex-direction: column; align-items: center; }
-        .quiz-stat-val { font-size: 0.95rem; font-weight: 800; color: var(--text-main); }
-        .quiz-stat-label { font-size: 0.55rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
+
+        .quiz-stat-val { font-size: 1rem; font-weight: 800; color: var(--text-main); }
+
+        .quiz-stat-label { font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+
+
+        /* Rest of Styles */
 
         .fav-group-header { margin: 20px 0 12px 5px; display: flex; align-items: baseline; gap: 10px; }
+
         .fav-group-title { color: var(--delete-red); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+
         .fav-group-ipa { color: var(--text-secondary); font-size: 0.85rem; font-family: monospace; }
 
+
+
         .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
+
         .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 20px; }
+
         .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; }
+
         .card.is-flipped { transform: rotateY(180deg); }
-        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 35px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); background: var(--card-bg); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #38383a; }
+
+
+
+        .card-face {
+
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+
+            border-radius: 35px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+
+            background: var(--card-bg); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #38383a;
+
+        }
+
+
+
         .card-front { justify-content: flex-start; align-items: center; text-align: center; padding: 60px 30px; }
+
         .word-display { font-size: 3.5rem; font-weight: 800; color: var(--text-main); margin: 0; }
+
         .ipa-sub { font-size: 1.2rem; color: var(--text-secondary); margin-top: 15px; font-family: monospace; display: flex; flex-direction: column; gap: 8px; }
 
-        .mastery-controls { position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; align-items: center; z-index: 100; transition: opacity 0.3s ease; }
+
+
+        .mastery-controls {
+
+            position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%);
+
+            display: flex; gap: 20px; align-items: center; z-index: 100; transition: opacity 0.3s ease;
+
+        }
+
         .card.is-flipped .mastery-controls { opacity: 0; pointer-events: none; }
-        .mastery-btn { background: #2C2C2E; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; border: 1px solid #3a3a3c; box-shadow: 0 6px 15px rgba(0,0,0,0.4); }
+
+
+
+        .mastery-btn {
+
+            background: #2C2C2E; width: 60px; height: 60px; border-radius: 50%;
+
+            display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
+
+            border: 1px solid #3a3a3c; box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+
+        }
+
         .mastery-btn.known { color: var(--success-green); }
-        .flip-hint { position: absolute; bottom: 40px; font-size: 1.15rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 20px; width: 100%; text-align: center; }
+
+        .mastery-btn.quiz { color: #FFD60A; }
+
+
+
+        .flip-hint { position: absolute; bottom: 40px; font-size: 1.15rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 20px; }
+
+
 
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
+
         .back-header { padding: 25px 25px 15px; border-bottom: 1px solid #38383a; flex-shrink: 0; position: relative; }
+
         .back-top-row { display: flex; align-items: center; justify-content: flex-start; gap: 12px; margin-bottom: 12px; position: relative; }
+
         .back-word { font-size: 1.6rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.5px; margin: 0; z-index: 5; }
+
         .more-btn { background: var(--primary); color: white; font-size: 0.65rem; font-weight: 800; padding: 6px 12px; border-radius: 12px; text-transform: uppercase; z-index: 5; }
+
         .meaning-container { display: flex; align-items: flex-start; justify-content: space-between; min-height: 60px; }
+
         .meaning-text { flex: 1; font-size: 1.2rem; font-weight: 700; color: var(--text-main); line-height: 1.4; margin: 0; z-index: 5; }
+
         .flip-zone-right { position: absolute; top: 0; right: 0; width: 40%; height: 100%; z-index: 2; }
 
+
+
         #example-list { flex-grow: 1; overflow-y: auto; padding: 15px 25px 30px; -webkit-overflow-scrolling: touch; }
+
         .example-item { background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; }
-        .example-item.is-fav { border-left: 4px solid var(--primary); }
+
+        .example-item.is-fav { border-left: 4px solid var(--fav-indicator); }
+
+
 
         .controls { padding: 20px 20px calc(var(--safe-bottom) + 30px); margin-top: 10px; display: flex; gap: 10px; width: 100%; max-width: 420px; }
+
         .nav-btn { flex: 1; height: 60px; border-radius: 18px; border: none; background: #2C2C2E; color: white; font-weight: 700; font-size: 0.9rem; }
+
         .nav-btn.primary { background: var(--primary); }
 
+
+
         .known-item { padding: 18px; border-bottom: 1px solid #1c1c1e; display: flex; justify-content: space-between; align-items: center; }
+
         .known-word { font-weight: 700; font-size: 1.1rem; }
+
         .known-ipa { color: var(--text-secondary); font-size: 0.9rem; font-family: monospace; }
+
     </style>
+
 </head>
+
 <body>
 
+
+
 <div id="sync-status"></div>
+
 <div id="loading-screen"><p>Loading...</p></div>
 
+
+
 <div id="settings-overlay">
+
     <header>
+
         <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
+
         <div style="font-weight:800;">Settings</div>
+
         <div style="width: 60px;"></div>
+
     </header>
+
     <div class="list-container">
+
         <div class="settings-list">
-            <div class="settings-item" onclick="openKnown()"><span>Mastered Words</span><span class="chevron">›</span></div>
-            <div class="settings-item" onclick="resetDeleted()"><span style="color:var(--delete-red);">Restore Deleted Examples</span><span class="chevron">›</span></div>
+
+            <div class="settings-item" onclick="openKnown()">
+
+                <span>Mastered Words</span>
+
+                <span class="chevron">›</span>
+
+            </div>
+
+            <div class="settings-item" onclick="resetDeleted()">
+
+                <span style="color:var(--delete-red);">Restore Deleted Examples</span>
+
+                <span class="chevron">›</span>
+
+            </div>
+
         </div>
+
     </div>
+
 </div>
+
+
 
 <div id="quiz-overlay">
+
     <header>
+
         <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
+
         <div style="font-weight:800;">Quiz Mode</div>
+
         <div style="width: 60px;"></div>
+
     </header>
+
     <div class="quiz-container">
+
         <div class="quiz-header-info">
-            <div class="quiz-stat"><span id="quiz-score-display" class="quiz-stat-val">0</span><span class="quiz-stat-label">Score</span></div>
-            <div class="quiz-stat"><span id="quiz-wrong-display" class="quiz-stat-val" style="color:var(--delete-red);">0</span><span class="quiz-stat-label">Got Wrong</span></div>
-            <div class="quiz-stat"><span id="quiz-total-display" class="quiz-stat-val">0</span><span class="quiz-stat-label">Total Favs</span></div>
-            <div class="quiz-stat"><span id="quiz-remaining-display" class="quiz-stat-val">0</span><span class="quiz-stat-label">Left</span></div>
+
+            <div class="quiz-stat">
+
+                <span id="quiz-score-display" class="quiz-stat-val">0</span>
+
+                <span class="quiz-stat-label">Score</span>
+
+            </div>
+
+            <div class="quiz-stat">
+
+                <span id="quiz-wrong-display" class="quiz-stat-val" style="color:var(--delete-red);">0</span>
+
+                <span class="quiz-stat-label">Got Wrong</span>
+
+            </div>
+
+            <div class="quiz-stat">
+
+                <span id="quiz-total-display" class="quiz-stat-val">0</span>
+
+                <span class="quiz-stat-label">Total Favs</span>
+
+            </div>
+
+            <div class="quiz-stat">
+
+                <span id="quiz-remaining-display" class="quiz-stat-val">0</span>
+
+                <span class="quiz-stat-label">Left</span>
+
+            </div>
+
         </div>
+
         <div id="quiz-question" class="quiz-sentence">Select a favorite...</div>
+
         <div id="quiz-options" class="options-grid"></div>
+
     </div>
+
 </div>
+
+
 
 <div id="fav-overlay">
+
     <header>
+
         <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
+
         <div style="font-weight:800;">Favorites</div>
+
         <div class="header-btn fav-btn" onclick="startQuiz(event)">💡</div>
+
     </header>
+
     <div id="fav-list" class="list-container"></div>
+
 </div>
+
+
 
 <div id="known-overlay">
+
     <header>
+
         <div onclick="openSettings()" class="header-btn" style="color:var(--primary);">← Settings</div>
+
         <div style="font-weight:800;">Mastered</div>
+
         <div style="width: 60px;"></div>
+
     </header>
+
     <div id="known-list" class="list-container"></div>
+
 </div>
+
+
 
 <header id="app-header" style="display:none;">
+
     <div class="header-btn" onclick="openSettings()">⚙️</div>
+
     <div class="header-btn fav-btn" onclick="openFavs()">★</div>
+
     <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
+
 </header>
 
+
+
 <div class="app-container" id="app">
+
     <div class="scene">
+
         <div class="card" id="card">
+
             <div class="card-face card-front">
+
                 <div class="word-container" onclick="playAudioFromEvent(event)">
+
                     <h1 id="f-word" class="word-display">...</h1>
-                    <div class="ipa-sub"><span id="f-ipa"></span><span id="f-phonetic"></span></div>
-                </div>
-                <div class="flip-hint" onclick="flipCard()">Tap to Flip</div>
-            </div>
-            <div class="mastery-controls">
-                <div class="mastery-btn known" onclick="markAsKnown(event)">👍</div>
-            </div>
-            <div class="card-face card-back">
-                <div class="back-header">
-                    <div class="flip-zone-right" onclick="flipCard()"></div>
-                    <div class="back-top-row">
-                        <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
-                        <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
+
+                    <div class="ipa-sub">
+
+                        <span id="f-ipa"></span>
+
+                        <span id="f-phonetic"></span>
+
                     </div>
-                    <div class="meaning-container"><p id="b-meaning" class="meaning-text">...</p></div>
+
                 </div>
-                <div id="example-list"></div>
+
+                <div class="flip-hint" onclick="flipCard()">Tap to Flip</div>
+
             </div>
+
+            
+
+            <div class="mastery-controls">
+
+                <div class="mastery-btn known" onclick="markAsKnown(event)">👍</div>
+
+            </div>
+
+
+
+            <div class="card-face card-back">
+
+                <div class="back-header">
+
+                    <div class="flip-zone-right" onclick="flipCard()"></div>
+
+                    <div class="back-top-row">
+
+                        <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
+
+                        <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
+
+                    </div>
+
+                    <div class="meaning-container">
+
+                        <p id="b-meaning" class="meaning-text">...</p>
+
+                    </div>
+
+                </div>
+
+                <div id="example-list"></div>
+
+            </div>
+
         </div>
+
     </div>
+
+
+
     <div class="controls">
+
         <button class="nav-btn" onclick="prevCard()">Back</button>
+
         <button class="nav-btn" onclick="shuffleCard()">Shuffle</button>
+
         <button class="nav-btn primary" onclick="nextCard()">Next</button>
+
     </div>
+
 </div>
 
+
+
 <script>
+
 const BIN_ID  = "69d3dacfaaba882197cd5a0e";
+
 const API_KEY = "$2a$10$2XIWmqUVHyv39zmLplK6YOCLf07sb3WyJIxxleZUrKRb61lugMCu6";
+
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
+
+
 let wordData = [];
+
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
+
 let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
+
 let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
 
+
+
 let quizScore = 0;
-let quizWrongCount = 0;
+
+let quizWrong = 0;
+
 let currentQuizCorrect = "";
+
 let quizPool = []; 
+
 let isQuizLocked = false;
 
+
+
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
+
 let availableMeanings = [];
+
 let currentMeaningIdx = 0;
+
 let syncTimeout = null;
 
+
+
 function showSync(state, message) {
+
     const el = document.getElementById('sync-status');
-    el.className = `show ${state}`; el.textContent = message;
+
+    el.className = `show ${state}`;
+
+    el.textContent = message;
+
     setTimeout(() => { el.className = ''; }, 2000);
+
 }
+
+
 
 window.onload = () => {
+
     Papa.parse("words.csv", {
+
         download: true, header: true,
+
         complete: async function(results) {
+
             wordData = results.data.filter(row => row.WORD);
+
             fetch(BIN_URL + "/latest", { headers: { "X-Master-Key": API_KEY } })
+
                 .then(r => r.json())
+
                 .then(d => {
+
                     deletedExamples = Array.from(new Set([...(d.record?.deleted || []), ...deletedExamples]));
+
                     favExamples = Array.from(new Set([...(d.record?.favs || []), ...favExamples]));
+
                     knownWords = Array.from(new Set([...(d.record?.known || []), ...knownWords]));
+
                     saveAndSync(false);
+
                 }).catch(() => {});
+
             document.getElementById('loading-screen').style.display = 'none';
+
             document.getElementById('app').style.display = 'flex';
+
             document.getElementById('app-header').style.display = 'flex';
+
             if(knownWords.includes(wordData[currentIndex].WORD.trim())) nextCard();
+
             else updateCard();
+
         }
+
     });
+
 };
 
+
+
 function updateCard() {
+
     const item = wordData[currentIndex];
+
     const meaningEl = document.getElementById('b-meaning');
+
     availableMeanings = [];
+
     if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING.trim());
+
     for(let i=1; i<=10; i++) {
+
         let val = item[`Meaning${i}`];
+
         if(val && val.trim()) availableMeanings.push(val.trim());
+
     }
+
     currentMeaningIdx = 0;
+
     document.getElementById('card').classList.remove('is-flipped');
+
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
+
     localStorage.setItem('wf_index_v6', currentIndex);
+
     document.getElementById('f-word').textContent = item.WORD;
+
     document.getElementById('f-ipa').textContent = item.IPA;
+
     document.getElementById('f-phonetic').textContent = item.PHONETIC;
+
     document.getElementById('b-word').textContent = item.WORD;
+
     meaningEl.innerText = availableMeanings[0] || "";
+
     const moreBtn = document.getElementById('more-btn');
+
     moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none';
+
     if(moreBtn.style.display === 'block') moreBtn.textContent = `More 1/${availableMeanings.length}`;
+
     renderExamples(item);
+
 }
+
+
 
 // --- QUIZ LOGIC ---
+
 function startQuiz(e) {
+
     if(e) e.stopPropagation();
-    if (favExamples.length < 1) { alert("Add some favorites first!"); return; }
-    quizPool = [...favExamples]; 
+
+    if (favExamples.length < 1) {
+
+        alert("Add some favorites first!");
+
+        return;
+
+    }
+
+    quizPool = [...favExamples];
+
     quizScore = 0;
-    quizWrongCount = 0;
-    document.getElementById('quiz-score-display').textContent = "0";
-    document.getElementById('quiz-wrong-display').textContent = "0";
+
+    quizWrong = 0;
+
     document.getElementById('fav-overlay').style.display = 'none';
+
     document.getElementById('quiz-overlay').style.display = 'flex';
+
     document.getElementById('quiz-total-display').textContent = favExamples.length;
+
     nextQuizQuestion();
+
 }
+
+
 
 function nextQuizQuestion() {
-    if (quizPool.length === 0) { alert("Well done! Restarting..."); quizPool = [...favExamples]; }
-    isQuizLocked = false;
-    document.getElementById('quiz-remaining-display').textContent = quizPool.length;
-    const poolIdx = Math.floor(Math.random() * quizPool.length);
-    const randomId = quizPool[poolIdx];
-    quizPool.splice(poolIdx, 1); 
-    const [word, sentence] = randomId.split('|');
-    currentQuizCorrect = word.trim();
-    const regex = new RegExp(`\\b${currentQuizCorrect}\\b`, 'gi');
-    const maskedSentence = sentence.replace(regex, "<b>_________</b>");
-    document.getElementById('quiz-question').innerHTML = maskedSentence;
-    let options = [currentQuizCorrect];
-    while(options.length < 6) {
-        let randWord = wordData[Math.floor(Math.random() * wordData.length)].WORD.trim();
-        if(!options.includes(randWord)) options.push(randWord);
+
+    if (quizPool.length === 0) {
+
+        alert("Well done! Restarting...");
+
+        quizPool = [...favExamples];
+
     }
+
+
+
+    isQuizLocked = false;
+
+    document.getElementById('quiz-remaining-display').textContent = quizPool.length;
+
+    
+
+    const poolIdx = Math.floor(Math.random() * quizPool.length);
+
+    const randomId = quizPool[poolIdx];
+
+    quizPool.splice(poolIdx, 1); 
+
+
+
+    const [word, sentence] = randomId.split('|');
+
+    currentQuizCorrect = word.trim();
+
+
+
+    const regex = new RegExp(`\\b${currentQuizCorrect}\\b`, 'gi');
+
+    // Using simple underscores
+
+    const maskedSentence = sentence.replace(regex, "<b>_________</b>");
+
+    document.getElementById('quiz-question').innerHTML = maskedSentence;
+
+
+
+    let options = [currentQuizCorrect];
+
+    while(options.length < 6) {
+
+        let randWord = wordData[Math.floor(Math.random() * wordData.length)].WORD.trim();
+
+        if(!options.includes(randWord)) options.push(randWord);
+
+    }
+
     options.sort(() => Math.random() - 0.5);
+
+
+
     const grid = document.getElementById('quiz-options');
+
     grid.innerHTML = "";
+
     options.forEach(opt => {
+
         const btn = document.createElement('div');
-        btn.className = 'option-btn'; btn.textContent = opt;
+
+        btn.className = 'option-btn';
+
+        btn.textContent = opt;
+
         btn.onclick = () => handleQuizTap(opt, btn);
+
         grid.appendChild(btn);
+
     });
+
 }
+
+
 
 function handleQuizTap(selectedWord, btn) {
+
     if (isQuizLocked) return;
+
     isQuizLocked = true;
+
+
+
     const btns = document.querySelectorAll('.option-btn');
+
     let correctBtn;
+
     btns.forEach(b => { if(b.textContent === currentQuizCorrect) correctBtn = b; });
+
+
+
     if(selectedWord === currentQuizCorrect) {
+
         btn.classList.add('correct');
+
         quizScore += 1;
+
     } else {
+
         btn.classList.add('wrong');
+
         correctBtn.classList.add('correct');
+
         quizScore = Math.max(0, quizScore - 1);
-        quizWrongCount += 1;
+
+        quizWrong += 1;
+
     }
+
+
+
     document.getElementById('quiz-score-display').textContent = quizScore;
-    document.getElementById('quiz-wrong-display').textContent = quizWrongCount;
+
+    document.getElementById('quiz-wrong-display').textContent = quizWrong;
+
     setTimeout(nextQuizQuestion, 1200);
+
 }
+
+
 
 // --- APP CORE ---
+
 function markAsKnown(e) {
+
     if(e) e.stopPropagation();
+
     const word = wordData[currentIndex].WORD.trim();
+
     if(!knownWords.includes(word)) {
-        knownWords.push(word); saveAndSync(); nextCard();
+
+        knownWords.push(word);
+
+        saveAndSync();
+
+        nextCard();
+
     }
+
 }
+
+
 
 function renderExamples(item) {
+
     const list = document.getElementById('example-list');
+
     list.innerHTML = "";
+
     const cleanWord = item.WORD.trim();
+
     const rows = [];
+
     for (let i = 1; i <= 50; i++) {
+
         const text = item[i.toString()];
+
         if (text && text.trim().length > 1) {
+
             const exId = `${cleanWord}|${text.trim()}`;
+
             if (deletedExamples.includes(exId)) continue;
+
             rows.push({ text: text.trim(), id: exId, isFav: favExamples.includes(exId) });
+
         }
+
     }
+
     rows.sort((a,b) => b.isFav - a.isFav).forEach((ex, idx) => {
+
         const div = document.createElement('div');
+
         div.className = `example-item ${ex.isFav ? 'is-fav' : ''}`;
+
         div.innerHTML = `<strong>${idx+1}.</strong> ${ex.text}`;
+
         let lastTap = 0;
+
         div.addEventListener('touchend', (e) => {
+
             if (new Date().getTime() - lastTap < 300) toggleFav(ex.id, div);
+
             lastTap = new Date().getTime();
+
         });
+
         let pressTimer;
+
         div.addEventListener('touchstart', (e) => {
+
             if (e.touches[0].clientX < window.innerWidth / 2) {
+
                 pressTimer = setTimeout(() => { if(confirm("Delete?")) deleteEx(ex.id, div); }, 750);
+
             }
+
         }, {passive: true});
+
         div.addEventListener('touchend', () => clearTimeout(pressTimer));
+
         list.appendChild(div);
+
     });
+
 }
 
-function openSettings(e) { if(e) e.stopPropagation(); document.getElementById('known-overlay').style.display = 'none'; document.getElementById('settings-overlay').style.display = 'flex'; }
-function openKnown() {
-    const list = document.getElementById('known-list');
-    list.innerHTML = "";
-    document.getElementById('settings-overlay').style.display = 'none';
-    document.getElementById('known-overlay').style.display = 'flex';
-    if (knownWords.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:gray; margin-top:50px;">No words mastered.</p>`;
-        return;
-    }
-    knownWords.slice().reverse().forEach(word => {
-        const masterItem = wordData.find(w => w.WORD.trim() === word);
-        const ipaText = masterItem ? masterItem.IPA : '';
-        const div = document.createElement('div');
-        div.className = 'known-item';
-        div.innerHTML = `<span class="known-word">${word}</span><span class="known-ipa">${ipaText}</span>`;
-        let pressTimer;
-        div.addEventListener('touchstart', (e) => {
-            if (e.touches[0].clientX < window.innerWidth / 2) {
-                pressTimer = setTimeout(() => {
-                    if(confirm(`Restore "${word}"?`)) {
-                        knownWords = knownWords.filter(w => w !== word);
-                        saveAndSync(); openKnown();
-                    }
-                }, 750);
-            }
-        }, {passive: true});
-        div.addEventListener('touchend', () => clearTimeout(pressTimer));
-        list.appendChild(div);
-    });
+
+
+function openSettings(e) {
+
+    if(e) e.stopPropagation();
+
+    document.getElementById('known-overlay').style.display = 'none';
+
+    document.getElementById('settings-overlay').style.display = 'flex';
+
 }
+
+
+
+function openKnown() {
+
+    const list = document.getElementById('known-list');
+
+    list.innerHTML = "";
+
+    document.getElementById('settings-overlay').style.display = 'none';
+
+    document.getElementById('known-overlay').style.display = 'flex';
+
+    if (knownWords.length === 0) {
+
+        list.innerHTML = `<p style="text-align:center; color:gray; margin-top:50px;">No words mastered.</p>`;
+
+        return;
+
+    }
+
+    knownWords.slice().reverse().forEach(word => {
+
+        const masterItem = wordData.find(w => w.WORD.trim() === word);
+
+        const ipaText = masterItem ? masterItem.IPA : '';
+
+        const div = document.createElement('div');
+
+        div.className = 'known-item';
+
+        div.innerHTML = `<span class="known-word">${word}</span><span class="known-ipa">${ipaText}</span>`;
+
+        let pressTimer;
+
+        div.addEventListener('touchstart', (e) => {
+
+            if (e.touches[0].clientX < window.innerWidth / 2) {
+
+                pressTimer = setTimeout(() => {
+
+                    if(confirm(`Restore "${word}"?`)) {
+
+                        knownWords = knownWords.filter(w => w !== word);
+
+                        saveAndSync();
+
+                        openKnown();
+
+                    }
+
+                }, 750);
+
+            }
+
+        }, {passive: true});
+
+        div.addEventListener('touchend', () => clearTimeout(pressTimer));
+
+        list.appendChild(div);
+
+    });
+
+}
+
+
 
 function openFavs() {
+
     const list = document.getElementById('fav-list');
+
     list.innerHTML = "";
+
     document.getElementById('fav-overlay').style.display = 'flex';
+
     if (favExamples.length === 0) {
+
         list.innerHTML = `<p style="text-align:center; color:var(--text-secondary); margin-top:50px;">No favorites.</p>`;
+
         return;
+
     }
+
     const organized = {};
+
     favExamples.forEach(id => {
-        const parts = id.split('|'); if (parts.length < 2) return;
-        const word = parts[0].trim(); const text = parts[1].trim();
+
+        const parts = id.split('|');
+
+        if (parts.length < 2) return;
+
+        const word = parts[0].trim();
+
+        const text = parts[1].trim();
+
         if (!organized[word]) {
+
             const master = wordData.find(w => w.WORD.trim().toLowerCase() === word.toLowerCase());
+
             organized[word] = { index: wordData.indexOf(master), ipa: master ? master.IPA : '', items: [] };
+
         }
+
         organized[word].items.push({id, text});
+
     });
+
     Object.keys(organized).forEach(word => {
+
         const groupHeader = document.createElement('div');
+
         groupHeader.className = 'fav-group-header';
+
         const title = document.createElement('div');
-        title.className = 'fav-group-title'; title.textContent = word;
+
+        title.className = 'fav-group-title';
+
+        title.textContent = word;
+
         const ipaSpan = document.createElement('div');
-        ipaSpan.className = 'fav-group-ipa'; ipaSpan.textContent = organized[word].ipa;
+
+        ipaSpan.className = 'fav-group-ipa';
+
+        ipaSpan.textContent = organized[word].ipa;
+
         let headerTimer;
+
         title.addEventListener('touchstart', () => {
+
             headerTimer = setTimeout(() => {
+
                 const idx = organized[word].index;
+
                 if (idx !== -1) { currentIndex = idx; closeOverlays(); setTimeout(() => document.getElementById('card').classList.add('is-flipped'), 50); }
+
             }, 750);
+
         }, {passive: true});
+
         title.addEventListener('touchend', () => clearTimeout(headerTimer));
+
         ipaSpan.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
-        groupHeader.appendChild(title); groupHeader.appendChild(ipaSpan);
+
+        groupHeader.appendChild(title);
+
+        groupHeader.appendChild(ipaSpan);
+
         list.appendChild(groupHeader);
+
         organized[word].items.forEach(itemObj => {
+
             const item = document.createElement('div');
-            item.className = 'example-item is-fav'; item.textContent = itemObj.text;
+
+            item.className = 'example-item is-fav';
+
+            item.textContent = itemObj.text;
+
             let exTimer;
+
             item.addEventListener('touchstart', (e) => {
+
                 if (e.touches[0].clientX < window.innerWidth / 2) {
-                    exTimer = setTimeout(() => { if (confirm("Unfavorite?")) { favExamples = favExamples.filter(x => x !== itemObj.id); saveAndSync(); item.remove(); } }, 750);
+
+                    exTimer = setTimeout(() => {
+
+                        if (confirm("Unfavorite?")) { favExamples = favExamples.filter(x => x !== itemObj.id); saveAndSync(); item.remove(); }
+
+                    }, 750);
+
                 }
+
             }, {passive: true});
+
             item.addEventListener('touchend', () => clearTimeout(exTimer));
+
             list.appendChild(item);
+
         });
+
     });
+
 }
+
+
 
 function closeOverlays() { 
+
     document.getElementById('fav-overlay').style.display = 'none'; 
+
     document.getElementById('known-overlay').style.display = 'none'; 
+
     document.getElementById('settings-overlay').style.display = 'none'; 
+
     document.getElementById('quiz-overlay').style.display = 'none';
+
     updateCard(); 
+
 }
 
+
+
 function resetDeleted() { if(confirm("Restore all?")) { deletedExamples = []; saveAndSync(); alert("Restored!"); } }
+
 function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
+
 function playAudioFromEvent(e) { if(e) e.stopPropagation(); playAudioByIndex(currentIndex); }
+
 function playAudioByIndex(idx) {
+
     if (idx < 0 || idx >= wordData.length) return;
-    const word = wordData[idx].WORD; const num = idx + 1;
+
+    const word = wordData[idx].WORD;
+
+    const num = idx + 1;
+
     let f = "audio-file";
+
     if (num >= 1019 && num <= 2026) f = "audio-file-2";
+
     else if (num >= 2027 && num <= 3034) f = "audio-file-3";
+
     else if (num >= 3035) f = "audio-file-4";
+
     new Audio(`${f}/${word}.mp3`).play().catch(()=>{});
+
 }
+
 function handleMoreClick(e) { 
+
     if(e) e.stopPropagation();
+
     currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
+
     document.getElementById('b-meaning').innerText = availableMeanings[currentMeaningIdx];
+
     document.getElementById('more-btn').textContent = `More ${currentMeaningIdx+1}/${availableMeanings.length}`;
+
 }
+
 function jumpPrompt() {
+
     const val = prompt(`Jump to #:`);
+
     if (val && !isNaN(val)) { currentIndex = Math.max(0, Math.min(wordData.length - 1, parseInt(val) - 1)); updateCard(); }
+
 }
+
 async function pushSync() {
+
     clearTimeout(syncTimeout);
+
     syncTimeout = setTimeout(async () => {
+
         showSync('syncing', 'Syncing...');
+
         try {
+
             await fetch(BIN_URL, {
+
                 method: "PUT",
+
                 headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
+
                 body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords })
+
             });
+
             showSync('synced', 'Synced');
+
         } catch {}
+
     }, 1000);
+
 }
+
 function saveAndSync(shouldPush = true) {
+
     localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
+
     localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
+
     localStorage.setItem('wf_known_words', JSON.stringify(knownWords));
+
     if(shouldPush) pushSync();
+
 }
+
 function toggleFav(id, el) {
+
     if (favExamples.includes(id)) favExamples = favExamples.filter(x => x !== id);
+
     else favExamples.push(id);
-    saveAndSync(); updateCard();
+
+    saveAndSync();
+
+    updateCard();
+
 }
+
 function deleteEx(id, el) { deletedExamples.push(id); saveAndSync(); el.remove(); }
+
 function prevCard() {
+
     let start = currentIndex;
+
     do { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
+
     updateCard();
+
 }
+
 function nextCard() {
+
     let start = currentIndex;
+
     do { currentIndex = (currentIndex + 1) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
+
     updateCard();
+
 }
+
 function shuffleCard() {
+
     let attempts = 0; let newIdx;
+
     do { newIdx = Math.floor(Math.random() * wordData.length); attempts++; } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
+
     currentIndex = newIdx; updateCard();
+
 }
+
 </script>
+
 </body>
+
 </html>
