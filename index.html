@@ -67,7 +67,7 @@
         .fav-btn { font-size: 1.2rem; padding: 4px 14px; line-height: 1; }
         .counter { font-size: 0.85rem; font-weight: 700; color: var(--text-main); background: #3a3a3c; padding: 6px 14px; border-radius: 20px; }
 
-        #fav-overlay, #known-overlay, #settings-overlay {
+        #fav-overlay, #known-overlay, #settings-overlay, #quiz-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 2000; display: none; flex-direction: column;
         }
@@ -81,6 +81,17 @@
         }
         .settings-item:active { background: #2c2c2e; }
         .chevron { color: var(--text-secondary); font-size: 1.2rem; }
+
+        /* Quiz Styling */
+        .quiz-container { padding: 20px; display: flex; flex-direction: column; gap: 20px; flex: 1; justify-content: center; }
+        .quiz-sentence { font-size: 1.4rem; font-weight: 600; line-height: 1.5; color: var(--text-main); text-align: center; background: var(--card-bg); padding: 30px 20px; border-radius: 25px; border: 1px solid #38383a; }
+        .quiz-sentence b { color: var(--primary); background: #2c2c2e; padding: 2px 10px; border-radius: 6px; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .option-btn { background: #2C2C2E; color: white; border: 1px solid #3a3a3c; padding: 18px 10px; border-radius: 15px; font-weight: 700; font-size: 1rem; text-align: center; }
+        .option-btn.selected { border-color: var(--primary); background: #003a70; }
+        .option-btn.correct { background: var(--success-green); border-color: var(--success-green); }
+        .option-btn.wrong { background: var(--delete-red); border-color: var(--delete-red); }
+        .quiz-score { font-size: 1.1rem; font-weight: 800; color: var(--primary); text-align: center; margin-bottom: 10px; }
 
         .fav-group-header { margin: 20px 0 12px 5px; display: flex; align-items: baseline; gap: 10px; }
         .fav-group-title { color: var(--delete-red); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
@@ -103,7 +114,7 @@
 
         .mastery-controls {
             position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 30px; align-items: center; z-index: 100; transition: opacity 0.3s ease;
+            display: flex; gap: 20px; align-items: center; z-index: 100; transition: opacity 0.3s ease;
         }
         .card.is-flipped .mastery-controls { opacity: 0; pointer-events: none; }
 
@@ -113,6 +124,7 @@
             border: 1px solid #3a3a3c; box-shadow: 0 6px 15px rgba(0,0,0,0.4);
         }
         .mastery-btn.known { color: var(--success-green); }
+        .mastery-btn.quiz { color: #FFD60A; }
 
         .flip-hint { position: absolute; bottom: 40px; font-size: 1.15rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 20px; }
 
@@ -163,6 +175,20 @@
     </div>
 </div>
 
+<div id="quiz-overlay">
+    <header>
+        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
+        <div style="font-weight:800;">Quiz Mode</div>
+        <div style="width: 60px;"></div>
+    </header>
+    <div class="quiz-container">
+        <div id="quiz-score-display" class="quiz-score">Score: 0</div>
+        <div id="quiz-question" class="quiz-sentence">Select a favorite to start...</div>
+        <div id="quiz-options" class="options-grid"></div>
+        <button id="quiz-confirm" class="nav-btn primary" onclick="checkQuizAnswer()" style="display:none; margin-top:10px;">Confirm</button>
+    </div>
+</div>
+
 <div id="fav-overlay">
     <header>
         <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
@@ -203,6 +229,7 @@
             
             <div class="mastery-controls">
                 <div class="mastery-btn known" onclick="markAsKnown(event)">👍</div>
+                <div class="mastery-btn quiz" onclick="startQuiz(event)">💡</div>
             </div>
 
             <div class="card-face card-back">
@@ -237,6 +264,10 @@ let wordData = [];
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
 let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
+let quizScore = 0;
+let currentQuizCorrect = "";
+let selectedQuizOption = null;
+
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
 let availableMeanings = [];
 let currentMeaningIdx = 0;
@@ -293,6 +324,82 @@ function updateCard() {
     moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none';
     if(moreBtn.style.display === 'block') moreBtn.textContent = `More 1/${availableMeanings.length}`;
     renderExamples(item);
+}
+
+// QUIZ LOGIC
+function startQuiz(e) {
+    if(e) e.stopPropagation();
+    if (favExamples.length < 1) {
+        alert("Add some examples to Favorites first to play the quiz!");
+        return;
+    }
+    document.getElementById('quiz-overlay').style.display = 'flex';
+    nextQuizQuestion();
+}
+
+function nextQuizQuestion() {
+    selectedQuizOption = null;
+    document.getElementById('quiz-confirm').style.display = 'none';
+    
+    // Pick random favorite
+    const randomId = favExamples[Math.floor(Math.random() * favExamples.length)];
+    const [word, sentence] = randomId.split('|');
+    currentQuizCorrect = word.trim();
+
+    // Mask the word in the sentence
+    const regex = new RegExp(`\\b${currentQuizCorrect}\\b`, 'gi');
+    const maskedSentence = sentence.replace(regex, "<b>_______</b>");
+    document.getElementById('quiz-question').innerHTML = maskedSentence;
+
+    // Generate 6 options
+    let options = [currentQuizCorrect];
+    while(options.length < 6) {
+        let randWord = wordData[Math.floor(Math.random() * wordData.length)].WORD.trim();
+        if(!options.includes(randWord)) options.push(randWord);
+    }
+    options.sort(() => Math.random() - 0.5);
+
+    // Render options
+    const grid = document.getElementById('quiz-options');
+    grid.innerHTML = "";
+    options.forEach(opt => {
+        const btn = document.createElement('div');
+        btn.className = 'option-btn';
+        btn.textContent = opt;
+        btn.onclick = () => selectQuizOption(opt, btn);
+        grid.appendChild(btn);
+    });
+}
+
+function selectQuizOption(word, btn) {
+    document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedQuizOption = word;
+    document.getElementById('quiz-confirm').style.display = 'block';
+}
+
+function checkQuizAnswer() {
+    const btns = document.querySelectorAll('.option-btn');
+    let correctBtn, selectedBtn;
+
+    btns.forEach(b => {
+        if(b.textContent === currentQuizCorrect) correctBtn = b;
+        if(b.textContent === selectedQuizOption) selectedBtn = b;
+    });
+
+    if(selectedQuizOption === currentQuizCorrect) {
+        selectedBtn.classList.add('correct');
+        quizScore += 10;
+    } else {
+        selectedBtn.classList.add('wrong');
+        correctBtn.classList.add('correct');
+        quizScore = Math.max(0, quizScore - 5);
+    }
+
+    document.getElementById('quiz-score-display').textContent = `Score: ${quizScore}`;
+    document.getElementById('quiz-confirm').style.display = 'none';
+    
+    setTimeout(nextQuizQuestion, 1500);
 }
 
 function markAsKnown(e) {
@@ -354,7 +461,6 @@ function openKnown() {
         return;
     }
     knownWords.slice().reverse().forEach(word => {
-        // Find the IPA for this word from the master wordData list
         const masterItem = wordData.find(w => w.WORD.trim() === word);
         const ipaText = masterItem ? masterItem.IPA : '';
 
@@ -444,6 +550,7 @@ function closeOverlays() {
     document.getElementById('fav-overlay').style.display = 'none'; 
     document.getElementById('known-overlay').style.display = 'none'; 
     document.getElementById('settings-overlay').style.display = 'none'; 
+    document.getElementById('quiz-overlay').style.display = 'none';
     updateCard(); 
 }
 
