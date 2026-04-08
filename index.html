@@ -218,6 +218,9 @@
 
 
 
+        .quiz-meaning { background: #1C1C1E; border: 1px solid #38383a; border-radius: 14px; padding: 14px 18px; font-size: 0.95rem; color: var(--text-secondary); font-style: italic; line-height: 1.5; }
+        .quiz-meaning span { color: var(--primary); font-weight: 700; font-style: normal; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 6px; }
+
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
         .option-btn { background: #2C2C2E; color: white; border: 1px solid #3a3a3c; padding: 16px 8px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; text-align: center; transition: background 0.2s ease; overflow: hidden; text-overflow: ellipsis; }
@@ -455,6 +458,8 @@
         </div>
 
         <div id="quiz-question" class="quiz-sentence">Select a favorite...</div>
+
+        <div id="quiz-meaning" class="quiz-meaning"><span>Meaning</span>—</div>
 
         <div id="quiz-options" class="options-grid"></div>
 
@@ -803,6 +808,10 @@ function nextQuizQuestion() {
     const [word, sentence] = randomId.split('|');
 
     currentQuizCorrect = word.trim();
+
+    const quizWordData = wordData.find(w => w.WORD.trim().toLowerCase() === currentQuizCorrect.toLowerCase());
+    const quizMeaning = quizWordData && quizWordData.MEANING && quizWordData.MEANING.trim() ? quizWordData.MEANING.trim() : '—';
+    document.getElementById('quiz-meaning').innerHTML = `<span>Meaning</span>${quizMeaning}`;
 
 
 
