@@ -748,6 +748,8 @@ function startQuiz(e) {
 
     quizPool = [...favExamples]; 
 
+    document.getElementById('fav-overlay').style.display = 'none';
+
     document.getElementById('quiz-overlay').style.display = 'flex';
 
     document.getElementById('quiz-total-display').textContent = favExamples.length;
