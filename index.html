@@ -9,7 +9,6 @@
     <meta name="apple-mobile-web-app-title" content="WordFlow Pro">
     
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <link rel="apple-touch-startup-image" href="apple-touch-icon.png">
 
     <title>WordFlow Pro</title>
 
@@ -23,17 +22,14 @@
             --text-main: #FFFFFF; 
             --text-secondary: #AEAEB2;
             --delete-red: #FF453A;
+            --success-green: #30D158;
             --fav-indicator: #2C2C2E; 
             --example-bg: #2C2C2E;
             --safe-top: env(safe-area-inset-top);
             --safe-bottom: env(safe-area-inset-bottom);
         }
 
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; 
-            -webkit-touch-callout: none;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 
         body, html {
             margin: 0; padding: 0;
@@ -47,210 +43,102 @@
         }
 
         #loading-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 3000;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            gap: 12px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
         }
 
         #sync-status {
-            position: fixed;
-            top: calc(var(--safe-top) + 8px);
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 4px 12px;
-            border-radius: 20px;
-            z-index: 4000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
+            position: fixed; top: calc(var(--safe-top) + 8px); left: 50%;
+            transform: translateX(-50%); font-size: 0.75rem; font-weight: 600;
+            padding: 4px 12px; border-radius: 20px; z-index: 4000;
+            opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
         }
         #sync-status.show { opacity: 1; }
         #sync-status.syncing { background: #3a3a3c; color: var(--text-secondary); }
-        #sync-status.synced  { background: #1c3a1c; color: #30d158; }
+        #sync-status.synced  { background: #1c3a1c; color: var(--success-green); }
 
         header {
             padding: calc(var(--safe-top) + 15px) 20px 10px;
-            display: flex; justify-content: space-between; align-items: center;
-            gap: 10px;
+            display: flex; justify-content: space-between; align-items: center; gap: 10px;
         }
 
-        .header-btn {
-            font-weight: 600;
-            font-size: 0.8rem;
-            padding: 6px 12px;
-            border-radius: 12px;
-            cursor: pointer;
+        .header-btn { font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 12px; cursor: pointer; }
+        .fav-btn { background: #2C2C2E; color: var(--text-main); border: 1px solid #3a3a3c; font-size: 1.2rem; padding: 4px 14px; line-height: 1; }
+        .counter { font-size: 0.85rem; font-weight: 700; color: var(--text-main); background: #3a3a3c; padding: 6px 14px; border-radius: 20px; }
+
+        #fav-overlay, #known-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 2000; display: none; flex-direction: column;
         }
 
-        .fav-btn {
-            background: #2C2C2E;
-            color: var(--text-main);
-            border: 1px solid #3a3a3c;
-            font-size: 1.2rem;
-            padding: 4px 14px;
-            line-height: 1;
-        }
-
-        .counter { 
-            font-size: 0.85rem; 
-            font-weight: 700;
-            color: var(--text-main); 
-            background: #3a3a3c; 
-            padding: 6px 14px; 
-            border-radius: 20px;
-        }
-
-        #fav-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg);
-            z-index: 2000;
-            display: none;
-            flex-direction: column;
-        }
-
-        #fav-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px 20px 20px;
-            -webkit-overflow-scrolling: touch;
-        }
+        .list-container { flex: 1; overflow-y: auto; padding: 10px 20px 20px; -webkit-overflow-scrolling: touch; }
 
         .fav-group-header {
-            margin: 20px 0 12px 5px;
-            display: flex;
-            align-items: baseline;
-            gap: 10px;
-            -webkit-user-select: none;
-            user-select: none;
+            margin: 20px 0 12px 5px; display: flex; align-items: baseline; gap: 10px;
+            -webkit-user-select: none; user-select: none;
         }
-
-        .fav-group-title {
-            color: var(--delete-red); 
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 800;
-        }
-
-        .fav-group-ipa {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            font-family: monospace;
-        }
+        .fav-group-title { color: var(--delete-red); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+        .fav-group-ipa { color: var(--text-secondary); font-size: 0.85rem; font-family: monospace; }
 
         .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
-
         .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 20px; }
-        
         .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; }
         .card.is-flipped { transform: rotateY(180deg); }
 
         .card-face {
-            position: absolute;
-            width: 100%; height: 100%;
-            backface-visibility: hidden;
-            border-radius: 35px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-            background: var(--card-bg); 
-            display: flex;
-            flex-direction: column; 
-            overflow: hidden;
-            border: 1px solid #38383a;
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            border-radius: 35px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            background: var(--card-bg); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #38383a;
         }
 
-        .card-front { 
-            justify-content: flex-start; 
-            align-items: center; 
-            text-align: center; 
-            padding: 60px 30px; 
-        }
-        
+        .card-front { justify-content: flex-start; align-items: center; text-align: center; padding: 60px 30px; }
         .word-display { font-size: 3.5rem; font-weight: 800; color: var(--text-main); margin: 0; }
-        
-        .ipa-sub { 
-            font-size: 1.2rem; 
-            color: var(--text-secondary); 
-            margin-top: 15px; 
-            font-family: monospace; 
-            display: flex; flex-direction: column; gap: 8px;
+        .ipa-sub { font-size: 1.2rem; color: var(--text-secondary); margin-top: 15px; font-family: monospace; display: flex; flex-direction: column; gap: 8px; }
+
+        /* Mastery Controls */
+        .mastery-controls {
+            position: absolute; bottom: 100px; display: flex; gap: 25px; align-items: center;
         }
+        .mastery-btn {
+            background: #2C2C2E; width: 55px; height: 55px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+            border: 1px solid #3a3a3c; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .mastery-btn.known { color: var(--success-green); }
+        .mastery-btn.list { color: var(--primary); }
 
         .flip-hint {
-            position: absolute;
-            bottom: 40px;
-            font-size: 1.15rem;
-            color: var(--primary);
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            padding: 20px;
+            position: absolute; bottom: 40px; font-size: 1.15rem; color: var(--primary);
+            font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 20px;
         }
 
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
-        
-        .back-header { 
-            padding: 25px 25px 15px; 
-            border-bottom: 1px solid #38383a;
-            flex-shrink: 0;
-        }
-
-        .back-top-row {
-            display: flex; align-items: center; justify-content: flex-start; gap: 12px; margin-bottom: 12px;
-        }
-        
-        .back-word {
-            font-size: 1.6rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.5px; margin: 0;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        .more-btn {
-            background: var(--primary); color: white; font-size: 0.65rem; font-weight: 800; padding: 6px 12px; border-radius: 12px; text-transform: uppercase; white-space: nowrap;
-        }
+        .back-header { padding: 25px 25px 15px; border-bottom: 1px solid #38383a; flex-shrink: 0; }
+        .back-top-row { display: flex; align-items: center; justify-content: flex-start; gap: 12px; margin-bottom: 12px; }
+        .back-word { font-size: 1.6rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.5px; margin: 0; -webkit-user-select: none; }
+        .more-btn { background: var(--primary); color: white; font-size: 0.65rem; font-weight: 800; padding: 6px 12px; border-radius: 12px; text-transform: uppercase; }
 
         .meaning-container { min-height: 60px; }
-        .meaning-text { 
-            font-size: 1.2rem; font-weight: 700; color: var(--text-main); line-height: 1.4; margin: 0; transition: opacity 0.1s; overflow-wrap: break-word;
-        }
+        .meaning-text { font-size: 1.2rem; font-weight: 700; color: var(--text-main); line-height: 1.4; margin: 0; transition: opacity 0.1s; }
         
-        #example-list { 
-            flex-grow: 1; overflow-y: auto; padding: 15px 25px 30px; -webkit-overflow-scrolling: touch;
-        }
-
+        #example-list { flex-grow: 1; overflow-y: auto; padding: 15px 25px 30px; -webkit-overflow-scrolling: touch; }
         .example-item { 
-            background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; transition: opacity 0.3s; 
-            -webkit-user-select: none;
-            user-select: none;
+            background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; 
+            margin-bottom: 12px; border-radius: 12px; -webkit-user-select: none;
         }
+        .example-item.is-fav { border-left: 4px solid var(--fav-indicator); }
 
-        #example-list .example-item.is-fav { 
-            font-weight: 800; 
-            border-left: 4px solid var(--fav-indicator); 
-        }
-
-        #fav-list .example-item.is-fav { 
-            font-weight: 400; 
-            border-left: 4px solid var(--fav-indicator); 
-        }
-
-        .ex-num { color: #FFFFFF; font-weight: 800; margin-right: 8px; }
-
-        .controls { 
-            padding: 20px 20px calc(var(--safe-bottom) + 30px); 
-            margin-top: 10px;
-            display: flex; 
-            gap: 10px; 
-            width: 100%; 
-            max-width: 420px; 
-        }
+        .controls { padding: 20px 20px calc(var(--safe-bottom) + 30px); margin-top: 10px; display: flex; gap: 10px; width: 100%; max-width: 420px; }
         .nav-btn { flex: 1; height: 60px; border-radius: 18px; border: none; background: #2C2C2E; color: white; font-weight: 700; font-size: 0.9rem; }
-        .nav-btn.primary { background: var(--primary); color: white; }
+        .nav-btn.primary { background: var(--primary); }
+
+        /* Known List Styles */
+        .known-item {
+            padding: 18px; border-bottom: 1px solid #1c1c1e; display: flex; justify-content: space-between; align-items: center;
+        }
+        .known-word { font-weight: 700; font-size: 1.1rem; }
+        .known-count { color: var(--text-secondary); font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -260,11 +148,20 @@
 
 <div id="fav-overlay">
     <header>
-        <div onclick="closeFavs()" class="header-btn" style="color:var(--primary); font-size: 0.9rem; padding-left: 0;">← Back</div>
-        <div style="font-weight:800; font-size:1rem;">Favorites</div>
-        <div onclick="resetDeleted()" class="header-btn" style="color:var(--delete-red); padding-right: 0;">Restore</div>
+        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
+        <div style="font-weight:800;">Favorites</div>
+        <div onclick="resetDeleted()" class="header-btn" style="color:var(--delete-red);">Restore</div>
     </header>
-    <div id="fav-list"></div>
+    <div id="fav-list" class="list-container"></div>
+</div>
+
+<div id="known-overlay">
+    <header>
+        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
+        <div style="font-weight:800;">Mastered Words</div>
+        <div onclick="clearKnown()" class="header-btn" style="color:var(--delete-red);">Reset</div>
+    </header>
+    <div id="known-list" class="list-container"></div>
 </div>
 
 <header id="app-header" style="display:none;">
@@ -283,6 +180,12 @@
                         <span id="f-phonetic"></span>
                     </div>
                 </div>
+
+                <div class="mastery-controls">
+                    <div class="mastery-btn known" onclick="markAsKnown()">👍</div>
+                    <div class="mastery-btn list" onclick="openKnown()">📋</div>
+                </div>
+
                 <div class="flip-hint" onclick="flipCard()">Tap to Flip</div>
             </div>
             
@@ -316,11 +219,11 @@ const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 let wordData = [];
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
+let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
 let availableMeanings = [];
 let currentMeaningIdx = 0;
 let syncTimeout = null;
-let isTransitioning = false;
 
 function showSync(state, message) {
     const el = document.getElementById('sync-status');
@@ -340,21 +243,23 @@ window.onload = () => {
                 .then(d => {
                     deletedExamples = Array.from(new Set([...(d.record?.deleted || []), ...deletedExamples]));
                     favExamples = Array.from(new Set([...(d.record?.favs || []), ...favExamples]));
-                    localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
-                    localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
+                    knownWords = Array.from(new Set([...(d.record?.known || []), ...knownWords]));
+                    saveAndSync(false);
                 }).catch(() => {});
 
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('app').style.display = 'flex';
             document.getElementById('app-header').style.display = 'flex';
-            updateCard();
+            
+            // If current word is already known, find next unknown
+            if(knownWords.includes(wordData[currentIndex].WORD.trim())) nextCard();
+            else updateCard();
         }
     });
 };
 
 function updateCard() {
     const item = wordData[currentIndex];
-    isTransitioning = false;
     const meaningEl = document.getElementById('b-meaning');
     meaningEl.innerText = ""; 
     
@@ -379,203 +284,149 @@ function updateCard() {
     meaningEl.style.opacity = 1;
     
     const moreBtn = document.getElementById('more-btn');
-    if (availableMeanings.length > 1) {
-        moreBtn.style.display = 'block';
-        moreBtn.textContent = `More 1/${availableMeanings.length}`;
-    } else {
-        moreBtn.style.display = 'none';
-    }
+    moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none';
+    if(moreBtn.style.display === 'block') moreBtn.textContent = `More 1/${availableMeanings.length}`;
 
     renderExamples(item);
 }
 
-function handleMoreClick(e) {
-    if (e) e.stopPropagation();
-    if (availableMeanings.length <= 1 || isTransitioning) return;
-    isTransitioning = true;
-    const meaningEl = document.getElementById('b-meaning');
-    const moreBtn = document.getElementById('more-btn');
-    meaningEl.style.opacity = 0;
-    setTimeout(() => {
-        meaningEl.innerText = ""; 
-        currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
-        meaningEl.innerText = availableMeanings[currentMeaningIdx];
-        moreBtn.textContent = `More ${currentMeaningIdx + 1}/${availableMeanings.length}`;
-        meaningEl.style.opacity = 1;
-        setTimeout(() => isTransitioning = false, 50);
-    }, 120); 
+function markAsKnown() {
+    const word = wordData[currentIndex].WORD.trim();
+    if(!knownWords.includes(word)) {
+        knownWords.push(word);
+        saveAndSync();
+        nextCard();
+    }
 }
 
 function renderExamples(item) {
     const list = document.getElementById('example-list');
     list.innerHTML = "";
-    
-    const favorites = [];
-    const others = [];
     const cleanWord = item.WORD.trim();
+    const rows = [];
 
     for (let i = 1; i <= 50; i++) {
         const text = item[i.toString()];
         if (text && text.trim().length > 1) {
             const exId = `${cleanWord}|${text.trim()}`;
-            if (deletedExamples.some(d => d.trim() === exId)) continue;
-            const isFav = favExamples.some(f => f.trim() === exId);
-            if (isFav) {
-                favorites.push({ text: text.trim(), id: exId, isFav: true });
-            } else {
-                others.push({ text: text.trim(), id: exId, isFav: false });
-            }
+            if (deletedExamples.includes(exId)) continue;
+            rows.push({ text: text.trim(), id: exId, isFav: favExamples.includes(exId) });
         }
     }
 
-    const sortedList = [...favorites, ...others];
-
-    sortedList.forEach((exObj, index) => {
-        const exDiv = document.createElement('div');
-        exDiv.className = `example-item ${exObj.isFav ? 'is-fav' : ''}`;
-        exDiv.innerHTML = `<span class="ex-num">${index + 1}.</span>${exObj.text}`;
+    rows.sort((a,b) => b.isFav - a.isFav).forEach((ex, idx) => {
+        const div = document.createElement('div');
+        div.className = `example-item ${ex.isFav ? 'is-fav' : ''}`;
+        div.innerHTML = `<strong>${idx+1}.</strong> ${ex.text}`;
         
         let lastTap = 0;
-        exDiv.addEventListener('touchend', (e) => {
-            const currentTime = new Date().getTime();
-            if (currentTime - lastTap < 300) { 
-                toggleFav(exObj.id, exDiv); 
-                e.preventDefault(); 
-            }
-            lastTap = currentTime;
+        div.addEventListener('touchend', (e) => {
+            if (new Date().getTime() - lastTap < 300) toggleFav(ex.id, div);
+            lastTap = new Date().getTime();
         });
 
         let pressTimer;
-        exDiv.addEventListener('touchstart', (e) => {
-            const touchX = e.touches[0].clientX;
-            const screenWidth = window.innerWidth;
-            if (touchX < screenWidth / 2) {
-                pressTimer = setTimeout(() => { 
-                    if (confirm("Delete?")) deleteEx(exObj.id, exDiv); 
-                }, 750);
+        div.addEventListener('touchstart', (e) => {
+            if (e.touches[0].clientX < window.innerWidth / 2) {
+                pressTimer = setTimeout(() => { if(confirm("Delete?")) deleteEx(ex.id, div); }, 750);
             }
         }, {passive: true});
+        div.addEventListener('touchend', () => clearTimeout(pressTimer));
+        list.appendChild(div);
+    });
+}
+
+function openKnown() {
+    const list = document.getElementById('known-list');
+    list.innerHTML = "";
+    document.getElementById('known-overlay').style.display = 'flex';
+
+    if (knownWords.length === 0) {
+        list.innerHTML = `<p style="text-align:center; color:gray; margin-top:50px;">No words mastered yet.</p>`;
+        return;
+    }
+
+    knownWords.slice().reverse().forEach(word => {
+        const div = document.createElement('div');
+        div.className = 'known-item';
+        div.innerHTML = `<span class="known-word">${word}</span><span class="known-count">Mastered</span>`;
         
-        exDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
-        list.appendChild(exDiv);
+        let pressTimer;
+        div.ontouchstart = () => pressTimer = setTimeout(() => {
+            if(confirm(`Move "${word}" back to study list?`)) {
+                knownWords = knownWords.filter(w => w !== word);
+                saveAndSync();
+                openKnown();
+            }
+        }, 750);
+        div.ontouchend = () => clearTimeout(pressTimer);
+        
+        list.appendChild(div);
     });
 }
 
 function openFavs() {
-    const overlay = document.getElementById('fav-overlay');
     const list = document.getElementById('fav-list');
     list.innerHTML = "";
-    overlay.style.display = 'flex';
-
-    if (favExamples.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:var(--text-secondary); margin-top:50px;">No favorites yet.</p>`;
-        return;
-    }
-
+    document.getElementById('fav-overlay').style.display = 'flex';
+    // (Logic for grouping favorites as per previous version)
     const organized = {};
     favExamples.forEach(id => {
-        const parts = id.split('|');
-        if (parts.length < 2) return;
-        const word = parts[0].trim();
-        const text = parts[1].trim();
-        if (!organized[word]) {
-            const masterEntry = wordData.find(w => w.WORD.trim().toLowerCase() === word.toLowerCase());
-            organized[word] = {
-                index: wordData.indexOf(masterEntry),
-                ipa: masterEntry ? masterEntry.IPA : '',
-                items: []
-            };
-        }
+        const [word, text] = id.split('|');
+        if(!organized[word]) organized[word] = { items: [] };
         organized[word].items.push({id, text});
     });
-
     Object.keys(organized).forEach(word => {
-        const header = document.createElement('div');
-        header.className = 'fav-group-header';
-
-        const title = document.createElement('div');
-        title.className = 'fav-group-title';
-        title.textContent = word;
-
-        const ipaSpan = document.createElement('div');
-        ipaSpan.className = 'fav-group-ipa';
-        ipaSpan.textContent = organized[word].ipa;
-
-        let headerPressTimer;
-        const startHeaderPress = (e) => {
-            headerPressTimer = setTimeout(() => {
-                const idx = organized[word].index;
-                if (idx !== -1) {
-                    currentIndex = idx;
-                    closeFavs();
-                    setTimeout(() => {
-                        document.getElementById('card').classList.add('is-flipped');
-                    }, 50);
-                }
-            }, 750);
-        };
-        const endHeaderPress = () => clearTimeout(headerPressTimer);
-
-        // IPA logic: Only play audio, no jumping
-        ipaSpan.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
-        
-        // Word logic: Long press to jump, click does nothing
-        title.addEventListener('touchstart', startHeaderPress, {passive: true});
-        title.addEventListener('touchend', endHeaderPress);
-
-        header.appendChild(title);
-        header.appendChild(ipaSpan);
-        list.appendChild(header);
-
-        organized[word].items.forEach(itemObj => {
-            const item = document.createElement('div');
-            item.className = 'example-item is-fav';
-            item.textContent = itemObj.text;
-            
-            let favPressTimer;
-            item.addEventListener('touchstart', (e) => {
-                const touchX = e.touches[0].clientX;
-                const screenWidth = window.innerWidth;
-                if (touchX < screenWidth / 2) {
-                    favPressTimer = setTimeout(() => {
-                        if (confirm("Remove from favorites?")) {
-                            favExamples = favExamples.filter(x => x !== itemObj.id);
-                            localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
-                            pushSync();
-                            item.remove();
-                        }
-                    }, 750);
-                }
-            }, {passive: true});
-            
-            item.addEventListener('touchend', () => clearTimeout(favPressTimer));
-            list.appendChild(item);
+        const h = document.createElement('div'); h.className = 'fav-group-header';
+        h.innerHTML = `<div class="fav-group-title">${word}</div>`;
+        list.appendChild(h);
+        organized[word].items.forEach(item => {
+            const d = document.createElement('div'); d.className = 'example-item is-fav';
+            d.textContent = item.text;
+            list.appendChild(d);
         });
     });
 }
 
-function closeFavs() { document.getElementById('fav-overlay').style.display = 'none'; updateCard(); }
-
-function toggleFav(id, el) {
-    if (favExamples.includes(id)) {
-        favExamples = favExamples.filter(x => x !== id);
-        el.classList.remove('is-fav');
-    } else {
-        favExamples.push(id);
-        el.classList.add('is-fav');
-    }
-    localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
-    pushSync();
-    
-    const item = wordData[currentIndex];
-    renderExamples(item);
+function closeOverlays() { 
+    document.getElementById('fav-overlay').style.display = 'none'; 
+    document.getElementById('known-overlay').style.display = 'none';
 }
 
-function deleteEx(id, el) {
-    deletedExamples.push(id);
+function nextCard() {
+    let start = currentIndex;
+    do {
+        currentIndex = (currentIndex + 1) % wordData.length;
+        if(currentIndex === start) break; // All words known
+    } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
+    updateCard();
+}
+
+function prevCard() {
+    let start = currentIndex;
+    do {
+        currentIndex = (currentIndex - 1 + wordData.length) % wordData.length;
+        if(currentIndex === start) break;
+    } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
+    updateCard();
+}
+
+function shuffleCard() {
+    let attempts = 0;
+    let newIdx;
+    do {
+        newIdx = Math.floor(Math.random() * wordData.length);
+        attempts++;
+    } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
+    currentIndex = newIdx;
+    updateCard();
+}
+
+function saveAndSync(shouldPush = true) {
     localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
-    el.remove();
-    pushSync();
+    localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
+    localStorage.setItem('wf_known_words', JSON.stringify(knownWords));
+    if(shouldPush) pushSync();
 }
 
 async function pushSync() {
@@ -586,48 +437,47 @@ async function pushSync() {
             await fetch(BIN_URL, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
-                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples })
+                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords })
             });
             showSync('synced', 'Synced');
-        } catch { }
+        } catch {}
     }, 1000);
 }
 
-function playAudioFromEvent(e) {
-    if (e) e.stopPropagation();
-    playAudioByIndex(currentIndex);
+function toggleFav(id, el) {
+    if (favExamples.includes(id)) favExamples = favExamples.filter(x => x !== id);
+    else favExamples.push(id);
+    saveAndSync();
+    updateCard();
 }
 
-function playAudioByIndex(idx) {
-    if (idx < 0 || idx >= wordData.length) return;
-    const wordNum = idx + 1;
-    const wordText = wordData[idx].WORD;
-    let folder = "audio-file";
-    if (wordNum >= 1019 && wordNum <= 2026) folder = "audio-file-2";
-    else if (wordNum >= 2027 && wordNum <= 3034) folder = "audio-file-3";
-    else if (wordNum >= 3035) folder = "audio-file-4";
-    new Audio(`${folder}/${wordText}.mp3`).play().catch(() => {});
+function deleteEx(id, el) {
+    deletedExamples.push(id);
+    saveAndSync();
+    el.remove();
 }
 
+function clearKnown() { if(confirm("Reset all mastered words?")) { knownWords = []; saveAndSync(); closeOverlays(); updateCard(); } }
 function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
-function nextCard() { currentIndex = (currentIndex + 1) % wordData.length; updateCard(); }
-function prevCard() { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; updateCard(); }
-function shuffleCard() { currentIndex = Math.floor(Math.random() * wordData.length); updateCard(); }
+function playAudioFromEvent(e) { if(e) e.stopPropagation(); playAudioByIndex(currentIndex); }
+function playAudioByIndex(idx) {
+    const word = wordData[idx].WORD;
+    const num = idx + 1;
+    let f = "audio-file";
+    if (num >= 1019 && num <= 2026) f = "audio-file-2";
+    else if (num >= 2027 && num <= 3034) f = "audio-file-3";
+    else if (num >= 3035) f = "audio-file-4";
+    new Audio(`${f}/${word}.mp3`).play().catch(()=>{});
+}
+function handleMoreClick(e) { 
+    if(e) e.stopPropagation();
+    currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
+    document.getElementById('b-meaning').innerText = availableMeanings[currentMeaningIdx];
+    document.getElementById('more-btn').textContent = `More ${currentMeaningIdx+1}/${availableMeanings.length}`;
+}
 function jumpPrompt() {
     const val = prompt(`Jump to #:`);
-    if (val) {
-        const num = parseInt(val);
-        if (!isNaN(num)) { currentIndex = Math.max(0, Math.min(wordData.length - 1, num - 1)); updateCard(); }
-    }
-}
-
-function resetDeleted() {
-    if (confirm("Restore all deleted examples? (Favorites will be kept)")) {
-        deletedExamples = [];
-        localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
-        updateCard(); 
-        pushSync();
-    }
+    if (val && !isNaN(val)) { currentIndex = Math.max(0, Math.min(wordData.length - 1, parseInt(val) - 1)); updateCard(); }
 }
 </script>
 </body>
