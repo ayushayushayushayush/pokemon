@@ -90,13 +90,13 @@
             font-weight: 500; 
             line-height: 1.6; 
             color: var(--text-main); 
-            text-align: left; /* Better for reading sentences */
+            text-align: left; 
             background: var(--card-bg); 
             padding: 25px 20px; 
             border-radius: 20px; 
             border: 1px solid #38383a; 
             min-height: 140px; 
-            display: block; /* Changed from flex to block for natural wrapping */
+            display: block; 
             word-wrap: break-word;
             overflow-wrap: break-word;
         }
@@ -105,7 +105,7 @@
             color: var(--primary); 
             font-weight: 800; 
             letter-spacing: 1px;
-            white-space: nowrap; /* Keep underscores together */
+            white-space: nowrap; 
         }
 
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -118,7 +118,6 @@
         .quiz-stat-val { font-size: 1rem; font-weight: 800; color: var(--text-main); }
         .quiz-stat-label { font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* Rest of Styles */
         .fav-group-header { margin: 20px 0 12px 5px; display: flex; align-items: baseline; gap: 10px; }
         .fav-group-title { color: var(--delete-red); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
         .fav-group-ipa { color: var(--text-secondary); font-size: 0.85rem; font-family: monospace; }
@@ -150,7 +149,6 @@
             border: 1px solid #3a3a3c; box-shadow: 0 6px 15px rgba(0,0,0,0.4);
         }
         .mastery-btn.known { color: var(--success-green); }
-        .mastery-btn.quiz { color: #FFD60A; }
 
         .flip-hint { position: absolute; bottom: 40px; font-size: 1.15rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 20px; }
 
@@ -231,7 +229,7 @@
     <header>
         <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
         <div style="font-weight:800;">Favorites</div>
-        <div style="width: 60px;"></div>
+        <div class="header-btn" onclick="startQuiz(event)">💡 Quiz</div>
     </header>
     <div id="fav-list" class="list-container"></div>
 </div>
@@ -266,8 +264,7 @@
             </div>
             
             <div class="mastery-controls">
-                <div class="mastery-btn known" onclick="markAsKnown(event)">👍</div>
-                <div class="mastery-btn quiz" onclick="startQuiz(event)">💡</div>
+                <div class="mastery-btn known" onclick="markAsKnown(event)">👍 Mastered</div>
             </div>
 
             <div class="card-face card-back">
@@ -370,7 +367,7 @@ function updateCard() {
 function startQuiz(e) {
     if(e) e.stopPropagation();
     if (favExamples.length < 1) {
-        alert("Add some favorites first!");
+        alert("Add some favorites first to play the quiz!");
         return;
     }
     quizPool = [...favExamples]; 
@@ -381,32 +378,25 @@ function startQuiz(e) {
 
 function nextQuizQuestion() {
     if (quizPool.length === 0) {
-        alert("Well done! Restarting...");
+        alert("Quiz finished! Well done.");
         quizPool = [...favExamples];
     }
-
     isQuizLocked = false;
     document.getElementById('quiz-remaining-display').textContent = quizPool.length;
-    
     const poolIdx = Math.floor(Math.random() * quizPool.length);
     const randomId = quizPool[poolIdx];
     quizPool.splice(poolIdx, 1); 
-
     const [word, sentence] = randomId.split('|');
     currentQuizCorrect = word.trim();
-
     const regex = new RegExp(`\\b${currentQuizCorrect}\\b`, 'gi');
-    // Using simple underscores
     const maskedSentence = sentence.replace(regex, "<b>_________</b>");
     document.getElementById('quiz-question').innerHTML = maskedSentence;
-
     let options = [currentQuizCorrect];
     while(options.length < 6) {
         let randWord = wordData[Math.floor(Math.random() * wordData.length)].WORD.trim();
         if(!options.includes(randWord)) options.push(randWord);
     }
     options.sort(() => Math.random() - 0.5);
-
     const grid = document.getElementById('quiz-options');
     grid.innerHTML = "";
     options.forEach(opt => {
@@ -421,11 +411,9 @@ function nextQuizQuestion() {
 function handleQuizTap(selectedWord, btn) {
     if (isQuizLocked) return;
     isQuizLocked = true;
-
     const btns = document.querySelectorAll('.option-btn');
     let correctBtn;
     btns.forEach(b => { if(b.textContent === currentQuizCorrect) correctBtn = b; });
-
     if(selectedWord === currentQuizCorrect) {
         btn.classList.add('correct');
         quizScore += 10;
@@ -434,7 +422,6 @@ function handleQuizTap(selectedWord, btn) {
         correctBtn.classList.add('correct');
         quizScore = Math.max(0, quizScore - 5);
     }
-
     document.getElementById('quiz-score-display').textContent = quizScore;
     setTimeout(nextQuizQuestion, 1200);
 }
