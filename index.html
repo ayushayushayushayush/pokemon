@@ -322,6 +322,7 @@
         .back-word { font-size: 1.6rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.5px; margin: 0; z-index: 5; }
 
         .more-btn { background: var(--primary); color: white; font-size: 0.65rem; font-weight: 800; padding: 6px 12px; border-radius: 12px; text-transform: uppercase; z-index: 5; }
+        .type-badge { background: #3a3a3c; color: var(--text-secondary); font-size: 0.6rem; font-weight: 700; padding: 5px 10px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px; z-index: 5; }
 
         .meaning-container { display: flex; align-items: flex-start; justify-content: space-between; min-height: 60px; }
 
@@ -565,6 +566,8 @@
 
                         <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
 
+                        <div id="type-badge" class="type-badge" style="display:none;"></div>
+
                     </div>
 
                     <div class="meaning-container">
@@ -740,6 +743,20 @@ function updateCard() {
     moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none';
 
     if(moreBtn.style.display === 'block') moreBtn.textContent = `More 1/${availableMeanings.length}`;
+
+    const typeBadge = document.getElementById('type-badge');
+
+    if (item.Type && item.Type.trim()) {
+
+        typeBadge.textContent = item.Type.trim();
+
+        typeBadge.style.display = 'block';
+
+    } else {
+
+        typeBadge.style.display = 'none';
+
+    }
 
     renderExamples(item);
 
@@ -969,13 +986,15 @@ function renderExamples(item) {
 
         div.addEventListener('touchend', (e) => {
 
-            e.stopPropagation();
-
-            clearTimeout(pressTimer);
-
             const now = new Date().getTime();
 
-            if (now - lastTap < 300) toggleFav(ex.id, div);
+            if (now - lastTap < 300) {
+
+                e.stopPropagation();
+
+                toggleFav(ex.id, div);
+
+            }
 
             lastTap = now;
 
@@ -985,8 +1004,6 @@ function renderExamples(item) {
 
         div.addEventListener('touchstart', (e) => {
 
-            e.stopPropagation();
-
             if (e.touches[0].clientX < window.innerWidth / 2) {
 
                 pressTimer = setTimeout(() => { if(confirm("Delete?")) deleteEx(ex.id, div); }, 750);
@@ -994,6 +1011,8 @@ function renderExamples(item) {
             }
 
         }, {passive: true});
+
+        div.addEventListener('touchend', () => clearTimeout(pressTimer));
 
         list.appendChild(div);
 
