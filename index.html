@@ -13,12 +13,11 @@
     <title>WordFlow Pro</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --primary: #4D9EFF;
-            --primary-dim: rgba(77,158,255,0.12);
             --bg: #000000;
             --surface-1: #0A0A0A;
             --surface-2: #111111;
@@ -27,362 +26,185 @@
             --border: rgba(255,255,255,0.07);
             --border-bright: rgba(255,255,255,0.13);
             --text-main: #F0F0F0;
-            --text-secondary: #666;
-            --text-dim: #444;
+            --text-secondary: #888;
             --delete-red: #FF4545;
             --success-green: #2ECC71;
-            --accent-gold: #FFD60A;
-            --fav-indicator: var(--primary);
-            --example-bg: var(--surface-3);
+            --radius-md: 16px;
+            --radius-xl: 32px;
             --safe-top: env(safe-area-inset-top);
             --safe-bottom: env(safe-area-inset-bottom);
-            --radius-sm: 10px;
-            --radius-md: 16px;
-            --radius-lg: 24px;
-            --radius-xl: 32px;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body, html {
-            margin: 0;
-            padding: 0; width: 100%; height: 100%;
-            background-color: var(--bg);
-            color: var(--text-main);
-            font-family: 'Lora', Georgia, serif;
-            display: flex; flex-direction: column;
-            overflow: hidden;
-            overscroll-behavior-y: none;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg); color: var(--text-main);
+            font-family: 'Lora', Georgia, serif; display: flex; flex-direction: column;
+            overflow: hidden; overscroll-behavior-y: none;
         }
 
-        /* ── Loading ── */
-        #loading-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); z-index: 3000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 16px;
+        /* Overlays */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 2000; display: none; flex-direction: column;
+            user-select: none;
         }
-        #loading-screen p {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.1rem; font-weight: 700;
-            color: var(--text-secondary); letter-spacing: 0.1em; text-transform: uppercase;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-        @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+        .list-container { flex: 1; overflow-y: auto; padding: 8px 18px 24px; -webkit-overflow-scrolling: touch; }
 
-        /* ── Sync pill ── */
+        /* Status & Headers */
         #sync-status {
-            position: fixed;
-            top: calc(var(--safe-top) + 10px); left: 50%;
-            transform: translateX(-50%); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em;
-            padding: 5px 14px; border-radius: 20px;
-            z-index: 4000;
+            position: fixed; top: calc(var(--safe-top) + 10px); left: 50%;
+            transform: translateX(-50%); font-size: 0.7rem; font-weight: 600;
+            padding: 5px 14px; border-radius: 20px; z-index: 4000;
             opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
         }
         #sync-status.show { opacity: 1; }
         #sync-status.syncing { background: var(--surface-4); color: var(--text-secondary); }
-        #sync-status.synced  { background: rgba(46,204,113,0.15); color: var(--success-green); border: 1px solid rgba(46,204,113,0.3); }
+        #sync-status.synced { background: rgba(46,204,113,0.15); color: var(--success-green); border: 1px solid rgba(46,204,113,0.3); }
 
-        /* ── Header Reorganized ── */
-        header {
-            padding: calc(var(--safe-top) + 16px) 20px 12px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
+        header { padding: calc(var(--safe-top) + 16px) 20px 12px; display: flex; justify-content: space-between; align-items: center; }
         .header-btn {
-            font-family: 'Lora', Georgia, serif;
-            font-weight: 600; font-size: 0.78rem; letter-spacing: 0.02em;
-            padding: 8px 14px; border-radius: var(--radius-sm); cursor: pointer;
-            background: var(--surface-3); color: var(--text-main);
-            border: 1px solid var(--border); transition: background 0.15s, border-color 0.15s;
+            font-family: 'Lora', Georgia, serif; font-weight: 600; font-size: 0.78rem;
+            padding: 8px 14px; border-radius: 10px; cursor: pointer;
+            background: var(--surface-3); color: var(--text-main); border: 1px solid var(--border);
         }
-        .header-btn:active { background: var(--surface-4); border-color: var(--border-bright); }
-        .fav-btn { font-size: 1.15rem; padding: 6px 14px; line-height: 1; }
-
         .counter {
-            font-family: 'Playfair Display', serif;
-            font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em;
+            font-family: 'Playfair Display', serif; font-size: 0.8rem; font-weight: 700;
             color: var(--text-secondary); background: var(--surface-2);
-            padding: 7px 16px; border-radius: 20px;
-            border: 1px solid var(--border);
+            padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border);
         }
 
-        /* ── Overlays ── */
-        #fav-overlay, #known-overlay, #settings-overlay, #quiz-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); z-index: 2000; display: none; flex-direction: column;
-        }
+        /* Quiz UI */
+        #quiz-score-bar { background: var(--surface-2); height: 6px; width: 100%; position: relative; overflow: hidden; }
+        #quiz-progress { background: var(--primary); height: 100%; width: 0%; transition: width 0.3s ease; }
 
-        .list-container { flex: 1; overflow-y: auto; padding: 8px 18px 24px; -webkit-overflow-scrolling: touch; }
-
-        #fav-overlay { user-select: none; -webkit-user-select: none; }
-
-        /* ── Settings ── */
-        .settings-list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
-        .settings-item {
-            background: var(--surface-2);
-            padding: 18px 20px; border-radius: var(--radius-md);
-            display: flex; justify-content: space-between; align-items: center;
-            font-weight: 600; font-size: 0.95rem;
-            border: 1px solid var(--border);
-            transition: background 0.15s;
-        }
-        .settings-item:active { background: var(--surface-3); }
-        .chevron { color: var(--text-dim); font-size: 1.3rem; }
-
-        /* ── Quiz ── */
-        .quiz-container { padding: 12px 16px 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; }
-        .quiz-header-info {
-            display: flex; justify-content: space-between; align-items: center;
-            background: var(--surface-2); padding: 14px 20px;
-            border-radius: var(--radius-md); border: 1px solid var(--border);
-        }
-        .quiz-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .quiz-stat-val { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 800; color: var(--text-main); }
-        .quiz-stat-label { font-size: 0.55rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
-
-        .quiz-sentence {
-            font-size: 1.1rem; font-weight: 400; line-height: 1.7;
-            color: var(--text-main); text-align: left;
-            background: var(--surface-2); padding: 22px 20px; border-radius: var(--radius-md);
-            border: 1px solid var(--border); min-height: 120px; display: block;
-            word-wrap: break-word; overflow-wrap: break-word;
-        }
-        .quiz-sentence b { color: var(--primary); font-weight: 800; letter-spacing: 0.05em; white-space: nowrap; }
-
-        .quiz-meaning {
-            background: var(--surface-2); border: 1px solid var(--border);
-            border-left: 3px solid var(--primary); border-radius: var(--radius-sm);
-            padding: 12px 16px; font-size: 0.9rem; color: var(--text-secondary);
-            font-style: italic; line-height: 1.6; cursor: pointer; user-select: none;
-            transition: border-color 0.2s, background 0.2s;
-        }
-        .quiz-meaning:active { background: var(--surface-3); }
-        .quiz-meaning span { color: var(--primary); font-weight: 700; font-style: normal; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; margin-right: 8px; }
-
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        
-        .option-btn {
-            background: var(--surface-2); color: var(--text-main);
-            border: 1px solid var(--border); padding: 12px 8px; border-radius: var(--radius-md);
-            font-family: 'Lora', Georgia, serif; font-weight: 600; font-size: 0.9rem;
-            text-align: center; transition: background 0.18s, border-color 0.18s, transform 0.1s;
-            overflow: hidden; display: flex; flex-direction: column; align-items: center; 
-            justify-content: center; gap: 3px; min-height: 75px;
-        }
-        .option-btn .opt-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
-        .option-btn .opt-ipa { font-family: monospace; font-weight: 400; color: var(--text-secondary); white-space: normal; overflow: visible; width: 100%; font-size: clamp(0.45rem, 1.8vw, 0.65rem); line-height: 1.2; }
-        .option-btn:active { transform: scale(0.97); }
-        .option-btn.correct { background: rgba(46,204,113,0.18); border-color: var(--success-green); color: var(--success-green); font-weight: 700; }
-        .option-btn.wrong { background: rgba(255,69,69,0.18); border-color: var(--delete-red); color: var(--delete-red); }
-
-        /* ── Favorites list ── */
-        .fav-group-header { margin: 22px 0 10px 4px; display: flex; align-items: baseline; gap: 10px; }
-        .fav-group-title { font-family: 'Playfair Display', serif; color: var(--delete-red); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; }
-        .fav-group-ipa { color: var(--text-dim); font-size: 0.82rem; font-family: monospace; }
-
-        /* ── Main card area ── */
+        /* Card Logic */
         .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
         .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 18px; }
-        .card { width: 100%; height: 100%; position: relative; transition: transform 0.65s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; }
+        .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; }
         .card.is-flipped { transform: rotateY(180deg); }
-
         .card-face {
             position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
             border-radius: var(--radius-xl); background: var(--surface-1);
             display: flex; flex-direction: column; overflow: hidden;
             border: 1px solid var(--border-bright);
-            box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 20px 60px rgba(0,0,0,0.8);
+        }
+        .card-front { justify-content: center; align-items: center; text-align: center; }
+        .word-display { font-family: 'Playfair Display', serif; font-size: 3.4rem; font-weight: 800; margin: 0; }
+        .card-back { transform: rotateY(180deg); }
+
+        /* Favorites List Styles */
+        .fav-group-header { margin: 24px 0 10px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+        .fav-word-title { font-family: 'Playfair Display', serif; color: var(--delete-red); font-size: 1.25rem; font-weight: 800; text-transform: uppercase; }
+        .fav-ipa { font-size: 1rem; color: var(--text-secondary); margin-left: 10px; font-family: monospace; }
+        
+        .example-item {
+            background: var(--surface-2); padding: 14px 16px; font-size: 0.95rem; line-height: 1.5;
+            color: #ccc; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border);
         }
 
-        /* Card front */
-        .card-front { justify-content: center; align-items: center; text-align: center; padding: 40px 30px; cursor: pointer; }
-        .word-container { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-        .word-display { font-family: 'Playfair Display', serif; font-size: 3.6rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: 0.01em; }
-        .ipa-sub { font-size: 1rem; color: var(--text-secondary); margin-top: 18px; font-family: monospace; display: flex; flex-direction: column; gap: 6px; line-height: 1.5; }
-
-        /* Mastery UI at TOP of Card */
-        .mastery-header {
-            position: absolute;
-            top: 0; left: 0; width: 100%;
-            height: 60px;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.03), transparent);
-            border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 100;
-            transition: opacity 0.3s ease;
+        /* Updated Quiz Options */
+        .quiz-container { padding: 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+        .quiz-sentence { font-size: 1.15rem; background: var(--surface-2); padding: 20px; border-radius: 16px; min-height: 100px; line-height: 1.6; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .option-btn { 
+            background: var(--surface-2); padding: 22px 10px; border-radius: 14px; 
+            text-align: center; border: 1px solid var(--border);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .card.is-flipped .mastery-header { opacity: 0; pointer-events: none; }
+        .option-word { font-size: 1.4rem; font-weight: 700; font-family: 'Playfair Display', serif; }
+        .option-ipa { font-size: 0.95rem; color: var(--text-secondary); font-family: monospace; margin-top: 4px; }
+        
+        .option-btn.correct { background: rgba(46,204,113,0.2); border-color: var(--success-green); color: var(--success-green); }
+        .option-btn.wrong { background: rgba(255,69,69,0.2); border-color: var(--delete-red); color: var(--delete-red); }
 
-        .mastery-btn {
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            color: var(--text-secondary); font-family: 'Lora', Georgia, serif;
-            font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-            width: 100%; height: 100%; transition: background 0.2s, color 0.2s;
-        }
-        .mastery-btn:active { background: rgba(46,204,113,0.1); color: var(--success-green); }
-        .mastery-btn svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.5; fill: none; }
-
-        /* Card back */
-        .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
-        .back-header { padding: 24px 24px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; position: relative; cursor: pointer; user-select: none; }
-        .back-top-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; margin-bottom: 12px; position: relative; }
-        .back-word { font-family: 'Playfair Display', serif; font-size: 1.55rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.04em; margin: 0; z-index: 5; }
-        .more-btn { background: var(--primary-dim); color: var(--primary); font-size: 0.6rem; font-weight: 700; padding: 5px 11px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.05em; z-index: 5; border: 1px solid rgba(77,158,255,0.2); }
-        .type-badge { background: var(--surface-4); color: var(--text-secondary); font-size: 0.58rem; font-weight: 700; padding: 5px 10px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.06em; z-index: 5; border: 1px solid var(--border); }
-        .meaning-container { display: flex; align-items: flex-start; justify-content: space-between; min-height: 55px; }
-        .meaning-text { flex: 1; font-size: 1.1rem; font-weight: 500; color: var(--text-main); line-height: 1.5; margin: 0; z-index: 5; }
-
-        #example-list { flex-grow: 1; overflow-y: auto; padding: 14px 20px 28px; -webkit-overflow-scrolling: touch; }
-        .example-item { background: var(--surface-2); padding: 14px 16px; font-size: 0.9rem; line-height: 1.6; color: #C0C0C8; margin-bottom: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); user-select: none; -webkit-user-select: none; transition: border-color 0.2s; }
-        .example-item.is-fav { color: #FF4545 !important; border-color: rgba(255,69,69,0.25); }
-
-        /* ── Nav controls ── */
-        .controls { padding: 16px 18px calc(var(--safe-bottom) + 28px); display: flex; gap: 10px; width: 100%; max-width: 420px; }
-        .nav-btn { flex: 1; height: 58px; border-radius: var(--radius-md); border: none; background: var(--surface-3); color: var(--text-main); font-family: 'Lora', Georgia, serif; font-weight: 700; font-size: 0.88rem; letter-spacing: 0.02em; border: 1px solid var(--border); transition: background 0.15s, transform 0.1s; }
-        .nav-btn:active { transform: scale(0.97); }
-        .nav-btn.primary { background: var(--primary); color: #fff; border-color: transparent; box-shadow: 0 4px 20px rgba(77,158,255,0.3); }
-        .nav-btn.primary:active { background: #3a8fe8; }
-
-        .known-item { padding: 16px 4px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-between; align-items: center; }
-        .known-word { font-weight: 600; font-size: 1rem; }
-        .known-ipa { color: var(--text-dim); font-size: 0.85rem; font-family: monospace; }
-
-        ::-webkit-scrollbar { width: 2px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 4px; }
+        .controls { padding: 16px 18px calc(var(--safe-bottom) + 20px); display: flex; gap: 10px; width: 100%; max-width: 420px; }
+        .nav-btn { flex: 1; height: 58px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface-3); color: #fff; font-weight: 700; }
+        .nav-btn.primary { background: var(--primary); border: none; }
     </style>
-
 </head>
-
 <body>
 
 <div id="sync-status"></div>
-<div id="loading-screen"><p>Loading...</p></div>
+<div id="loading-screen" style="position:fixed; width:100%; height:100%; background:#000; z-index:9999; display:flex; align-items:center; justify-content:center;">LOADING DATABASE...</div>
 
-<div id="settings-overlay">
-    <header>
-        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
-        <div style="font-weight:800;">Settings</div>
-        <div style="width: 60px;"></div>
-    </header>
-    <div class="list-container">
-        <div class="settings-list">
-            <div class="settings-item" onclick="openKnown()">
-                <span>Mastered Words</span>
-                <span class="chevron">›</span>
-            </div>
-            <div class="settings-item" onclick="resetDeleted()">
-                <span style="color:var(--delete-red);">Restore Deleted Examples</span>
-                <span class="chevron">›</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="quiz-overlay">
-    <header>
-        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
-        <div style="font-weight:800;">Quiz Mode</div>
-        <div style="width: 60px;"></div>
-    </header>
-    <div class="quiz-container">
-        <div class="quiz-header-info">
-            <div class="quiz-stat">
-                <span id="quiz-score-display" class="quiz-stat-val" style="color:var(--success-green);">0</span>
-                <span class="quiz-stat-label">Got Right</span>
-            </div>
-            <div class="quiz-stat">
-                <span id="quiz-wrong-display" class="quiz-stat-val" style="color:var(--delete-red);">0</span>
-                <span class="quiz-stat-label">Got Wrong</span>
-            </div>
-            <div class="quiz-stat">
-                <span id="quiz-total-display" class="quiz-stat-val">0</span>
-                <span class="quiz-stat-label">Total Favs</span>
-            </div>
-            <div class="quiz-stat">
-                <span id="quiz-remaining-display" class="quiz-stat-val">0</span>
-                <span class="quiz-stat-label">Left</span>
-            </div>
-        </div>
-        <div id="quiz-question" class="quiz-sentence">Select a favorite...</div>
-        <div id="quiz-meaning" class="quiz-meaning" onclick="quizMeaningIdx=(quizMeaningIdx+1)%quizMeanings.length; renderQuizMeaning();"><span>Meaning</span>—</div>
-        <div id="quiz-options" class="options-grid"></div>
-    </div>
-</div>
-
-<div id="fav-overlay">
+<div id="fav-overlay" class="overlay">
     <header>
         <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
         <div style="font-weight:800;">Favorites</div>
-        <div class="header-btn fav-btn" onclick="startQuiz(event)">💡</div>
+        <div class="header-btn" onclick="startQuiz()">💡 Quiz</div>
     </header>
     <div id="fav-list" class="list-container"></div>
 </div>
 
-<div id="known-overlay">
+<div id="settings-overlay" class="overlay">
+    <header>
+        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
+        <div style="font-weight:800;">Settings</div>
+        <div style="width:60px;"></div>
+    </header>
+    <div class="list-container">
+        <div onclick="openKnown()" class="example-item">Mastered Words ›</div>
+        <div onclick="resetDeleted()" class="example-item" style="color:var(--delete-red);">Restore Deleted Examples</div>
+    </div>
+</div>
+
+<div id="known-overlay" class="overlay">
     <header>
         <div onclick="openSettings()" class="header-btn" style="color:var(--primary);">← Settings</div>
         <div style="font-weight:800;">Mastered</div>
-        <div onclick="removeAllKnown()" class="header-btn" style="color:var(--delete-red);">Remove All</div>
+        <div style="width:60px;"></div>
     </header>
     <div id="known-list" class="list-container"></div>
 </div>
 
+<div id="quiz-overlay" class="overlay">
+    <header>
+        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
+        <div id="quiz-score-text" style="font-weight:800; font-size:0.8rem;">0/0</div>
+        <div style="width:60px;"></div>
+    </header>
+    <div id="quiz-score-bar"><div id="quiz-progress"></div></div>
+    <div class="quiz-container">
+        <div id="quiz-question" class="quiz-sentence"></div>
+        <div id="quiz-options" class="options-grid"></div>
+    </div>
+</div>
+
 <header id="app-header" style="display:none;">
     <div class="header-btn" onclick="openSettings()">⚙️</div>
+    <div class="header-btn" onclick="openFavs()">★</div>
     <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
-    <div class="header-btn fav-btn" onclick="openFavs()">★</div>
 </header>
 
 <div class="app-container" id="app">
-    <div class="scene">
+    <div class="scene" onclick="flipCard()">
         <div class="card" id="card">
-            <div class="card-face card-front" onclick="flipCard()">
-                <div class="mastery-header">
-                    <div class="mastery-btn" onclick="markAsKnown(event)">
-                        <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>
-                        I Know This Word
-                    </div>
-                </div>
-
-                <div class="word-container" onclick="playAudioFromEvent(event)">
-                    <h1 id="f-word" class="word-display">...</h1>
-                    <div class="ipa-sub">
-                        <span id="f-ipa"></span>
-                        <span id="f-phonetic"></span>
-                    </div>
+            <div class="card-face card-front">
+                <h1 id="f-word" class="word-display">...</h1>
+                <div id="f-ipa" style="color:var(--text-secondary); margin-top:10px; font-size: 1.1rem;"></div>
+                <div style="position:absolute; bottom:30px; width:100%; text-align:center;">
+                    <button class="header-btn" onclick="markAsKnown(event)" style="color:var(--success-green); border-color:var(--success-green);">✓ Mastered</button>
                 </div>
             </div>
-            
             <div class="card-face card-back">
-                <div class="back-header" onclick="flipCard()">
-                    <div class="back-top-row">
-                        <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
-                        <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
-                        <div id="type-badge" class="type-badge" style="display:none;"></div>
-                    </div>
-                    <div class="meaning-container">
-                        <p id="b-meaning" class="meaning-text">...</p>
-                    </div>
+                <div style="padding:20px; border-bottom:1px solid var(--border);">
+                    <h2 id="b-word" style="font-family:'Playfair Display'; color:var(--delete-red); margin:0;"></h2>
+                    <p id="b-meaning" style="margin:10px 0 0; font-weight:500;"></p>
                 </div>
-                <div id="example-list"></div>
+                <div id="example-list" class="list-container"></div>
             </div>
         </div>
     </div>
-
     <div class="controls">
         <button class="nav-btn" onclick="prevCard()">Back</button>
-        <button class="nav-btn" onclick="shuffleCard()">Shuffle</button>
         <button class="nav-btn primary" onclick="nextCard()">Next</button>
     </div>
 </div>
 
 <script>
-
-const BIN_ID  = "69d3dacfaaba882197cd5a0e";
+const BIN_ID = "69d3dacfaaba882197cd5a0e";
 const API_KEY = "$2a$10$2XIWmqUVHyv39zmLplK6YOCLf07sb3WyJIxxleZUrKRb61lugMCu6";
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
@@ -390,425 +212,239 @@ let wordData = [];
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
 let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
-
-let quizScore = 0;
-let quizWrong = 0;
-let currentQuizCorrect = "";
-let quizPool = [];
-let isQuizLocked = false;
-let quizMeanings = [];
-let quizMeaningIdx = 0;
-
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
-let availableMeanings = [];
-let currentMeaningIdx = 0;
-let syncTimeout = null;
 
-function showSync(state, message) {
-    const el = document.getElementById('sync-status');
-    el.className = `show ${state}`;
-    el.textContent = message;
-    setTimeout(() => { el.className = ''; }, 2000);
-}
+let quizPool = [];
+let quizTotal = 0;
+let quizCorrect = 0;
+let quizAttemptCount = 0;
 
 window.onload = () => {
     Papa.parse("words.csv", {
         download: true, header: true,
         complete: async function(results) {
             wordData = results.data.filter(row => row.WORD);
-            fetch(BIN_URL + "/latest", { headers: { "X-Master-Key": API_KEY } })
-                .then(r => r.json())
-                .then(d => {
-                    deletedExamples = Array.from(new Set([...(d.record?.deleted || []), ...deletedExamples]));
-                    favExamples = Array.from(new Set([...(d.record?.favs || []), ...favExamples]));
-                    knownWords = Array.from(new Set([...(d.record?.known || []), ...knownWords]));
-                    saveAndSync(false);
-                }).catch(() => {});
+            
+            // Cloud Sync Retrieval
+            try {
+                const res = await fetch(BIN_URL + "/latest", { headers: { "X-Master-Key": API_KEY } });
+                const d = await res.json();
+                deletedExamples = Array.from(new Set([...(d.record?.deleted || []), ...deletedExamples]));
+                favExamples = Array.from(new Set([...(d.record?.favs || []), ...favExamples]));
+                knownWords = Array.from(new Set([...(d.record?.known || []), ...knownWords]));
+                saveAndSync(false);
+            } catch (e) { console.log("Sync Error", e); }
+            
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('app').style.display = 'flex';
             document.getElementById('app-header').style.display = 'flex';
-            if(knownWords.includes(wordData[currentIndex].WORD.trim())) nextCard();
-            else updateCard();
+            updateCard();
         }
     });
 };
 
+function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
+
 function updateCard() {
     const item = wordData[currentIndex];
-    const meaningEl = document.getElementById('b-meaning');
-    availableMeanings = [];
-    if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING.trim());
-    for(let i=1; i<=10; i++) {
-        let val = item[`Meaning${i}`];
-        if(val && val.trim()) availableMeanings.push(val.trim());
-    }
-    currentMeaningIdx = 0;
     document.getElementById('card').classList.remove('is-flipped');
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
     localStorage.setItem('wf_index_v6', currentIndex);
     document.getElementById('f-word').textContent = item.WORD;
-    document.getElementById('f-ipa').textContent = item.IPA;
-    document.getElementById('f-phonetic').textContent = item.PHONETIC;
+    document.getElementById('f-ipa').textContent = item.IPA || '';
     document.getElementById('b-word').textContent = item.WORD;
-    meaningEl.innerText = availableMeanings[0] || "";
-    const moreBtn = document.getElementById('more-btn');
-    moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none';
-    if(moreBtn.style.display === 'block') moreBtn.textContent = `More 1/${availableMeanings.length}`;
-    const typeBadge = document.getElementById('type-badge');
-    if (item.Type && item.Type.trim()) {
-        typeBadge.textContent = item.Type.trim();
-        typeBadge.style.display = 'block';
-    } else {
-        typeBadge.style.display = 'none';
-    }
+    document.getElementById('b-meaning').textContent = item.MEANING;
     renderExamples(item);
 }
 
-function renderQuizMeaning() {
-    const el = document.getElementById('quiz-meaning');
-    const counter = quizMeanings.length > 1 ? ` <em style="font-size:0.62rem;opacity:0.45;font-style:normal;">${quizMeaningIdx + 1}/${quizMeanings.length}</em>` : '';
-    el.innerHTML = `<span>Meaning</span>${quizMeanings[quizMeaningIdx]}${counter}`;
+function renderExamples(item) {
+    const list = document.getElementById('example-list');
+    list.innerHTML = "";
+    const word = item.WORD.trim();
+    for (let i = 1; i <= 50; i++) {
+        const text = item[i.toString()];
+        if (text && text.trim().length > 1) {
+            const exId = `${word}|${text.trim()}`;
+            if (deletedExamples.includes(exId)) continue;
+            
+            const div = document.createElement('div');
+            div.className = 'example-item';
+            if (favExamples.includes(exId)) div.style.color = 'var(--delete-red)';
+            div.innerHTML = text.trim();
+            
+            // Long press logic for main card examples
+            let timer;
+            div.ontouchstart = (e) => {
+                const startX = e.touches[0].clientX;
+                timer = setTimeout(() => {
+                    if (startX > window.innerWidth / 2) {
+                        if (favExamples.includes(exId)) favExamples = favExamples.filter(x => x !== exId);
+                        else favExamples.push(exId);
+                        div.style.color = favExamples.includes(exId) ? 'var(--delete-red)' : '';
+                    } else {
+                        deletedExamples.push(exId);
+                        div.remove();
+                    }
+                    saveAndSync();
+                }, 600);
+            };
+            div.ontouchend = () => clearTimeout(timer);
+            div.onclick = (e) => e.stopPropagation();
+            list.appendChild(div);
+        }
+    }
 }
 
-function startQuiz(e) {
-    if(e) e.stopPropagation();
-    if (favExamples.length < 1) {
-        alert("Add some favorites first!");
-        return;
-    }
-    quizPool = [...favExamples];
-    quizScore = 0;
-    quizWrong = 0;
-    document.getElementById('fav-overlay').style.display = 'none';
+function renderFavList() {
+    const list = document.getElementById('fav-list');
+    list.innerHTML = "";
+    const groups = {};
+    favExamples.forEach(exId => {
+        const [w, txt] = exId.split('|');
+        if (!groups[w]) groups[w] = [];
+        groups[w].push({ id: exId, text: txt });
+    });
+
+    Object.keys(groups).sort().forEach(w => {
+        const wordObj = wordData.find(x => x.WORD.trim() === w);
+        const header = document.createElement('div');
+        header.className = 'fav-group-header';
+        header.innerHTML = `<span class="fav-word-title">${w}</span> <span class="fav-ipa">${wordObj?.IPA || ''}</span>`;
+        
+        let headerTimer;
+        header.ontouchstart = () => {
+            headerTimer = setTimeout(() => {
+                const idx = wordData.findIndex(x => x.WORD.trim() === w);
+                if(idx !== -1) {
+                    currentIndex = idx;
+                    updateCard();
+                    setTimeout(() => document.getElementById('card').classList.add('is-flipped'), 100);
+                    closeOverlays();
+                }
+            }, 600);
+        };
+        header.ontouchend = () => clearTimeout(headerTimer);
+        list.appendChild(header);
+        
+        groups[w].forEach(ex => {
+            const item = document.createElement('div');
+            item.className = 'example-item';
+            item.textContent = ex.text;
+            let exTimer;
+            item.ontouchstart = (e) => {
+                const startX = e.touches[0].clientX;
+                exTimer = setTimeout(() => {
+                    if (startX < window.innerWidth / 2) {
+                        favExamples = favExamples.filter(x => x !== ex.id);
+                        item.remove();
+                        saveAndSync();
+                    }
+                }, 600);
+            };
+            item.ontouchend = () => clearTimeout(exTimer);
+            list.appendChild(item);
+        });
+    });
+}
+
+function startQuiz() {
+    if(favExamples.length < 6) { alert("Need 6 favorites to quiz!"); return; }
+    quizPool = [...favExamples].sort(() => Math.random() - 0.5);
+    quizTotal = quizPool.length;
+    quizCorrect = 0;
+    closeOverlays();
     document.getElementById('quiz-overlay').style.display = 'flex';
-    document.getElementById('quiz-total-display').textContent = favExamples.length;
     nextQuizQuestion();
 }
 
 function nextQuizQuestion() {
-    if (quizPool.length === 0) {
-        alert("Well done! Restarting...");
-        quizPool = [...favExamples];
-    }
-    isQuizLocked = false;
-    document.getElementById('quiz-remaining-display').textContent = quizPool.length;
-    const poolIdx = Math.floor(Math.random() * quizPool.length);
-    const randomId = quizPool[poolIdx];
-    quizPool.splice(poolIdx, 1); 
-    const [word, sentence] = randomId.split('|');
-    currentQuizCorrect = word.trim();
-    const quizWordData = wordData.find(w => w.WORD.trim().toLowerCase() === currentQuizCorrect.toLowerCase());
-    quizMeanings = [];
-    if (quizWordData) {
-        if (quizWordData.MEANING && quizWordData.MEANING.trim()) quizMeanings.push(quizWordData.MEANING.trim());
-        for (let i = 1; i <= 10; i++) {
-            const v = quizWordData[`Meaning${i}`];
-            if (v && v.trim()) quizMeanings.push(v.trim());
-        }
-    }
-    if (quizMeanings.length === 0) quizMeanings = ['—'];
-    quizMeaningIdx = 0;
-    renderQuizMeaning();
+    if(quizPool.length === 0) { alert(`Finished! Score: ${quizCorrect}/${quizTotal}`); closeOverlays(); return; }
+    quizAttemptCount = 0;
+    const ex = quizPool.pop();
+    const [word, sentence] = ex.split('|');
+    const masked = sentence.replace(new RegExp(word, 'gi'), "<b>_______</b>");
+    
+    document.getElementById('quiz-question').innerHTML = masked;
+    document.getElementById('quiz-score-text').textContent = `${quizCorrect} / ${quizTotal}`;
+    document.getElementById('quiz-progress').style.width = `${((quizTotal - quizPool.length - 1) / quizTotal) * 100}%`;
 
-    const escapedWord = currentQuizCorrect.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const stem = escapedWord.endsWith('e') ? escapedWord.slice(0, -1) : escapedWord;
-    const regex = new RegExp(`\\b(?:${escapedWord}|${stem})\\w*`, 'gi');
-    const maskedSentence = sentence.replace(regex, "<b>_________</b>");
-    document.getElementById('quiz-question').innerHTML = maskedSentence;
-
-    let options = [currentQuizCorrect];
+    let options = [word];
     while(options.length < 6) {
-        let randWord = wordData[Math.floor(Math.random() * wordData.length)].WORD.trim();
-        if(!options.includes(randWord)) options.push(randWord);
+        const rw = wordData[Math.floor(Math.random() * wordData.length)].WORD;
+        if(!options.includes(rw)) options.push(rw);
     }
     options.sort(() => Math.random() - 0.5);
 
     const grid = document.getElementById('quiz-options');
     grid.innerHTML = "";
     options.forEach(opt => {
+        const wordObj = wordData.find(x => x.WORD.trim() === opt);
         const btn = document.createElement('div');
         btn.className = 'option-btn';
-        const optData = wordData.find(w => w.WORD.trim() === opt);
-        let optIpa = optData && optData.IPA ? optData.IPA.trim() : '';
-        if (optIpa.includes(',')) {
-            optIpa = optIpa.split(',').join(',<br>');
-        }
-        btn.innerHTML = `<span class="opt-word">${opt}</span>${optIpa ? `<span class="opt-ipa">${optIpa}</span>` : ''}`;
-        btn.onclick = () => handleQuizTap(opt, btn);
+        btn.innerHTML = `<div class="option-word">${opt}</div><div class="option-ipa">${wordObj?.IPA || ''}</div>`;
+        
+        btn.onclick = () => {
+            if(btn.classList.contains('correct') || btn.classList.contains('wrong')) return;
+            quizAttemptCount++;
+            if(opt === word) {
+                btn.classList.add('correct');
+                quizCorrect++;
+                setTimeout(nextQuizQuestion, 800);
+            } else {
+                btn.classList.add('wrong');
+                if(quizAttemptCount >= 3) setTimeout(nextQuizQuestion, 800);
+            }
+        };
         grid.appendChild(btn);
     });
 }
 
-function handleQuizTap(selectedWord, btn) {
-    if (isQuizLocked) return;
-    isQuizLocked = true;
-    const btns = document.querySelectorAll('.option-btn');
-    let correctBtn;
-    btns.forEach(b => { 
-        const wordSpan = b.querySelector('.opt-word');
-        if ((wordSpan ? wordSpan.textContent : b.textContent).trim() === currentQuizCorrect) correctBtn = b;
-    });
-    if(selectedWord === currentQuizCorrect) {
-        btn.classList.add('correct');
-        quizScore += 1;
-    } else {
-        btn.classList.add('wrong');
-        correctBtn.classList.add('correct');
-        quizScore = Math.max(0, quizScore - 1);
-        quizWrong += 1;
+function openSettings() { closeOverlays(); document.getElementById('settings-overlay').style.display = 'flex'; }
+function openFavs() { closeOverlays(); document.getElementById('fav-overlay').style.display = 'flex'; renderFavList(); }
+function openKnown() { closeOverlays(); document.getElementById('known-overlay').style.display = 'flex'; 
+    document.getElementById('known-list').innerHTML = knownWords.map(w => `<div class="example-item">${w}</div>`).join('');
+}
+function closeOverlays() { document.querySelectorAll('.overlay').forEach(el => el.style.display = 'none'); }
+
+function jumpPrompt() {
+    const val = prompt("Jump to word #:", currentIndex + 1);
+    if(val) {
+        const n = parseInt(val) - 1;
+        if(n >= 0 && n < wordData.length) { currentIndex = n; updateCard(); }
     }
-    document.getElementById('quiz-score-display').textContent = quizScore;
-    document.getElementById('quiz-wrong-display').textContent = quizWrong;
-    setTimeout(nextQuizQuestion, 1200);
 }
 
 function markAsKnown(e) {
     if(e) e.stopPropagation();
-    const word = wordData[currentIndex].WORD.trim();
-    if(!knownWords.includes(word)) {
-        knownWords.push(word);
-        saveAndSync();
-        nextCard();
-    }
+    const w = wordData[currentIndex].WORD.trim();
+    if(!knownWords.includes(w)) { knownWords.push(w); saveAndSync(); nextCard(); }
 }
 
-function renderExamples(item) {
-    const list = document.getElementById('example-list');
-    list.innerHTML = "";
-    const cleanWord = item.WORD.trim();
-    const rows = [];
-    for (let i = 1; i <= 50; i++) {
-        const text = item[i.toString()];
-        if (text && text.trim().length > 1) {
-            const exId = `${cleanWord}|${text.trim()}`;
-            if (deletedExamples.includes(exId)) continue;
-            rows.push({ text: text.trim(), id: exId, isFav: favExamples.includes(exId) });
-        }
-    }
-    rows.sort((a,b) => b.isFav - a.isFav).forEach((ex, idx) => {
-        const div = document.createElement('div');
-        div.className = 'example-item';
-        div.dataset.exId = ex.id;
-        div.innerHTML = `<strong>${idx+1}.</strong> ${ex.text}`;
-        if (ex.isFav) div.style.color = '#FF453A';
-        let pressTimer = null;
-        let moved = false;
-        let startX = 0;
-        div.addEventListener('touchstart', (e) => {
-            moved = false;
-            startX = e.touches[0].clientX;
-            const isRightSide = startX > window.innerWidth / 2;
-            const delay = isRightSide ? 1200 : 750;
-            pressTimer = setTimeout(() => {
-                if (moved) return;
-                if (isRightSide) {
-                    if (favExamples.includes(ex.id)) {
-                        favExamples = favExamples.filter(x => x !== ex.id);
-                        div.style.color = '';
-                    } else {
-                        favExamples.push(ex.id);
-                        div.style.color = '#FF453A';
-                    }
-                    saveAndSync();
-                } else {
-                    if (confirm("Delete?")) deleteEx(ex.id, div);
-                }
-            }, delay);
-        }, {passive: true});
-        div.addEventListener('touchmove', () => {
-            moved = true;
-            clearTimeout(pressTimer);
-        }, {passive: true});
-        div.addEventListener('touchend', () => {
-            clearTimeout(pressTimer);
-        });
-        list.appendChild(div);
-    });
-}
+function nextCard() { currentIndex = (currentIndex + 1) % wordData.length; updateCard(); }
+function prevCard() { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; updateCard(); }
 
-function openSettings(e) {
-    if(e) e.stopPropagation();
-    document.getElementById('known-overlay').style.display = 'none';
-    document.getElementById('settings-overlay').style.display = 'flex';
-}
-
-function openKnown() {
-    const list = document.getElementById('known-list');
-    list.innerHTML = "";
-    document.getElementById('settings-overlay').style.display = 'none';
-    document.getElementById('known-overlay').style.display = 'flex';
-    if (knownWords.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:gray; margin-top:50px;">No words mastered.</p>`;
-        return;
-    }
-    knownWords.slice().reverse().forEach(word => {
-        const masterItem = wordData.find(w => w.WORD.trim() === word);
-        const ipaText = masterItem ? masterItem.IPA : '';
-        const div = document.createElement('div');
-        div.className = 'known-item';
-        div.innerHTML = `<span class="known-word">${word}</span><span class="known-ipa">${ipaText}</span>`;
-        let pressTimer;
-        div.addEventListener('touchstart', (e) => {
-            if (e.touches[0].clientX < window.innerWidth / 2) {
-                pressTimer = setTimeout(() => {
-                    if(confirm(`Restore "${word}"?`)) {
-                        knownWords = knownWords.filter(w => w !== word);
-                        saveAndSync();
-                        openKnown();
-                    }
-                }, 750);
-            }
-        }, {passive: true});
-        div.addEventListener('touchend', () => clearTimeout(pressTimer));
-        list.appendChild(div);
-    });
-}
-
-function removeAllKnown() {
-    if (knownWords.length === 0) return;
-    if (confirm("Remove all mastered words?")) {
-        knownWords = [];
-        saveAndSync();
-        openKnown();
-    }
-}
-
-function openFavs() {
-    const list = document.getElementById('fav-list');
-    list.innerHTML = "";
-    document.getElementById('fav-overlay').style.display = 'flex';
-    if (favExamples.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:var(--text-secondary); margin-top:50px;">No favorites.</p>`;
-        return;
-    }
-    const organized = {};
-    favExamples.forEach(id => {
-        const parts = id.split('|');
-        if (parts.length < 2) return;
-        const word = parts[0].trim();
-        const text = parts[1].trim();
-        if (!organized[word]) {
-            const master = wordData.find(w => w.WORD.trim().toLowerCase() === word.toLowerCase());
-            organized[word] = { index: wordData.indexOf(master), ipa: master ? master.IPA : '', items: [] };
-        }
-        organized[word].items.push({id, text});
-    });
-    Object.keys(organized).forEach(word => {
-        const groupHeader = document.createElement('div');
-        groupHeader.className = 'fav-group-header';
-        const title = document.createElement('div');
-        title.className = 'fav-group-title';
-        title.textContent = word;
-        const ipaSpan = document.createElement('div');
-        ipaSpan.className = 'fav-group-ipa';
-        ipaSpan.textContent = organized[word].ipa;
-        let headerTimer;
-        title.addEventListener('touchstart', () => {
-            headerTimer = setTimeout(() => {
-                const idx = organized[word].index;
-                if (idx !== -1) { currentIndex = idx; closeOverlays(); setTimeout(() => document.getElementById('card').classList.add('is-flipped'), 50); }
-            }, 750);
-        }, {passive: true});
-        title.addEventListener('touchend', () => clearTimeout(headerTimer));
-        ipaSpan.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
-        groupHeader.appendChild(title);
-        groupHeader.appendChild(ipaSpan);
-        list.appendChild(groupHeader);
-        organized[word].items.forEach(itemObj => {
-            const item = document.createElement('div');
-            item.className = 'example-item';
-            item.textContent = itemObj.text;
-            let exTimer;
-            item.addEventListener('touchstart', (e) => {
-                if (e.touches[0].clientX < window.innerWidth / 2) {
-                    exTimer = setTimeout(() => {
-                        if (confirm("Unfavorite?")) { favExamples = favExamples.filter(x => x !== itemObj.id); saveAndSync(); item.remove(); }
-                    }, 750);
-                }
-            }, {passive: true});
-            item.addEventListener('touchend', () => clearTimeout(exTimer));
-            list.appendChild(item);
-        });
-    });
-}
-
-function closeOverlays() { 
-    document.getElementById('fav-overlay').style.display = 'none'; 
-    document.getElementById('known-overlay').style.display = 'none'; 
-    document.getElementById('settings-overlay').style.display = 'none'; 
-    document.getElementById('quiz-overlay').style.display = 'none';
-    updateCard();
-}
-
-function resetDeleted() { if(confirm("Restore all?")) { deletedExamples = []; saveAndSync(); alert("Restored!"); } }
-function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
-function playAudioFromEvent(e) { if(e) e.stopPropagation(); playAudioByIndex(currentIndex); }
-
-function playAudioByIndex(idx) {
-    if (idx < 0 || idx >= wordData.length) return;
-    const word = wordData[idx].WORD;
-    const num = idx + 1;
-    let f = "audio-file";
-    if (num >= 1019 && num <= 2026) f = "audio-file-2";
-    else if (num >= 2027 && num <= 3034) f = "audio-file-3";
-    else if (num >= 3035) f = "audio-file-4";
-    new Audio(`${f}/${word}.mp3`).play().catch(()=>{});
-}
-
-function handleMoreClick(e) { 
-    if(e) e.stopPropagation();
-    currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
-    document.getElementById('b-meaning').innerText = availableMeanings[currentMeaningIdx];
-    document.getElementById('more-btn').textContent = `More ${currentMeaningIdx+1}/${availableMeanings.length}`;
-}
-
-function jumpPrompt() {
-    const val = prompt(`Jump to #:`);
-    if (val && !isNaN(val)) { currentIndex = Math.max(0, Math.min(wordData.length - 1, parseInt(val) - 1)); updateCard(); }
-}
-
-async function pushSync() {
-    clearTimeout(syncTimeout);
-    syncTimeout = setTimeout(async () => {
-        showSync('syncing', 'Syncing...');
-        try {
-            await fetch(BIN_URL, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
-                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords })
-            });
-            showSync('synced', 'Synced');
-        } catch {}
-    }, 1000);
-}
-
-function saveAndSync(shouldPush = true) {
+function saveAndSync(push = true) {
     localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
     localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
     localStorage.setItem('wf_known_words', JSON.stringify(knownWords));
-    if(shouldPush) pushSync();
+    
+    if(push) {
+        const status = document.getElementById('sync-status');
+        status.className = 'show syncing';
+        status.textContent = 'Syncing...';
+        fetch(BIN_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+            body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords })
+        }).then(() => {
+            status.className = 'show synced';
+            status.textContent = 'Synced';
+            setTimeout(() => status.className = '', 1500);
+        }).catch(() => { status.className = ''; });
+    }
 }
 
-function deleteEx(id, el) { deletedExamples.push(id); saveAndSync(); el.remove(); }
-
-function prevCard() {
-    let start = currentIndex;
-    do { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
-    updateCard();
-}
-
-function nextCard() {
-    let start = currentIndex;
-    do { currentIndex = (currentIndex + 1) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
-    updateCard();
-}
-
-function shuffleCard() {
-    let attempts = 0; let newIdx;
-    do { newIdx = Math.floor(Math.random() * wordData.length); attempts++; } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
-    currentIndex = newIdx; updateCard();
-}
-
+function resetDeleted() { if(confirm("Restore all deleted examples?")) { deletedExamples = []; saveAndSync(); alert("Restored!"); } }
 </script>
 </body>
 </html>
