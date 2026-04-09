@@ -191,11 +191,19 @@
         .option-btn {
             background: var(--surface-2); color: var(--text-main);
             border: 1px solid var(--border);
-            padding: 16px 8px; border-radius: var(--radius-md);
+            padding: 12px 8px; border-radius: var(--radius-md);
             font-family: 'Lora', Georgia, serif;
             font-weight: 600; font-size: 0.9rem; text-align: center;
             transition: background 0.18s, border-color 0.18s, transform 0.1s;
-            overflow: hidden; text-overflow: ellipsis;
+            overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+        }
+        .option-btn .opt-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+        .option-btn .opt-ipa {
+            font-family: monospace; font-weight: 400;
+            color: var(--text-secondary); white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; width: 100%;
+            font-size: clamp(0.45rem, 1.8vw, 0.65rem);
         }
         .option-btn:active { transform: scale(0.97); }
         .option-btn.correct {
@@ -237,6 +245,7 @@
 
         /* Card front */
         .card-front { justify-content: flex-start; align-items: center; text-align: center; padding: 60px 30px; }
+        .word-container { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 
         .word-display {
             font-family: 'Playfair Display', serif;
@@ -260,23 +269,40 @@
         .card.is-flipped .mastery-controls { opacity: 0; pointer-events: none; }
 
         .mastery-btn {
-            background: var(--surface-3); width: 58px; height: 58px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+            background: var(--surface-3); border-radius: 50px;
+            display: flex; align-items: center; justify-content: center;
             border: 1px solid var(--border-bright);
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
             transition: transform 0.15s, background 0.15s;
+            padding: 0 22px; height: 48px;
         }
-        .mastery-btn:active { transform: scale(0.9); }
-        .mastery-btn.known { color: var(--success-green); }
-        .mastery-btn.quiz { color: var(--accent-gold); }
+        .mastery-btn:active { transform: scale(0.93); }
+        .mastery-btn.known {
+            background: rgba(46,204,113,0.12);
+            border-color: rgba(46,204,113,0.3);
+            color: var(--success-green);
+            font-family: 'Lora', Georgia, serif;
+            font-size: 0.82rem; font-weight: 600;
+            letter-spacing: 0.06em; text-transform: uppercase;
+        }
 
         .flip-hint {
-            position: absolute; bottom: 36px;
-            font-family: 'Playfair Display', serif;
-            font-size: 0.7rem; color: var(--text-dim);
-            font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.2em; padding: 20px;
-            width: 100%; text-align: center;
+            position: absolute; bottom: 28px;
+            left: 50%; transform: translateX(-50%);
+            font-family: 'Lora', Georgia, serif;
+            font-size: 0.85rem; font-weight: 600;
+            letter-spacing: 0.12em; text-transform: uppercase;
+            color: var(--primary);
+            background: var(--primary-dim);
+            border: 1px solid rgba(77,158,255,0.25);
+            border-radius: 50px;
+            padding: 14px 32px;
+            white-space: nowrap;
+            animation: flip-pulse 2.4s ease-in-out infinite;
+        }
+        @keyframes flip-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(77,158,255,0); opacity: 0.85; }
+            50% { box-shadow: 0 0 0 8px rgba(77,158,255,0.08); opacity: 1; }
         }
 
         /* Card back */
@@ -443,9 +469,9 @@
 
             <div class="quiz-stat">
 
-                <span id="quiz-score-display" class="quiz-stat-val">0</span>
+                <span id="quiz-score-display" class="quiz-stat-val" style="color:var(--success-green);">0</span>
 
-                <span class="quiz-stat-label">Score</span>
+                <span class="quiz-stat-label">Got Right</span>
 
             </div>
 
@@ -477,7 +503,7 @@
 
         <div id="quiz-question" class="quiz-sentence">Select a favorite...</div>
 
-        <div id="quiz-meaning" class="quiz-meaning"><span>Meaning</span>—</div>
+        <div id="quiz-meaning" class="quiz-meaning" onclick="quizMeaningIdx=(quizMeaningIdx+1)%quizMeanings.length; renderQuizMeaning();"><span>Meaning</span>—</div>
 
         <div id="quiz-options" class="options-grid"></div>
 
@@ -565,7 +591,7 @@
 
             <div class="mastery-controls">
 
-                <div class="mastery-btn known" onclick="markAsKnown(event)">👍</div>
+                <div class="mastery-btn known" onclick="markAsKnown(event)">✓ I Know This Word</div>
 
             </div>
 
@@ -646,6 +672,10 @@ let currentQuizCorrect = "";
 let quizPool = []; 
 
 let isQuizLocked = false;
+
+let quizMeanings = [];
+
+let quizMeaningIdx = 0;
 
 
 
@@ -779,6 +809,14 @@ function updateCard() {
 
 
 
+function renderQuizMeaning() {
+    const el = document.getElementById('quiz-meaning');
+    const counter = quizMeanings.length > 1
+        ? ` <em style="font-size:0.62rem;opacity:0.45;font-style:normal;">${quizMeaningIdx + 1}/${quizMeanings.length}</em>`
+        : '';
+    el.innerHTML = `<span>Meaning</span>${quizMeanings[quizMeaningIdx]}${counter}`;
+}
+
 // --- QUIZ LOGIC ---
 
 function startQuiz(e) {
@@ -842,8 +880,17 @@ function nextQuizQuestion() {
     currentQuizCorrect = word.trim();
 
     const quizWordData = wordData.find(w => w.WORD.trim().toLowerCase() === currentQuizCorrect.toLowerCase());
-    const quizMeaning = quizWordData && quizWordData.MEANING && quizWordData.MEANING.trim() ? quizWordData.MEANING.trim() : '—';
-    document.getElementById('quiz-meaning').innerHTML = `<span>Meaning</span>${quizMeaning}`;
+    quizMeanings = [];
+    if (quizWordData) {
+        if (quizWordData.MEANING && quizWordData.MEANING.trim()) quizMeanings.push(quizWordData.MEANING.trim());
+        for (let i = 1; i <= 10; i++) {
+            const v = quizWordData[`Meaning${i}`];
+            if (v && v.trim()) quizMeanings.push(v.trim());
+        }
+    }
+    if (quizMeanings.length === 0) quizMeanings = ['—'];
+    quizMeaningIdx = 0;
+    renderQuizMeaning();
 
 
 
@@ -883,7 +930,9 @@ function nextQuizQuestion() {
 
         btn.className = 'option-btn';
 
-        btn.textContent = opt;
+        const optData = wordData.find(w => w.WORD.trim() === opt);
+        const optIpa = optData && optData.IPA ? optData.IPA.trim() : '';
+        btn.innerHTML = `<span class="opt-word">${opt}</span>${optIpa ? `<span class="opt-ipa">${optIpa}</span>` : ''}`;
 
         btn.onclick = () => handleQuizTap(opt, btn);
 
@@ -907,7 +956,10 @@ function handleQuizTap(selectedWord, btn) {
 
     let correctBtn;
 
-    btns.forEach(b => { if(b.textContent === currentQuizCorrect) correctBtn = b; });
+    btns.forEach(b => { 
+        const wordSpan = b.querySelector('.opt-word');
+        if ((wordSpan ? wordSpan.textContent : b.textContent).trim() === currentQuizCorrect) correctBtn = b;
+    });
 
 
 
