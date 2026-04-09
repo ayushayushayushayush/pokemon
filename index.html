@@ -332,7 +332,7 @@
 
         .example-item { background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; }
 
-        .example-item.is-fav { border-left: 4px solid var(--fav-indicator); }
+        .example-item.is-fav { border-left: 4px solid var(--delete-red); color: var(--delete-red); }
 
 
 
@@ -1309,13 +1309,15 @@ function saveAndSync(shouldPush = true) {
 
 function toggleFav(id, el) {
 
-    if (favExamples.includes(id)) favExamples = favExamples.filter(x => x !== id);
-
-    else favExamples.push(id);
+    if (favExamples.includes(id)) {
+        favExamples = favExamples.filter(x => x !== id);
+        el.classList.remove('is-fav');
+    } else {
+        favExamples.push(id);
+        el.classList.add('is-fav');
+    }
 
     saveAndSync();
-
-    updateCard();
 
 }
 
