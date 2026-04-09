@@ -969,15 +969,23 @@ function renderExamples(item) {
 
         div.addEventListener('touchend', (e) => {
 
-            if (new Date().getTime() - lastTap < 300) toggleFav(ex.id, div);
+            e.stopPropagation();
 
-            lastTap = new Date().getTime();
+            clearTimeout(pressTimer);
+
+            const now = new Date().getTime();
+
+            if (now - lastTap < 300) toggleFav(ex.id, div);
+
+            lastTap = now;
 
         });
 
         let pressTimer;
 
         div.addEventListener('touchstart', (e) => {
+
+            e.stopPropagation();
 
             if (e.touches[0].clientX < window.innerWidth / 2) {
 
@@ -986,8 +994,6 @@ function renderExamples(item) {
             }
 
         }, {passive: true});
-
-        div.addEventListener('touchend', () => clearTimeout(pressTimer));
 
         list.appendChild(div);
 
