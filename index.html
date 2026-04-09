@@ -206,9 +206,9 @@
             transition: background 0.18s, border-color 0.18s, transform 0.1s;
             overflow: hidden;
             display: flex; flex-direction: column; align-items: center; 
-            justify-content: center; /* Center content vertically */
+            justify-content: center;
             gap: 3px;
-            min-height: 75px; /* Added height to accommodate two IPA lines */
+            min-height: 75px;
         }
         .option-btn .opt-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
         
@@ -216,7 +216,7 @@
             font-family: monospace;
             font-weight: 400;
             color: var(--text-secondary); 
-            white-space: normal; /* Allow text to wrap if it contains <br> */
+            white-space: normal;
             overflow: visible; 
             width: 100%;
             font-size: clamp(0.45rem, 1.8vw, 0.65rem);
@@ -268,8 +268,8 @@
         }
 
         /* Card front */
-        .card-front { justify-content: flex-start;
-        align-items: center; text-align: center; padding: 60px 30px; }
+        .card-front { justify-content: center;
+        align-items: center; text-align: center; padding: 40px 30px 100px; cursor: pointer; }
         .word-container { user-select: none;
         -webkit-user-select: none; -webkit-touch-callout: none; }
 
@@ -288,35 +288,30 @@
             line-height: 1.5;
         }
 
-        .mastery-controls {
+        /* NEW Mastery UI */
+        .mastery-footer {
             position: absolute;
-            bottom: 130px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 16px; align-items: center; z-index: 100;
+            bottom: 0; left: 0; width: 100%;
+            height: 80px;
+            background: linear-gradient(to top, rgba(255,255,255,0.03), transparent);
+            border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 100;
             transition: opacity 0.3s ease;
         }
-        .card.is-flipped .mastery-controls { opacity: 0; pointer-events: none; }
+        .card.is-flipped .mastery-footer { opacity: 0; pointer-events: none; }
 
         .mastery-btn {
-            background: var(--surface-3);
-            border-radius: 50px;
-            display: flex; align-items: center; justify-content: center;
-            border: 1px solid var(--border-bright);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            transition: transform 0.15s, background 0.15s;
-            padding: 0 22px; height: 48px;
-        }
-        .mastery-btn:active { transform: scale(0.93); }
-        .mastery-btn.known {
-            background: rgba(46,204,113,0.12);
-            border-color: rgba(46,204,113,0.3);
-            color: var(--success-green);
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            color: var(--text-secondary);
             font-family: 'Lora', Georgia, serif;
-            font-size: 0.82rem; font-weight: 600;
+            font-size: 0.85rem; font-weight: 600;
             letter-spacing: 0.06em; text-transform: uppercase;
+            width: 100%; height: 100%;
+            transition: background 0.2s, color 0.2s;
         }
-
-        /* Card front is fully tappable/clickable to flip — no button needed */
-        .card-front { cursor: pointer; }
+        .mastery-btn:active { background: rgba(46,204,113,0.1); color: var(--success-green); }
+        .mastery-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.5; fill: none; }
 
         /* Card back */
         .card-back { transform: rotateY(180deg);
@@ -499,8 +494,8 @@
 </div>
 
 <header id="app-header" style="display:none;">
-    <div class="header-btn" onclick="openSettings()">⚙️</div>
     <div class="header-btn fav-btn" onclick="openFavs()">★</div>
+    <div class="header-btn" onclick="openSettings()">⚙️</div>
     <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
 </header>
 
@@ -515,12 +510,15 @@
                         <span id="f-phonetic"></span>
                     </div>
                 </div>
+                
+                <div class="mastery-footer">
+                    <div class="mastery-btn" onclick="markAsKnown(event)">
+                        <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>
+                        I Know This Word
+                    </div>
+                </div>
             </div>
             
-            <div class="mastery-controls">
-                <div class="mastery-btn known" onclick="markAsKnown(event)">✓ I Know This Word</div>
-            </div>
-
             <div class="card-face card-back">
                 <div class="back-header" onclick="flipCard()">
                     <div class="back-top-row">
@@ -695,14 +693,10 @@ function nextQuizQuestion() {
         const btn = document.createElement('div');
         btn.className = 'option-btn';
         const optData = wordData.find(w => w.WORD.trim() === opt);
-        
         let optIpa = optData && optData.IPA ? optData.IPA.trim() : '';
-        
-        // Split IPA if it contains a comma and move content to new line 
         if (optIpa.includes(',')) {
             optIpa = optIpa.split(',').join(',<br>');
         }
-
         btn.innerHTML = `<span class="opt-word">${opt}</span>${optIpa ? `<span class="opt-ipa">${optIpa}</span>` : ''}`;
         btn.onclick = () => handleQuizTap(opt, btn);
         grid.appendChild(btn);
@@ -957,17 +951,6 @@ function saveAndSync(shouldPush = true) {
     localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
     localStorage.setItem('wf_known_words', JSON.stringify(knownWords));
     if(shouldPush) pushSync();
-}
-
-function toggleFav(id, el) {
-    if (favExamples.includes(id)) {
-        favExamples = favExamples.filter(x => x !== id);
-        if (el) el.style.color = '';
-    } else {
-        favExamples.push(id);
-        if (el) el.style.color = '#FF453A';
-    }
-    saveAndSync();
 }
 
 function deleteEx(id, el) { deletedExamples.push(id); saveAndSync(); el.remove(); }
