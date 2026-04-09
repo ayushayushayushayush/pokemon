@@ -954,6 +954,9 @@ function renderExamples(item) {
 
     list.innerHTML = "";
 
+    // Block any dblclick/click from example-list bubbling up to card flip handlers
+    list.ondblclick = (e) => e.stopPropagation();
+
     const cleanWord = item.WORD.trim();
 
     const rows = [];
@@ -982,51 +985,47 @@ function renderExamples(item) {
 
         div.innerHTML = `<strong>${idx+1}.</strong> ${ex.text}`;
 
+        // Desktop: dblclick to favorite
+        div.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            toggleFav(ex.id, div);
+        });
+
+        // Mobile: double-tap to favorite
         let lastTap = 0;
-        let blockNextClick = false;
+        let pressTimer;
+        let suppressClick = false;
+        let touchX = 0;
+
+        div.addEventListener('touchstart', (e) => {
+            touchX = e.touches[0].clientX;
+            pressTimer = setTimeout(() => {
+                if (touchX < window.innerWidth / 2) {
+                    if(confirm("Delete?")) deleteEx(ex.id, div);
+                }
+            }, 750);
+        }, {passive: true});
 
         div.addEventListener('touchend', (e) => {
-
-            const now = new Date().getTime();
-
-            if (now - lastTap < 300) {
-
+            clearTimeout(pressTimer);
+            const now = Date.now();
+            if (now - lastTap < 350) {
                 e.stopPropagation();
                 e.preventDefault();
-                blockNextClick = true;
+                suppressClick = true;
                 toggleFav(ex.id, div);
-
+                setTimeout(() => { suppressClick = false; }, 600);
             }
-
             lastTap = now;
-
         });
 
         div.addEventListener('click', (e) => {
-
-            if (blockNextClick) {
-
+            if (suppressClick) {
                 e.stopPropagation();
                 e.preventDefault();
-                blockNextClick = false;
-
             }
-
-        });
-
-        let pressTimer;
-
-        div.addEventListener('touchstart', (e) => {
-
-            if (e.touches[0].clientX < window.innerWidth / 2) {
-
-                pressTimer = setTimeout(() => { if(confirm("Delete?")) deleteEx(ex.id, div); }, 750);
-
-            }
-
-        }, {passive: true});
-
-        div.addEventListener('touchend', () => clearTimeout(pressTimer));
+        }, true);
 
         list.appendChild(div);
 
