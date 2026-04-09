@@ -526,7 +526,7 @@
 
         <div style="font-weight:800;">Mastered</div>
 
-        <div style="width: 60px;"></div>
+        <div onclick="removeAllKnown()" class="header-btn" style="color:var(--delete-red);">Remove All</div>
 
     </header>
 
@@ -1210,7 +1210,25 @@ function openKnown() {
 
 
 
-// ── openFavs ──
+// ── removeAllKnown ──
+// Clears the entire mastered-words list after a confirmation dialog, then refreshes the view.
+function removeAllKnown() {
+
+    if (knownWords.length === 0) return;
+
+    if (confirm("Remove all mastered words?")) {
+
+        knownWords = [];
+
+        saveAndSync();
+
+        openKnown();
+
+    }
+
+}
+
+
 // Shows the favorites overlay, organized by word with IPA.
 // Long-press a word title (750ms) to jump to that card.
 // Long-press an example sentence LEFT side (750ms) to unfavorite it.
