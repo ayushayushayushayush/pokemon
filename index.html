@@ -315,7 +315,7 @@
 
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
 
-        .back-header { padding: 25px 25px 15px; border-bottom: 1px solid #38383a; flex-shrink: 0; position: relative; }
+        .back-header { padding: 25px 25px 15px; border-bottom: 1px solid #38383a; flex-shrink: 0; position: relative; cursor: pointer; user-select: none; }
 
         .back-top-row { display: flex; align-items: center; justify-content: flex-start; gap: 12px; margin-bottom: 12px; position: relative; }
 
@@ -327,10 +327,6 @@
         .meaning-container { display: flex; align-items: flex-start; justify-content: space-between; min-height: 60px; }
 
         .meaning-text { flex: 1; font-size: 1.2rem; font-weight: 700; color: var(--text-main); line-height: 1.4; margin: 0; z-index: 5; }
-
-        .flip-zone-right { position: absolute; top: 0; right: 0; width: 40%; height: 100%; z-index: 2; }
-
-
 
         #example-list { flex-grow: 1; overflow-y: auto; padding: 15px 25px 30px; -webkit-overflow-scrolling: touch; }
 
@@ -556,9 +552,7 @@
 
             <div class="card-face card-back">
 
-                <div class="back-header">
-
-                    <div class="flip-zone-right" onclick="flipCard()"></div>
+                <div class="back-header" onclick="flipCard()">
 
                     <div class="back-top-row">
 
@@ -954,9 +948,6 @@ function renderExamples(item) {
 
     list.innerHTML = "";
 
-    // Block any dblclick/click from example-list bubbling up to card flip handlers
-    list.ondblclick = (e) => e.stopPropagation();
-
     const cleanWord = item.WORD.trim();
 
     const rows = [];
@@ -985,18 +976,14 @@ function renderExamples(item) {
 
         div.innerHTML = `<strong>${idx+1}.</strong> ${ex.text}`;
 
-        // Desktop: dblclick to favorite
-        div.addEventListener('dblclick', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            toggleFav(ex.id, div);
-        });
-
-        // Mobile: double-tap to favorite
+        // Double-tap (mobile) or dblclick (desktop) to favorite
         let lastTap = 0;
         let pressTimer;
-        let suppressClick = false;
         let touchX = 0;
+
+        div.addEventListener('dblclick', (e) => {
+            toggleFav(ex.id, div);
+        });
 
         div.addEventListener('touchstart', (e) => {
             touchX = e.touches[0].clientX;
@@ -1011,21 +998,10 @@ function renderExamples(item) {
             clearTimeout(pressTimer);
             const now = Date.now();
             if (now - lastTap < 350) {
-                e.stopPropagation();
-                e.preventDefault();
-                suppressClick = true;
                 toggleFav(ex.id, div);
-                setTimeout(() => { suppressClick = false; }, 600);
             }
             lastTap = now;
         });
-
-        div.addEventListener('click', (e) => {
-            if (suppressClick) {
-                e.stopPropagation();
-                e.preventDefault();
-            }
-        }, true);
 
         list.appendChild(div);
 
