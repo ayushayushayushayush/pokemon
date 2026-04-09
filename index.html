@@ -116,7 +116,6 @@
         }
 
         .list-container { flex: 1; overflow-y: auto; padding: 8px 18px 24px; -webkit-overflow-scrolling: touch; }
-
         #fav-overlay { user-select: none; -webkit-user-select: none; }
 
         /* ── Settings ── */
@@ -147,7 +146,7 @@
             font-size: 1.1rem; font-weight: 400; line-height: 1.7;
             color: var(--text-main); text-align: left;
             background: var(--surface-2); padding: 22px 20px; border-radius: var(--radius-md);
-            border: 1px solid var(--border); min-height: 120px; display: block;
+            border: 1px solid var(--border); min-height: 110px; display: block;
             word-wrap: break-word; overflow-wrap: break-word;
         }
         .quiz-sentence b { color: var(--primary); font-weight: 800; letter-spacing: 0.05em; white-space: nowrap; }
@@ -162,19 +161,29 @@
         .quiz-meaning:active { background: var(--surface-3); }
         .quiz-meaning span { color: var(--primary); font-weight: 700; font-style: normal; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; margin-right: 8px; }
 
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         
         .option-btn {
             background: var(--surface-2); color: var(--text-main);
-            border: 1px solid var(--border); padding: 12px 8px; border-radius: var(--radius-md);
-            font-family: 'Lora', Georgia, serif; font-weight: 600; font-size: 0.9rem;
+            border: 1px solid var(--border-bright); padding: 14px 10px; border-radius: var(--radius-md);
+            font-family: 'Lora', Georgia, serif; 
             text-align: center; transition: background 0.18s, border-color 0.18s, transform 0.1s;
             overflow: hidden; display: flex; flex-direction: column; align-items: center; 
-            justify-content: center; gap: 3px; min-height: 75px;
+            justify-content: center; gap: 6px; min-height: 90px;
         }
-        .option-btn .opt-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
-        .option-btn .opt-ipa { font-family: monospace; font-weight: 400; color: var(--text-secondary); white-space: normal; overflow: visible; width: 100%; font-size: clamp(0.45rem, 1.8vw, 0.65rem); line-height: 1.2; }
-        .option-btn:active { transform: scale(0.97); }
+        .option-btn .opt-word { 
+            font-size: 1.2rem; /* Increased font size */
+            font-weight: 700;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; 
+        }
+        .option-btn .opt-ipa { 
+            font-family: monospace; font-weight: 400; 
+            color: #888; /* Slightly brighter for visibility */
+            white-space: normal; overflow: visible; width: 100%; 
+            font-size: 0.85rem; /* Increased IPA font size */
+            line-height: 1.2; 
+        }
+        .option-btn:active { transform: scale(0.97); background: var(--surface-3); }
         .option-btn.correct { background: rgba(46,204,113,0.18); border-color: var(--success-green); color: var(--success-green); font-weight: 700; }
         .option-btn.wrong { background: rgba(255,69,69,0.18); border-color: var(--delete-red); color: var(--delete-red); }
 
