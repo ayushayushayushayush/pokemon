@@ -1,37 +1,20 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-
     
-
     <meta name="apple-mobile-web-app-capable" content="yes">
-
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
     <meta name="apple-mobile-web-app-title" content="WordFlow Pro">
-
     
-
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-
-
 
     <title>WordFlow Pro</title>
 
-
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
-
-
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
-
     <style>
         :root {
             --primary: #4D9EFF;
@@ -62,22 +45,27 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 
         body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
+            margin: 0;
+            padding: 0; width: 100%; height: 100%;
             background-color: var(--bg);
             color: var(--text-main);
             font-family: 'Lora', Georgia, serif;
             display: flex; flex-direction: column;
-            overflow: hidden; overscroll-behavior-y: none;
+            overflow: hidden;
+            overscroll-behavior-y: none;
         }
 
         /* ── Loading ── */
         #loading-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 3000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 16px;
         }
         #loading-screen p {
-            font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem; font-weight: 700;
             color: var(--text-secondary); letter-spacing: 0.1em; text-transform: uppercase;
             animation: pulse 1.5s ease-in-out infinite;
         }
@@ -85,9 +73,11 @@
 
         /* ── Sync pill ── */
         #sync-status {
-            position: fixed; top: calc(var(--safe-top) + 10px); left: 50%;
+            position: fixed;
+            top: calc(var(--safe-top) + 10px); left: 50%;
             transform: translateX(-50%); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em;
-            padding: 5px 14px; border-radius: 20px; z-index: 4000;
+            padding: 5px 14px; border-radius: 20px;
+            z-index: 4000;
             opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
         }
         #sync-status.show { opacity: 1; }
@@ -107,7 +97,8 @@
             background: var(--surface-3); color: var(--text-main);
             border: 1px solid var(--border); transition: background 0.15s, border-color 0.15s;
         }
-        .header-btn:active { background: var(--surface-4); border-color: var(--border-bright); }
+        .header-btn:active { background: var(--surface-4);
+        border-color: var(--border-bright); }
         .fav-btn { font-size: 1.15rem; padding: 6px 14px; line-height: 1; }
 
         .counter {
@@ -120,31 +111,38 @@
 
         /* ── Overlays ── */
         #fav-overlay, #known-overlay, #settings-overlay, #quiz-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 2000; display: none; flex-direction: column;
         }
 
         .list-container { flex: 1; overflow-y: auto; padding: 8px 18px 24px; -webkit-overflow-scrolling: touch; }
 
         /* Disable text selection throughout the favorites overlay */
-        #fav-overlay { user-select: none; -webkit-user-select: none; }
+        #fav-overlay { user-select: none;
+        -webkit-user-select: none; }
 
         /* ── Settings ── */
-        .settings-list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+        .settings-list { margin-top: 16px;
+        display: flex; flex-direction: column; gap: 8px; }
         .settings-item {
-            background: var(--surface-2); padding: 18px 20px; border-radius: var(--radius-md);
+            background: var(--surface-2);
+            padding: 18px 20px; border-radius: var(--radius-md);
             display: flex; justify-content: space-between; align-items: center;
             font-weight: 600; font-size: 0.95rem;
-            border: 1px solid var(--border); transition: background 0.15s;
+            border: 1px solid var(--border);
+            transition: background 0.15s;
         }
         .settings-item:active { background: var(--surface-3); }
         .chevron { color: var(--text-dim); font-size: 1.3rem; }
 
         /* ── Quiz ── */
-        .quiz-container { padding: 12px 16px 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; }
+        .quiz-container { padding: 12px 16px 20px;
+        display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; }
 
         .quiz-header-info {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex;
+            justify-content: space-between; align-items: center;
             background: var(--surface-2); padding: 14px 20px;
             border-radius: var(--radius-md); border: 1px solid var(--border);
         }
@@ -154,12 +152,14 @@
             font-size: 1.15rem; font-weight: 800; color: var(--text-main);
         }
         .quiz-stat-label {
-            font-size: 0.55rem; color: var(--text-secondary);
+            font-size: 0.55rem;
+            color: var(--text-secondary);
             text-transform: uppercase; letter-spacing: 0.08em;
         }
 
         .quiz-sentence {
-            font-size: 1.1rem; font-weight: 400; line-height: 1.7;
+            font-size: 1.1rem;
+            font-weight: 400; line-height: 1.7;
             color: var(--text-main); text-align: left;
             background: var(--surface-2);
             padding: 22px 20px; border-radius: var(--radius-md);
@@ -168,7 +168,8 @@
             word-wrap: break-word; overflow-wrap: break-word;
         }
         .quiz-sentence b {
-            color: var(--primary); font-weight: 800;
+            color: var(--primary);
+            font-weight: 800;
             letter-spacing: 0.05em; white-space: nowrap;
         }
 
@@ -179,47 +180,63 @@
             border-radius: var(--radius-sm);
             padding: 12px 16px;
             font-size: 0.9rem; color: var(--text-secondary);
-            font-style: italic; line-height: 1.6;
+            font-style: italic;
+            line-height: 1.6;
             cursor: pointer; user-select: none;
             transition: border-color 0.2s, background 0.2s;
         }
         .quiz-meaning:active { background: var(--surface-3); }
         .quiz-meaning span {
-            color: var(--primary); font-weight: 700;
+            color: var(--primary);
+            font-weight: 700;
             font-style: normal; font-size: 0.62rem;
             text-transform: uppercase; letter-spacing: 0.1em; margin-right: 8px;
         }
 
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        
         .option-btn {
-            background: var(--surface-2); color: var(--text-main);
+            background: var(--surface-2);
+            color: var(--text-main);
             border: 1px solid var(--border);
             padding: 12px 8px; border-radius: var(--radius-md);
             font-family: 'Lora', Georgia, serif;
-            font-weight: 600; font-size: 0.9rem; text-align: center;
+            font-weight: 600; font-size: 0.9rem;
+            text-align: center;
             transition: background 0.18s, border-color 0.18s, transform 0.1s;
             overflow: hidden;
-            display: flex; flex-direction: column; align-items: center; gap: 3px;
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; /* Center content vertically */
+            gap: 3px;
+            min-height: 75px; /* Added height to accommodate two IPA lines */
         }
         .option-btn .opt-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+        
         .option-btn .opt-ipa {
-            font-family: monospace; font-weight: 400;
-            color: var(--text-secondary); white-space: nowrap;
-            overflow: hidden; text-overflow: ellipsis; width: 100%;
+            font-family: monospace;
+            font-weight: 400;
+            color: var(--text-secondary); 
+            white-space: normal; /* Allow text to wrap if it contains <br> */
+            overflow: visible; 
+            width: 100%;
             font-size: clamp(0.45rem, 1.8vw, 0.65rem);
+            line-height: 1.2;
         }
         .option-btn:active { transform: scale(0.97); }
         .option-btn.correct {
-            background: rgba(46,204,113,0.18); border-color: var(--success-green);
+            background: rgba(46,204,113,0.18);
+            border-color: var(--success-green);
             color: var(--success-green); font-weight: 700;
         }
         .option-btn.wrong {
-            background: rgba(255,69,69,0.18); border-color: var(--delete-red);
+            background: rgba(255,69,69,0.18);
+            border-color: var(--delete-red);
             color: var(--delete-red);
         }
 
         /* ── Favorites list ── */
-        .fav-group-header { margin: 22px 0 10px 4px; display: flex; align-items: baseline; gap: 10px; }
+        .fav-group-header { margin: 22px 0 10px 4px;
+        display: flex; align-items: baseline; gap: 10px; }
         .fav-group-title {
             font-family: 'Playfair Display', serif;
             color: var(--delete-red); font-size: 0.95rem;
@@ -228,17 +245,21 @@
         .fav-group-ipa { color: var(--text-dim); font-size: 0.82rem; font-family: monospace; }
 
         /* ── Main card area ── */
-        .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 18px; }
+        .app-container { flex: 1;
+        display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .scene { width: 92%;
+        max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 18px; }
         .card {
-            width: 100%; height: 100%; position: relative;
+            width: 100%;
+            height: 100%; position: relative;
             transition: transform 0.65s cubic-bezier(0.23, 1, 0.32, 1);
             transform-style: preserve-3d;
         }
         .card.is-flipped { transform: rotateY(180deg); }
 
         .card-face {
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            position: absolute;
+            width: 100%; height: 100%; backface-visibility: hidden;
             border-radius: var(--radius-xl);
             background: var(--surface-1);
             display: flex; flex-direction: column; overflow: hidden;
@@ -247,8 +268,10 @@
         }
 
         /* Card front */
-        .card-front { justify-content: flex-start; align-items: center; text-align: center; padding: 60px 30px; }
-        .word-container { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+        .card-front { justify-content: flex-start;
+        align-items: center; text-align: center; padding: 60px 30px; }
+        .word-container { user-select: none;
+        -webkit-user-select: none; -webkit-touch-callout: none; }
 
         .word-display {
             font-family: 'Playfair Display', serif;
@@ -258,21 +281,24 @@
         }
 
         .ipa-sub {
-            font-size: 1rem; color: var(--text-secondary);
+            font-size: 1rem;
+            color: var(--text-secondary);
             margin-top: 18px; font-family: monospace;
             display: flex; flex-direction: column; gap: 6px;
             line-height: 1.5;
         }
 
         .mastery-controls {
-            position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%);
+            position: absolute;
+            bottom: 130px; left: 50%; transform: translateX(-50%);
             display: flex; gap: 16px; align-items: center; z-index: 100;
             transition: opacity 0.3s ease;
         }
         .card.is-flipped .mastery-controls { opacity: 0; pointer-events: none; }
 
         .mastery-btn {
-            background: var(--surface-3); border-radius: 50px;
+            background: var(--surface-3);
+            border-radius: 50px;
             display: flex; align-items: center; justify-content: center;
             border: 1px solid var(--border-bright);
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
@@ -293,7 +319,8 @@
         .card-front { cursor: pointer; }
 
         /* Card back */
-        .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
+        .card-back { transform: rotateY(180deg);
+        display: flex; flex-direction: column; }
 
         .back-header {
             padding: 24px 24px 16px;
@@ -303,7 +330,8 @@
         }
 
         .back-top-row {
-            display: flex; align-items: center;
+            display: flex;
+            align-items: center;
             justify-content: flex-start; gap: 10px;
             margin-bottom: 12px; position: relative;
         }
@@ -316,7 +344,8 @@
         }
 
         .more-btn {
-            background: var(--primary-dim); color: var(--primary);
+            background: var(--primary-dim);
+            color: var(--primary);
             font-size: 0.6rem; font-weight: 700;
             padding: 5px 11px; border-radius: 8px;
             text-transform: uppercase; letter-spacing: 0.05em; z-index: 5;
@@ -324,17 +353,20 @@
         }
 
         .type-badge {
-            background: var(--surface-4); color: var(--text-secondary);
+            background: var(--surface-4);
+            color: var(--text-secondary);
             font-size: 0.58rem; font-weight: 700;
             padding: 5px 10px; border-radius: 8px;
             text-transform: uppercase; letter-spacing: 0.06em; z-index: 5;
             border: 1px solid var(--border);
         }
 
-        .meaning-container { display: flex; align-items: flex-start; justify-content: space-between; min-height: 55px; }
+        .meaning-container { display: flex; align-items: flex-start; justify-content: space-between;
+        min-height: 55px; }
 
         .meaning-text {
-            flex: 1; font-size: 1.1rem; font-weight: 500;
+            flex: 1;
+            font-size: 1.1rem; font-weight: 500;
             color: var(--text-main); line-height: 1.5; margin: 0; z-index: 5;
         }
 
@@ -345,7 +377,8 @@
             padding: 14px 16px; font-size: 0.9rem; line-height: 1.6;
             color: #C0C0C8; margin-bottom: 10px; border-radius: var(--radius-md);
             border: 1px solid var(--border);
-            user-select: none; -webkit-user-select: none;
+            user-select: none;
+            -webkit-user-select: none;
             transition: border-color 0.2s;
         }
         .example-item.is-fav { color: #FF4545 !important; border-color: rgba(255,69,69,0.25); }
@@ -357,7 +390,8 @@
         }
 
         .nav-btn {
-            flex: 1; height: 58px; border-radius: var(--radius-md); border: none;
+            flex: 1;
+            height: 58px; border-radius: var(--radius-md); border: none;
             background: var(--surface-3); color: var(--text-main);
             font-family: 'Lora', Georgia, serif;
             font-weight: 700; font-size: 0.88rem; letter-spacing: 0.02em;
@@ -365,7 +399,8 @@
         }
         .nav-btn:active { transform: scale(0.97); }
         .nav-btn.primary {
-            background: var(--primary); color: #fff;
+            background: var(--primary);
+            color: #fff;
             border-color: transparent;
             box-shadow: 0 4px 20px rgba(77,158,255,0.3);
         }
@@ -373,7 +408,8 @@
 
         /* ── Known/Mastered list ── */
         .known-item {
-            padding: 16px 4px; border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding: 16px 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
             display: flex; justify-content: space-between; align-items: center;
         }
         .known-word { font-weight: 600; font-size: 1rem; }
@@ -389,444 +425,209 @@
 
 <body>
 
-
-
 <div id="sync-status"></div>
-
 <div id="loading-screen"><p>Loading...</p></div>
 
-
-
-
 <div id="settings-overlay">
-
     <header>
-
         <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
-
         <div style="font-weight:800;">Settings</div>
-
         <div style="width: 60px;"></div>
-
     </header>
-
     <div class="list-container">
-
         <div class="settings-list">
-
             <div class="settings-item" onclick="openKnown()">
-
                 <span>Mastered Words</span>
-
                 <span class="chevron">›</span>
-
             </div>
-
             <div class="settings-item" onclick="resetDeleted()">
-
                 <span style="color:var(--delete-red);">Restore Deleted Examples</span>
-
                 <span class="chevron">›</span>
-
             </div>
-
         </div>
-
     </div>
-
 </div>
-
-
 
 <div id="quiz-overlay">
-
     <header>
-
         <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
-
         <div style="font-weight:800;">Quiz Mode</div>
-
         <div style="width: 60px;"></div>
-
     </header>
-
     <div class="quiz-container">
-
         <div class="quiz-header-info">
-
             <div class="quiz-stat">
-
                 <span id="quiz-score-display" class="quiz-stat-val" style="color:var(--success-green);">0</span>
-
                 <span class="quiz-stat-label">Got Right</span>
-
             </div>
-
             <div class="quiz-stat">
-
                 <span id="quiz-wrong-display" class="quiz-stat-val" style="color:var(--delete-red);">0</span>
-
                 <span class="quiz-stat-label">Got Wrong</span>
-
             </div>
-
             <div class="quiz-stat">
-
                 <span id="quiz-total-display" class="quiz-stat-val">0</span>
-
                 <span class="quiz-stat-label">Total Favs</span>
-
             </div>
-
             <div class="quiz-stat">
-
                 <span id="quiz-remaining-display" class="quiz-stat-val">0</span>
-
                 <span class="quiz-stat-label">Left</span>
-
             </div>
-
         </div>
-
         <div id="quiz-question" class="quiz-sentence">Select a favorite...</div>
-
-        <div id="quiz-meaning" class="quiz-meaning" onclick="quizMeaningIdx=(quizMeaningIdx+1)%quizMeanings.length; renderQuizMeaning();"><span>Meaning</span>—</div>
-
+        <div id="quiz-meaning" class="quiz-meaning" onclick="quizMeaningIdx=(quizMeaningIdx+1)%quizMeanings.length;
+        renderQuizMeaning();"><span>Meaning</span>—</div>
         <div id="quiz-options" class="options-grid"></div>
-
     </div>
-
 </div>
-
-
 
 <div id="fav-overlay">
-
     <header>
-
         <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
-
         <div style="font-weight:800;">Favorites</div>
-
         <div class="header-btn fav-btn" onclick="startQuiz(event)">💡</div>
-
     </header>
-
     <div id="fav-list" class="list-container"></div>
-
 </div>
-
-
 
 <div id="known-overlay">
-
     <header>
-
         <div onclick="openSettings()" class="header-btn" style="color:var(--primary);">← Settings</div>
-
         <div style="font-weight:800;">Mastered</div>
-
         <div onclick="removeAllKnown()" class="header-btn" style="color:var(--delete-red);">Remove All</div>
-
     </header>
-
     <div id="known-list" class="list-container"></div>
-
 </div>
-
-
 
 <header id="app-header" style="display:none;">
-
     <div class="header-btn" onclick="openSettings()">⚙️</div>
-
     <div class="header-btn fav-btn" onclick="openFavs()">★</div>
-
     <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
-
 </header>
 
-
-
 <div class="app-container" id="app">
-
     <div class="scene">
-
         <div class="card" id="card">
-
-            <!-- CARD FRONT: clicking anywhere on this face flips the card -->
             <div class="card-face card-front" onclick="flipCard()">
-
-                <!-- Word display: tapping the word plays its audio -->
                 <div class="word-container" onclick="playAudioFromEvent(event)">
-
                     <h1 id="f-word" class="word-display">...</h1>
-
                     <div class="ipa-sub">
-
                         <span id="f-ipa"></span>
-
                         <span id="f-phonetic"></span>
-
                     </div>
-
                 </div>
-
-                <!-- NOTE: "Tap to Flip" button removed — the whole card face is now clickable -->
-
             </div>
-
             
-
-            <!-- MASTERY CONTROLS: shown only on card front (hidden when flipped via CSS).
-                 "I Know This Word" marks the word as mastered and skips it going forward. -->
             <div class="mastery-controls">
-
                 <div class="mastery-btn known" onclick="markAsKnown(event)">✓ I Know This Word</div>
-
             </div>
 
-
-
-            <!-- CARD BACK: clicking the back-header area flips the card back to the front -->
             <div class="card-face card-back">
-
-                <!-- BACK HEADER: tap to flip back to the front face.
-                     Contains the word, "More" meanings button, word type badge, and meaning text. -->
                 <div class="back-header" onclick="flipCard()">
-
                     <div class="back-top-row">
-
-                        <!-- Tapping the word on the back also plays audio -->
                         <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
-
-                        <!-- "More" button cycles through alternate meanings (hidden when only 1 meaning exists) -->
                         <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
-
-                        <!-- Word type badge (e.g. noun, verb) — hidden if not available in data -->
                         <div id="type-badge" class="type-badge" style="display:none;"></div>
-
                     </div>
-
                     <div class="meaning-container">
-
                         <p id="b-meaning" class="meaning-text">...</p>
-
                     </div>
-
                 </div>
-
-                <!-- EXAMPLE LIST: scrollable list of example sentences for the current word.
-                     Long-press LEFT side to delete; long-press RIGHT side to favorite. -->
                 <div id="example-list"></div>
-
             </div>
-
         </div>
-
     </div>
 
-
-
-    <!-- BOTTOM NAV: Back/Shuffle/Next controls for navigating the card deck.
-         Known/mastered words are automatically skipped during navigation. -->
     <div class="controls">
-
         <button class="nav-btn" onclick="prevCard()">Back</button>
-
         <button class="nav-btn" onclick="shuffleCard()">Shuffle</button>
-
         <button class="nav-btn primary" onclick="nextCard()">Next</button>
-
     </div>
-
 </div>
-
-
 
 <script>
 
-// ── Cloud Sync Config ──
-// JSONBin.io is used to sync user progress (favorites, deleted, known) across devices.
 const BIN_ID  = "69d3dacfaaba882197cd5a0e";
-
 const API_KEY = "$2a$10$2XIWmqUVHyv39zmLplK6YOCLf07sb3WyJIxxleZUrKRb61lugMCu6";
-
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
+let wordData = [];
+let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
+let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
+let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
 
-
-// ── App State ──
-let wordData = [];  // Full word list loaded from words.csv
-
-// Persisted to localStorage and synced to cloud:
-let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");  // IDs of deleted example sentences
-
-let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");  // IDs of favorited example sentences
-
-let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");  // Words marked as mastered
-
-
-
-// ── Quiz State ──
 let quizScore = 0;
-
 let quizWrong = 0;
+let currentQuizCorrect = "";
+let quizPool = [];
+let isQuizLocked = false;
+let quizMeanings = [];
+let quizMeaningIdx = 0;
 
-let currentQuizCorrect = "";  // The correct answer word for the current question
+let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
+let availableMeanings = [];
+let currentMeaningIdx = 0;
+let syncTimeout = null;
 
-let quizPool = [];  // Remaining unasked questions in current quiz round
-
-let isQuizLocked = false;  // Prevents double-tapping answer options
-
-let quizMeanings = [];  // All meanings for the current quiz word
-
-let quizMeaningIdx = 0;  // Which meaning is currently displayed
-
-
-
-// ── Card State ──
-let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);  // Currently shown card index
-
-let availableMeanings = [];  // All meanings for the currently shown word
-
-let currentMeaningIdx = 0;  // Which meaning is displayed on the card back
-
-let syncTimeout = null;  // Debounce timer for cloud sync
-
-
-
-// ── showSync ──
-// Briefly shows a status pill at the top of the screen ("Syncing..." or "Synced ✓").
-// State can be 'syncing' or 'synced'; auto-hides after 2 seconds.
 function showSync(state, message) {
-
     const el = document.getElementById('sync-status');
-
     el.className = `show ${state}`;
-
     el.textContent = message;
-
     setTimeout(() => { el.className = ''; }, 2000);
-
 }
 
-
-
-// ── window.onload ──
-// Entry point: loads words.csv via PapaParse, then merges cloud-synced state
-// with localStorage. Skips to the next unknown word if the saved index is already mastered.
 window.onload = () => {
-
     Papa.parse("words.csv", {
-
         download: true, header: true,
-
         complete: async function(results) {
-
             wordData = results.data.filter(row => row.WORD);
-
             fetch(BIN_URL + "/latest", { headers: { "X-Master-Key": API_KEY } })
-
                 .then(r => r.json())
-
                 .then(d => {
-
                     deletedExamples = Array.from(new Set([...(d.record?.deleted || []), ...deletedExamples]));
-
                     favExamples = Array.from(new Set([...(d.record?.favs || []), ...favExamples]));
-
                     knownWords = Array.from(new Set([...(d.record?.known || []), ...knownWords]));
-
                     saveAndSync(false);
-
                 }).catch(() => {});
-
             document.getElementById('loading-screen').style.display = 'none';
-
             document.getElementById('app').style.display = 'flex';
-
             document.getElementById('app-header').style.display = 'flex';
-
             if(knownWords.includes(wordData[currentIndex].WORD.trim())) nextCard();
-
             else updateCard();
-
         }
-
     });
-
 };
 
-
-
-// ── updateCard ──
-// Refreshes the card UI to reflect the word at currentIndex.
-// Resets the flip state, populates front/back content, and re-renders examples.
 function updateCard() {
-
     const item = wordData[currentIndex];
-
     const meaningEl = document.getElementById('b-meaning');
-
     availableMeanings = [];
-
     if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING.trim());
-
     for(let i=1; i<=10; i++) {
-
         let val = item[`Meaning${i}`];
-
         if(val && val.trim()) availableMeanings.push(val.trim());
-
     }
-
     currentMeaningIdx = 0;
-
     document.getElementById('card').classList.remove('is-flipped');
-
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
-
     localStorage.setItem('wf_index_v6', currentIndex);
-
     document.getElementById('f-word').textContent = item.WORD;
-
     document.getElementById('f-ipa').textContent = item.IPA;
-
     document.getElementById('f-phonetic').textContent = item.PHONETIC;
-
     document.getElementById('b-word').textContent = item.WORD;
-
     meaningEl.innerText = availableMeanings[0] || "";
-
     const moreBtn = document.getElementById('more-btn');
-
     moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none';
-
     if(moreBtn.style.display === 'block') moreBtn.textContent = `More 1/${availableMeanings.length}`;
-
     const typeBadge = document.getElementById('type-badge');
-
     if (item.Type && item.Type.trim()) {
-
         typeBadge.textContent = item.Type.trim();
-
         typeBadge.style.display = 'block';
-
     } else {
-
         typeBadge.style.display = 'none';
-
     }
-
     renderExamples(item);
-
 }
 
-
-
-// ── renderQuizMeaning ──
-// Updates the meaning display in quiz mode. Shows a "1/N" counter if multiple meanings exist.
 function renderQuizMeaning() {
     const el = document.getElementById('quiz-meaning');
     const counter = quizMeanings.length > 1
@@ -835,72 +636,33 @@ function renderQuizMeaning() {
     el.innerHTML = `<span>Meaning</span>${quizMeanings[quizMeaningIdx]}${counter}`;
 }
 
-// ── startQuiz ──
-// Launches quiz mode using the user's favorited examples as the question pool.
-// Requires at least 1 favorite. Resets score counters and shows the quiz overlay.
 function startQuiz(e) {
-
     if(e) e.stopPropagation();
-
     if (favExamples.length < 1) {
-
         alert("Add some favorites first!");
-
         return;
-
     }
-
     quizPool = [...favExamples];
-
     quizScore = 0;
-
     quizWrong = 0;
-
     document.getElementById('fav-overlay').style.display = 'none';
-
     document.getElementById('quiz-overlay').style.display = 'flex';
-
     document.getElementById('quiz-total-display').textContent = favExamples.length;
-
     nextQuizQuestion();
-
 }
 
-
-
-// ── nextQuizQuestion ──
-// Picks a random favorite example from the pool, blanks out the target word in the sentence,
-// and generates 6 answer options (1 correct + 5 random words from the full list).
 function nextQuizQuestion() {
-
     if (quizPool.length === 0) {
-
         alert("Well done! Restarting...");
-
         quizPool = [...favExamples];
-
     }
-
-
-
     isQuizLocked = false;
-
     document.getElementById('quiz-remaining-display').textContent = quizPool.length;
-
-    
-
     const poolIdx = Math.floor(Math.random() * quizPool.length);
-
     const randomId = quizPool[poolIdx];
-
     quizPool.splice(poolIdx, 1); 
-
-
-
     const [word, sentence] = randomId.split('|');
-
     currentQuizCorrect = word.trim();
-
     const quizWordData = wordData.find(w => w.WORD.trim().toLowerCase() === currentQuizCorrect.toLowerCase());
     quizMeanings = [];
     if (quizWordData) {
@@ -914,180 +676,94 @@ function nextQuizQuestion() {
     quizMeaningIdx = 0;
     renderQuizMeaning();
 
-
-
     const escapedWord = currentQuizCorrect.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const stem = escapedWord.endsWith('e') ? escapedWord.slice(0, -1) : escapedWord;
     const regex = new RegExp(`\\b(?:${escapedWord}|${stem})\\w*`, 'gi');
-
-    // Using simple underscores
-
     const maskedSentence = sentence.replace(regex, "<b>_________</b>");
-
     document.getElementById('quiz-question').innerHTML = maskedSentence;
 
-
-
     let options = [currentQuizCorrect];
-
     while(options.length < 6) {
-
         let randWord = wordData[Math.floor(Math.random() * wordData.length)].WORD.trim();
-
         if(!options.includes(randWord)) options.push(randWord);
-
     }
-
     options.sort(() => Math.random() - 0.5);
 
-
-
     const grid = document.getElementById('quiz-options');
-
     grid.innerHTML = "";
-
     options.forEach(opt => {
-
         const btn = document.createElement('div');
-
         btn.className = 'option-btn';
-
         const optData = wordData.find(w => w.WORD.trim() === opt);
-        const optIpa = optData && optData.IPA ? optData.IPA.trim() : '';
+        
+        let optIpa = optData && optData.IPA ? optData.IPA.trim() : '';
+        
+        // Split IPA if it contains a comma and move content to new line 
+        if (optIpa.includes(',')) {
+            optIpa = optIpa.split(',').join(',<br>');
+        }
+
         btn.innerHTML = `<span class="opt-word">${opt}</span>${optIpa ? `<span class="opt-ipa">${optIpa}</span>` : ''}`;
-
         btn.onclick = () => handleQuizTap(opt, btn);
-
         grid.appendChild(btn);
-
     });
-
 }
 
-
-
-// ── handleQuizTap ──
-// Called when the user taps a quiz answer option.
-// Locks the UI immediately to prevent double-taps, highlights correct/wrong,
-// updates the score (+1 correct, -1 wrong, min 0), then advances after 1.2s.
 function handleQuizTap(selectedWord, btn) {
-
     if (isQuizLocked) return;
-
     isQuizLocked = true;
-
-
-
     const btns = document.querySelectorAll('.option-btn');
-
     let correctBtn;
-
     btns.forEach(b => { 
         const wordSpan = b.querySelector('.opt-word');
         if ((wordSpan ? wordSpan.textContent : b.textContent).trim() === currentQuizCorrect) correctBtn = b;
     });
-
-
-
     if(selectedWord === currentQuizCorrect) {
-
         btn.classList.add('correct');
-
         quizScore += 1;
-
     } else {
-
         btn.classList.add('wrong');
-
         correctBtn.classList.add('correct');
-
         quizScore = Math.max(0, quizScore - 1);
-
         quizWrong += 1;
-
     }
-
-
-
     document.getElementById('quiz-score-display').textContent = quizScore;
-
     document.getElementById('quiz-wrong-display').textContent = quizWrong;
-
     setTimeout(nextQuizQuestion, 1200);
-
 }
 
-
-
-// ── markAsKnown ──
-// Adds the current word to the knownWords list, saves/syncs, then advances to the next card.
-// Known words are skipped during prev/next/shuffle navigation.
 function markAsKnown(e) {
-
     if(e) e.stopPropagation();
-
     const word = wordData[currentIndex].WORD.trim();
-
     if(!knownWords.includes(word)) {
-
         knownWords.push(word);
-
         saveAndSync();
-
         nextCard();
-
     }
-
 }
 
-
-
-// ── renderExamples ──
-// Builds the scrollable list of example sentences for the given word item.
-// Filters out deleted examples and sorts favorited ones to the top.
-// Touch interactions:
-//   - Long-press LEFT  (750ms) → delete example (with confirm dialog)
-//   - Long-press RIGHT (1200ms) → toggle favorite (turns red when active)
 function renderExamples(item) {
-
     const list = document.getElementById('example-list');
-
     list.innerHTML = "";
-
     const cleanWord = item.WORD.trim();
-
     const rows = [];
-
     for (let i = 1; i <= 50; i++) {
-
         const text = item[i.toString()];
-
         if (text && text.trim().length > 1) {
-
             const exId = `${cleanWord}|${text.trim()}`;
-
             if (deletedExamples.includes(exId)) continue;
-
             rows.push({ text: text.trim(), id: exId, isFav: favExamples.includes(exId) });
-
         }
-
     }
-
     rows.sort((a,b) => b.isFav - a.isFav).forEach((ex, idx) => {
-
         const div = document.createElement('div');
         div.className = 'example-item';
         div.dataset.exId = ex.id;
         div.innerHTML = `<strong>${idx+1}.</strong> ${ex.text}`;
-
-        // Apply color immediately based on fav state
         if (ex.isFav) div.style.color = '#FF453A';
-
         let pressTimer = null;
         let moved = false;
         let startX = 0;
-
         div.addEventListener('touchstart', (e) => {
             moved = false;
             startX = e.touches[0].clientX;
@@ -1096,7 +772,6 @@ function renderExamples(item) {
             pressTimer = setTimeout(() => {
                 if (moved) return;
                 if (isRightSide) {
-                    // Long press right = favorite
                     if (favExamples.includes(ex.id)) {
                         favExamples = favExamples.filter(x => x !== ex.id);
                         div.style.color = '';
@@ -1106,382 +781,185 @@ function renderExamples(item) {
                     }
                     saveAndSync();
                 } else {
-                    // Long press left = delete
                     if (confirm("Delete?")) deleteEx(ex.id, div);
                 }
             }, delay);
         }, {passive: true});
-
         div.addEventListener('touchmove', () => {
             moved = true;
             clearTimeout(pressTimer);
         }, {passive: true});
-
         div.addEventListener('touchend', () => {
             clearTimeout(pressTimer);
         });
-
         list.appendChild(div);
-
     });
-
 }
 
-
-
-// ── openSettings ──
-// Shows the settings overlay (hides the known-words overlay if open).
 function openSettings(e) {
-
     if(e) e.stopPropagation();
-
     document.getElementById('known-overlay').style.display = 'none';
-
     document.getElementById('settings-overlay').style.display = 'flex';
-
 }
 
-
-
-// ── openKnown ──
-// Shows the mastered-words list overlay (sorted newest first).
-// Long-press LEFT on any word to restore it (remove from known list).
 function openKnown() {
-
     const list = document.getElementById('known-list');
-
     list.innerHTML = "";
-
     document.getElementById('settings-overlay').style.display = 'none';
-
     document.getElementById('known-overlay').style.display = 'flex';
-
     if (knownWords.length === 0) {
-
         list.innerHTML = `<p style="text-align:center; color:gray; margin-top:50px;">No words mastered.</p>`;
-
         return;
-
     }
-
     knownWords.slice().reverse().forEach(word => {
-
         const masterItem = wordData.find(w => w.WORD.trim() === word);
-
         const ipaText = masterItem ? masterItem.IPA : '';
-
         const div = document.createElement('div');
-
         div.className = 'known-item';
-
         div.innerHTML = `<span class="known-word">${word}</span><span class="known-ipa">${ipaText}</span>`;
-
         let pressTimer;
-
         div.addEventListener('touchstart', (e) => {
-
             if (e.touches[0].clientX < window.innerWidth / 2) {
-
                 pressTimer = setTimeout(() => {
-
                     if(confirm(`Restore "${word}"?`)) {
-
                         knownWords = knownWords.filter(w => w !== word);
-
                         saveAndSync();
-
                         openKnown();
-
                     }
-
                 }, 750);
-
             }
-
         }, {passive: true});
-
         div.addEventListener('touchend', () => clearTimeout(pressTimer));
-
         list.appendChild(div);
-
     });
-
 }
 
-
-
-// ── removeAllKnown ──
-// Clears the entire mastered-words list after a confirmation dialog, then refreshes the view.
 function removeAllKnown() {
-
     if (knownWords.length === 0) return;
-
     if (confirm("Remove all mastered words?")) {
-
         knownWords = [];
-
         saveAndSync();
-
         openKnown();
-
     }
-
 }
 
-
-// Shows the favorites overlay, organized by word with IPA.
-// Long-press a word title (750ms) to jump to that card.
-// Long-press an example sentence LEFT side (750ms) to unfavorite it.
-// Tapping the IPA text plays the word's audio.
 function openFavs() {
-
     const list = document.getElementById('fav-list');
-
     list.innerHTML = "";
-
     document.getElementById('fav-overlay').style.display = 'flex';
-
     if (favExamples.length === 0) {
-
         list.innerHTML = `<p style="text-align:center; color:var(--text-secondary); margin-top:50px;">No favorites.</p>`;
-
         return;
-
     }
-
     const organized = {};
-
     favExamples.forEach(id => {
-
         const parts = id.split('|');
-
         if (parts.length < 2) return;
-
         const word = parts[0].trim();
-
         const text = parts[1].trim();
-
         if (!organized[word]) {
-
             const master = wordData.find(w => w.WORD.trim().toLowerCase() === word.toLowerCase());
-
             organized[word] = { index: wordData.indexOf(master), ipa: master ? master.IPA : '', items: [] };
-
         }
-
         organized[word].items.push({id, text});
-
     });
-
     Object.keys(organized).forEach(word => {
-
         const groupHeader = document.createElement('div');
-
         groupHeader.className = 'fav-group-header';
-
         const title = document.createElement('div');
-
         title.className = 'fav-group-title';
-
         title.textContent = word;
-
         const ipaSpan = document.createElement('div');
-
         ipaSpan.className = 'fav-group-ipa';
-
         ipaSpan.textContent = organized[word].ipa;
-
         let headerTimer;
-
         title.addEventListener('touchstart', () => {
-
             headerTimer = setTimeout(() => {
-
                 const idx = organized[word].index;
-
                 if (idx !== -1) { currentIndex = idx; closeOverlays(); setTimeout(() => document.getElementById('card').classList.add('is-flipped'), 50); }
-
             }, 750);
-
         }, {passive: true});
-
         title.addEventListener('touchend', () => clearTimeout(headerTimer));
-
         ipaSpan.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
-
         groupHeader.appendChild(title);
-
         groupHeader.appendChild(ipaSpan);
-
         list.appendChild(groupHeader);
-
         organized[word].items.forEach(itemObj => {
-
             const item = document.createElement('div');
-
             item.className = 'example-item';
-
             item.textContent = itemObj.text;
-
             let exTimer;
-
             item.addEventListener('touchstart', (e) => {
-
                 if (e.touches[0].clientX < window.innerWidth / 2) {
-
                     exTimer = setTimeout(() => {
-
                         if (confirm("Unfavorite?")) { favExamples = favExamples.filter(x => x !== itemObj.id); saveAndSync(); item.remove(); }
-
                     }, 750);
-
                 }
-
             }, {passive: true});
-
             item.addEventListener('touchend', () => clearTimeout(exTimer));
-
             list.appendChild(item);
-
         });
-
     });
-
 }
 
-
-
-// ── closeOverlays ──
-// Hides all overlay panels (favorites, known, settings, quiz) and refreshes the main card.
 function closeOverlays() { 
-
     document.getElementById('fav-overlay').style.display = 'none'; 
-
     document.getElementById('known-overlay').style.display = 'none'; 
-
     document.getElementById('settings-overlay').style.display = 'none'; 
-
     document.getElementById('quiz-overlay').style.display = 'none';
-
-    updateCard(); 
-
+    updateCard();
 }
 
-
-
-// ── resetDeleted ──
-// Restores all deleted example sentences after a confirmation dialog.
 function resetDeleted() { if(confirm("Restore all?")) { deletedExamples = []; saveAndSync(); alert("Restored!"); } }
-
-// ── flipCard ──
-// Toggles the 3D flip animation on the card by adding/removing the 'is-flipped' class.
-// Called when tapping the card front OR the back-header area.
 function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
-
-// ── playAudioFromEvent ──
-// Wrapper that stops event propagation (to prevent card flip) then plays audio.
 function playAudioFromEvent(e) { if(e) e.stopPropagation(); playAudioByIndex(currentIndex); }
 
-// ── playAudioByIndex ──
-// Plays the pronunciation MP3 for the word at the given index.
-// Audio files are split across 4 folders based on word number ranges.
 function playAudioByIndex(idx) {
-
     if (idx < 0 || idx >= wordData.length) return;
-
     const word = wordData[idx].WORD;
-
     const num = idx + 1;
-
     let f = "audio-file";
-
     if (num >= 1019 && num <= 2026) f = "audio-file-2";
-
     else if (num >= 2027 && num <= 3034) f = "audio-file-3";
-
     else if (num >= 3035) f = "audio-file-4";
-
     new Audio(`${f}/${word}.mp3`).play().catch(()=>{});
-
 }
 
-// ── handleMoreClick ──
-// Cycles through alternate meanings on the card back.
-// Updates the meaning text and the "More X/Y" counter button label.
 function handleMoreClick(e) { 
-
     if(e) e.stopPropagation();
-
     currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
-
     document.getElementById('b-meaning').innerText = availableMeanings[currentMeaningIdx];
-
     document.getElementById('more-btn').textContent = `More ${currentMeaningIdx+1}/${availableMeanings.length}`;
-
 }
 
-// ── jumpPrompt ──
-// Prompts the user to enter a word number and jumps directly to that card.
-// Tapping the counter pill in the header triggers this.
 function jumpPrompt() {
-
     const val = prompt(`Jump to #:`);
-
     if (val && !isNaN(val)) { currentIndex = Math.max(0, Math.min(wordData.length - 1, parseInt(val) - 1)); updateCard(); }
-
 }
 
-// ── pushSync ──
-// Debounced cloud sync: waits 1 second after the last change before pushing
-// deleted/favs/known state to JSONBin. Shows a sync status pill during the request.
 async function pushSync() {
-
     clearTimeout(syncTimeout);
-
     syncTimeout = setTimeout(async () => {
-
         showSync('syncing', 'Syncing...');
-
         try {
-
             await fetch(BIN_URL, {
-
                 method: "PUT",
-
                 headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
-
                 body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords })
-
             });
-
             showSync('synced', 'Synced');
-
         } catch {}
-
     }, 1000);
-
 }
 
-// ── saveAndSync ──
-// Saves all user state to localStorage immediately, then optionally triggers a cloud sync.
-// Pass shouldPush = false to skip the cloud push (e.g. on initial load merge).
 function saveAndSync(shouldPush = true) {
-
     localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
-
     localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
-
     localStorage.setItem('wf_known_words', JSON.stringify(knownWords));
-
     if(shouldPush) pushSync();
-
 }
 
-// ── toggleFav ──
-// Adds or removes an example ID from the favorites list, updates the element color,
-// and saves/syncs. The 'el' parameter is optional (the tapped DOM element).
 function toggleFav(id, el) {
-
     if (favExamples.includes(id)) {
         favExamples = favExamples.filter(x => x !== id);
         if (el) el.style.color = '';
@@ -1489,53 +967,31 @@ function toggleFav(id, el) {
         favExamples.push(id);
         if (el) el.style.color = '#FF453A';
     }
-
     saveAndSync();
-
 }
 
-// ── deleteEx ──
-// Adds an example ID to the deleted list, saves/syncs, and removes the element from the DOM.
 function deleteEx(id, el) { deletedExamples.push(id); saveAndSync(); el.remove(); }
 
-// ── prevCard ──
-// Moves to the previous card, skipping any words already in the knownWords list.
 function prevCard() {
-
     let start = currentIndex;
-
     do { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
-
     updateCard();
-
 }
 
-// ── nextCard ──
-// Advances to the next card, skipping any words already in the knownWords list.
 function nextCard() {
-
     let start = currentIndex;
-
-    do { currentIndex = (currentIndex + 1) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
-
+    do { currentIndex = (currentIndex + 1) % wordData.length;
+    if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
     updateCard();
-
 }
 
-// ── shuffleCard ──
-// Jumps to a random card, making up to 100 attempts to avoid landing on a known word.
 function shuffleCard() {
-
     let attempts = 0; let newIdx;
-
-    do { newIdx = Math.floor(Math.random() * wordData.length); attempts++; } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
-
+    do { newIdx = Math.floor(Math.random() * wordData.length); attempts++;
+    } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
     currentIndex = newIdx; updateCard();
-
 }
 
 </script>
-
 </body>
-
 </html>
