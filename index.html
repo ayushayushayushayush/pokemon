@@ -983,6 +983,7 @@ function renderExamples(item) {
         div.innerHTML = `<strong>${idx+1}.</strong> ${ex.text}`;
 
         let lastTap = 0;
+        let blockNextClick = false;
 
         div.addEventListener('touchend', (e) => {
 
@@ -991,12 +992,25 @@ function renderExamples(item) {
             if (now - lastTap < 300) {
 
                 e.stopPropagation();
-
+                e.preventDefault();
+                blockNextClick = true;
                 toggleFav(ex.id, div);
 
             }
 
             lastTap = now;
+
+        });
+
+        div.addEventListener('click', (e) => {
+
+            if (blockNextClick) {
+
+                e.stopPropagation();
+                e.preventDefault();
+                blockNextClick = false;
+
+            }
 
         });
 
