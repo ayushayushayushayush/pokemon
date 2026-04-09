@@ -172,15 +172,15 @@
             justify-content: center; gap: 6px; min-height: 90px;
         }
         .option-btn .opt-word { 
-            font-size: 1.2rem; /* Increased font size */
+            font-size: 1.2rem;
             font-weight: 700;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; 
         }
         .option-btn .opt-ipa { 
             font-family: monospace; font-weight: 400; 
-            color: #888; /* Slightly brighter for visibility */
+            color: #888;
             white-space: normal; overflow: visible; width: 100%; 
-            font-size: 0.85rem; /* Increased IPA font size */
+            font-size: 0.85rem;
             line-height: 1.2; 
         }
         .option-btn:active { transform: scale(0.97); background: var(--surface-3); }
@@ -211,28 +211,6 @@
         .word-container { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
         .word-display { font-family: 'Playfair Display', serif; font-size: 3.6rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: 0.01em; }
         .ipa-sub { font-size: 1rem; color: var(--text-secondary); margin-top: 18px; font-family: monospace; display: flex; flex-direction: column; gap: 6px; line-height: 1.5; }
-
-        /* Mastery UI at TOP of Card */
-        .mastery-header {
-            position: absolute;
-            top: 0; left: 0; width: 100%;
-            height: 60px;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.03), transparent);
-            border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 100;
-            transition: opacity 0.3s ease;
-        }
-        .card.is-flipped .mastery-header { opacity: 0; pointer-events: none; }
-
-        .mastery-btn {
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            color: var(--text-secondary); font-family: 'Lora', Georgia, serif;
-            font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-            width: 100%; height: 100%; transition: background 0.2s, color 0.2s;
-        }
-        .mastery-btn:active { background: rgba(46,204,113,0.1); color: var(--success-green); }
-        .mastery-btn svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.5; fill: none; }
 
         /* Card back */
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
@@ -349,15 +327,8 @@
 <div class="app-container" id="app">
     <div class="scene">
         <div class="card" id="card">
-            <div class="card-face card-front" onclick="flipCard()">
-                <div class="mastery-header">
-                    <div class="mastery-btn" onclick="markAsKnown(event)">
-                        <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>
-                        I Know This Word
-                    </div>
-                </div>
-
-                <div class="word-container" onclick="playAudioFromEvent(event)">
+            <div class="card-face card-front" onclick="handleCardFrontClick(event)">
+                <div class="word-container" id="front-word-container">
                     <h1 id="f-word" class="word-display">...</h1>
                     <div class="ipa-sub">
                         <span id="f-ipa"></span>
@@ -413,6 +384,10 @@ let availableMeanings = [];
 let currentMeaningIdx = 0;
 let syncTimeout = null;
 
+// Gestures for Mastery
+let masteryTimer = null;
+let masteryMoved = false;
+
 function showSync(state, message) {
     const el = document.getElementById('sync-status');
     el.className = `show ${state}`;
@@ -421,6 +396,7 @@ function showSync(state, message) {
 }
 
 window.onload = () => {
+    setupMasteryGesture();
     Papa.parse("words.csv", {
         download: true, header: true,
         complete: async function(results) {
@@ -441,6 +417,49 @@ window.onload = () => {
         }
     });
 };
+
+function setupMasteryGesture() {
+    const container = document.getElementById('front-word-container');
+    
+    container.addEventListener('touchstart', (e) => {
+        masteryMoved = false;
+        masteryTimer = setTimeout(() => {
+            if (!masteryMoved) {
+                confirmMastery();
+            }
+        }, 750);
+    }, {passive: true});
+
+    container.addEventListener('touchmove', () => {
+        masteryMoved = true;
+        clearTimeout(masteryTimer);
+    }, {passive: true});
+
+    container.addEventListener('touchend', () => {
+        clearTimeout(masteryTimer);
+    });
+}
+
+function confirmMastery() {
+    const word = wordData[currentIndex].WORD.trim();
+    if (confirm(`Mark "${word}" as mastered and hide it?`)) {
+        if(!knownWords.includes(word)) {
+            knownWords.push(word);
+            saveAndSync();
+            nextCard();
+        }
+    }
+}
+
+function handleCardFrontClick(e) {
+    // If the click is on the word container, it's for audio.
+    // Otherwise, flip the card.
+    if (e.target.closest('#front-word-container')) {
+        playAudioByIndex(currentIndex);
+    } else {
+        flipCard();
+    }
+}
 
 function updateCard() {
     const item = wordData[currentIndex];
@@ -569,16 +588,6 @@ function handleQuizTap(selectedWord, btn) {
     document.getElementById('quiz-score-display').textContent = quizScore;
     document.getElementById('quiz-wrong-display').textContent = quizWrong;
     setTimeout(nextQuizQuestion, 1200);
-}
-
-function markAsKnown(e) {
-    if(e) e.stopPropagation();
-    const word = wordData[currentIndex].WORD.trim();
-    if(!knownWords.includes(word)) {
-        knownWords.push(word);
-        saveAndSync();
-        nextCard();
-    }
 }
 
 function renderExamples(item) {
