@@ -26,11 +26,11 @@
 
 
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="[cdnjs.cloudflare.com](https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js)"></script>
 
 
 
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+    <link href="[fonts.googleapis.com](https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap)" rel="stylesheet">
 
     <style>
         :root {
@@ -649,7 +649,7 @@ const BIN_ID  = "69d3dacfaaba882197cd5a0e";
 
 const API_KEY = "$2a$10$2XIWmqUVHyv39zmLplK6YOCLf07sb3WyJIxxleZUrKRb61lugMCu6";
 
-const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const BIN_URL = `[api.jsonbin.io](https://api.jsonbin.io/v3/b/${BIN_ID})`;
 
 
 
@@ -1054,6 +1054,13 @@ function renderExamples(item) {
         let pressTimer = null;
         let moved = false;
         let startX = 0;
+
+        // Double-click/double-tap to toggle favorite
+        div.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            toggleFav(ex.id, div);
+        });
 
         div.addEventListener('touchstart', (e) => {
             moved = false;
