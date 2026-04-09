@@ -38,7 +38,7 @@
 
             --bg: #000000;      
 
-            --card-bg: #000000; 
+            --card-bg: #1C1C1E; 
 
             --text-main: #FFFFFF; 
 
@@ -128,7 +128,7 @@
 
 
 
-        .header-btn { font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 12px; cursor: pointer; background: #111111; color: #8e8e93; border: 1px solid #1c1c1e; }
+        .header-btn { font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 12px; cursor: pointer; background: #2C2C2E; color: var(--text-main); border: 1px solid #3a3a3c; }
 
         .fav-btn { font-size: 1.2rem; padding: 4px 14px; line-height: 1; }
 
@@ -267,54 +267,26 @@
 
             border-radius: 35px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
 
-            background: var(--card-bg); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #1a1a1c;
+            background: var(--card-bg); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #38383a;
 
         }
 
 
 
-        .card-front {
-            justify-content: center; align-items: center; text-align: center; padding: 40px 30px;
-            background: #000000;
-            position: relative;
-        }
+        .card-front { justify-content: flex-start; align-items: center; text-align: center; padding: 60px 30px; }
 
-        .card-front::before {
-            content: '';
-            position: absolute;
-            top: 40%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300px; height: 300px;
-            background: radial-gradient(circle, rgba(10,132,255,0.07) 0%, transparent 70%);
-            pointer-events: none;
-            border-radius: 50%;
-        }
+        .word-display { font-size: 3.5rem; font-weight: 800; color: var(--text-main); margin: 0; }
 
-        .word-container { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; }
-
-        .word-display {
-            font-size: 3.8rem; font-weight: 800; color: #FFFFFF;
-            margin: 0; letter-spacing: -1.5px; line-height: 1.1;
-            text-shadow: 0 0 60px rgba(10,132,255,0.2);
-        }
-
-        .ipa-sub {
-            margin-top: 20px; display: flex; flex-direction: column; gap: 7px; align-items: center;
-        }
-
-        .ipa-sub span:first-child {
-            font-size: 1.05rem; color: #636366; font-family: 'Courier New', monospace; letter-spacing: 0.5px;
-        }
-
-        .ipa-sub span:last-child {
-            font-size: 0.78rem; color: #48484a; font-family: 'Courier New', monospace; letter-spacing: 2px; text-transform: uppercase;
-        }
+        .ipa-sub { font-size: 1.2rem; color: var(--text-secondary); margin-top: 15px; font-family: monospace; display: flex; flex-direction: column; gap: 8px; }
 
 
 
         .mastery-controls {
-            position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%);
+
+            position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%);
+
             display: flex; gap: 20px; align-items: center; z-index: 100; transition: opacity 0.3s ease;
+
         }
 
         .card.is-flipped .mastery-controls { opacity: 0; pointer-events: none; }
@@ -322,9 +294,13 @@
 
 
         .mastery-btn {
-            background: #111111; width: 58px; height: 58px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
-            border: 1px solid #2a2a2c; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+
+            background: #2C2C2E; width: 60px; height: 60px; border-radius: 50%;
+
+            display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
+
+            border: 1px solid #3a3a3c; box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+
         }
 
         .mastery-btn.known { color: var(--success-green); }
@@ -333,13 +309,7 @@
 
 
 
-        .flip-hint {
-            position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%);
-            font-size: 0.7rem; color: #3a3a3c; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 3px; padding: 10px 20px;
-            border: 1px solid #2a2a2c; border-radius: 20px;
-            white-space: nowrap;
-        }
+        .flip-hint { position: absolute; bottom: 40px; font-size: 1.15rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 20px; }
 
 
 
@@ -366,9 +336,11 @@
 
 
 
-        .controls { padding: 16px 20px calc(var(--safe-bottom) + 24px); margin-top: 0; display: flex; gap: 8px; width: 100%; max-width: 420px; }
-        .nav-btn { flex: 1; height: 54px; border-radius: 16px; border: none; background: #111111; color: #636366; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.5px; }
-        .nav-btn.primary { background: #0A84FF; color: white; }
+        .controls { padding: 20px 20px calc(var(--safe-bottom) + 30px); margin-top: 10px; display: flex; gap: 10px; width: 100%; max-width: 420px; }
+
+        .nav-btn { flex: 1; height: 60px; border-radius: 18px; border: none; background: #2C2C2E; color: white; font-weight: 700; font-size: 0.9rem; }
+
+        .nav-btn.primary { background: var(--primary); }
 
 
 
