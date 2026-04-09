@@ -286,24 +286,8 @@
             letter-spacing: 0.06em; text-transform: uppercase;
         }
 
-        .flip-hint {
-            position: absolute; bottom: 28px;
-            left: 50%; transform: translateX(-50%);
-            font-family: 'Lora', Georgia, serif;
-            font-size: 0.85rem; font-weight: 600;
-            letter-spacing: 0.12em; text-transform: uppercase;
-            color: var(--primary);
-            background: var(--primary-dim);
-            border: 1px solid rgba(77,158,255,0.25);
-            border-radius: 50px;
-            padding: 14px 32px;
-            white-space: nowrap;
-            animation: flip-pulse 2.4s ease-in-out infinite;
-        }
-        @keyframes flip-pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(77,158,255,0); opacity: 0.85; }
-            50% { box-shadow: 0 0 0 8px rgba(77,158,255,0.08); opacity: 1; }
-        }
+        /* Card front is fully tappable/clickable to flip — no button needed */
+        .card-front { cursor: pointer; }
 
         /* Card back */
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
@@ -567,8 +551,10 @@
 
         <div class="card" id="card">
 
-            <div class="card-face card-front">
+            <!-- CARD FRONT: clicking anywhere on this face flips the card -->
+            <div class="card-face card-front" onclick="flipCard()">
 
+                <!-- Word display: tapping the word plays its audio -->
                 <div class="word-container" onclick="playAudioFromEvent(event)">
 
                     <h1 id="f-word" class="word-display">...</h1>
@@ -583,12 +569,14 @@
 
                 </div>
 
-                <div class="flip-hint" onclick="flipCard()">Tap to Flip</div>
+                <!-- NOTE: "Tap to Flip" button removed — the whole card face is now clickable -->
 
             </div>
 
             
 
+            <!-- MASTERY CONTROLS: shown only on card front (hidden when flipped via CSS).
+                 "I Know This Word" marks the word as mastered and skips it going forward. -->
             <div class="mastery-controls">
 
                 <div class="mastery-btn known" onclick="markAsKnown(event)">✓ I Know This Word</div>
@@ -597,16 +585,22 @@
 
 
 
+            <!-- CARD BACK: clicking the back-header area flips the card back to the front -->
             <div class="card-face card-back">
 
+                <!-- BACK HEADER: tap to flip back to the front face.
+                     Contains the word, "More" meanings button, word type badge, and meaning text. -->
                 <div class="back-header" onclick="flipCard()">
 
                     <div class="back-top-row">
 
+                        <!-- Tapping the word on the back also plays audio -->
                         <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
 
+                        <!-- "More" button cycles through alternate meanings (hidden when only 1 meaning exists) -->
                         <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
 
+                        <!-- Word type badge (e.g. noun, verb) — hidden if not available in data -->
                         <div id="type-badge" class="type-badge" style="display:none;"></div>
 
                     </div>
@@ -619,6 +613,8 @@
 
                 </div>
 
+                <!-- EXAMPLE LIST: scrollable list of example sentences for the current word.
+                     Long-press LEFT side to delete; long-press RIGHT side to favorite. -->
                 <div id="example-list"></div>
 
             </div>
@@ -629,6 +625,8 @@
 
 
 
+    <!-- BOTTOM NAV: Back/Shuffle/Next controls for navigating the card deck.
+         Known/mastered words are automatically skipped during navigation. -->
     <div class="controls">
 
         <button class="nav-btn" onclick="prevCard()">Back</button>
@@ -645,6 +643,8 @@
 
 <script>
 
+// ── Cloud Sync Config ──
+// JSONBin.io is used to sync user progress (favorites, deleted, known) across devices.
 const BIN_ID  = "69d3dacfaaba882197cd5a0e";
 
 const API_KEY = "$2a$10$2XIWmqUVHyv39zmLplK6YOCLf07sb3WyJIxxleZUrKRb61lugMCu6";
@@ -653,42 +653,49 @@ const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 
 
-let wordData = [];
+// ── App State ──
+let wordData = [];  // Full word list loaded from words.csv
 
-let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
+// Persisted to localStorage and synced to cloud:
+let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");  // IDs of deleted example sentences
 
-let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
+let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");  // IDs of favorited example sentences
 
-let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
+let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");  // Words marked as mastered
 
 
 
+// ── Quiz State ──
 let quizScore = 0;
 
 let quizWrong = 0;
 
-let currentQuizCorrect = "";
+let currentQuizCorrect = "";  // The correct answer word for the current question
 
-let quizPool = []; 
+let quizPool = [];  // Remaining unasked questions in current quiz round
 
-let isQuizLocked = false;
+let isQuizLocked = false;  // Prevents double-tapping answer options
 
-let quizMeanings = [];
+let quizMeanings = [];  // All meanings for the current quiz word
 
-let quizMeaningIdx = 0;
-
-
-
-let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
-
-let availableMeanings = [];
-
-let currentMeaningIdx = 0;
-
-let syncTimeout = null;
+let quizMeaningIdx = 0;  // Which meaning is currently displayed
 
 
 
+// ── Card State ──
+let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);  // Currently shown card index
+
+let availableMeanings = [];  // All meanings for the currently shown word
+
+let currentMeaningIdx = 0;  // Which meaning is displayed on the card back
+
+let syncTimeout = null;  // Debounce timer for cloud sync
+
+
+
+// ── showSync ──
+// Briefly shows a status pill at the top of the screen ("Syncing..." or "Synced ✓").
+// State can be 'syncing' or 'synced'; auto-hides after 2 seconds.
 function showSync(state, message) {
 
     const el = document.getElementById('sync-status');
@@ -703,6 +710,9 @@ function showSync(state, message) {
 
 
 
+// ── window.onload ──
+// Entry point: loads words.csv via PapaParse, then merges cloud-synced state
+// with localStorage. Skips to the next unknown word if the saved index is already mastered.
 window.onload = () => {
 
     Papa.parse("words.csv", {
@@ -747,6 +757,9 @@ window.onload = () => {
 
 
 
+// ── updateCard ──
+// Refreshes the card UI to reflect the word at currentIndex.
+// Resets the flip state, populates front/back content, and re-renders examples.
 function updateCard() {
 
     const item = wordData[currentIndex];
@@ -809,6 +822,8 @@ function updateCard() {
 
 
 
+// ── renderQuizMeaning ──
+// Updates the meaning display in quiz mode. Shows a "1/N" counter if multiple meanings exist.
 function renderQuizMeaning() {
     const el = document.getElementById('quiz-meaning');
     const counter = quizMeanings.length > 1
@@ -817,8 +832,9 @@ function renderQuizMeaning() {
     el.innerHTML = `<span>Meaning</span>${quizMeanings[quizMeaningIdx]}${counter}`;
 }
 
-// --- QUIZ LOGIC ---
-
+// ── startQuiz ──
+// Launches quiz mode using the user's favorited examples as the question pool.
+// Requires at least 1 favorite. Resets score counters and shows the quiz overlay.
 function startQuiz(e) {
 
     if(e) e.stopPropagation();
@@ -849,6 +865,9 @@ function startQuiz(e) {
 
 
 
+// ── nextQuizQuestion ──
+// Picks a random favorite example from the pool, blanks out the target word in the sentence,
+// and generates 6 answer options (1 correct + 5 random words from the full list).
 function nextQuizQuestion() {
 
     if (quizPool.length === 0) {
@@ -944,6 +963,10 @@ function nextQuizQuestion() {
 
 
 
+// ── handleQuizTap ──
+// Called when the user taps a quiz answer option.
+// Locks the UI immediately to prevent double-taps, highlights correct/wrong,
+// updates the score (+1 correct, -1 wrong, min 0), then advances after 1.2s.
 function handleQuizTap(selectedWord, btn) {
 
     if (isQuizLocked) return;
@@ -993,8 +1016,9 @@ function handleQuizTap(selectedWord, btn) {
 
 
 
-// --- APP CORE ---
-
+// ── markAsKnown ──
+// Adds the current word to the knownWords list, saves/syncs, then advances to the next card.
+// Known words are skipped during prev/next/shuffle navigation.
 function markAsKnown(e) {
 
     if(e) e.stopPropagation();
@@ -1015,6 +1039,12 @@ function markAsKnown(e) {
 
 
 
+// ── renderExamples ──
+// Builds the scrollable list of example sentences for the given word item.
+// Filters out deleted examples and sorts favorited ones to the top.
+// Touch interactions:
+//   - Long-press LEFT  (750ms) → delete example (with confirm dialog)
+//   - Long-press RIGHT (1200ms) → toggle favorite (turns red when active)
 function renderExamples(item) {
 
     const list = document.getElementById('example-list');
@@ -1096,6 +1126,8 @@ function renderExamples(item) {
 
 
 
+// ── openSettings ──
+// Shows the settings overlay (hides the known-words overlay if open).
 function openSettings(e) {
 
     if(e) e.stopPropagation();
@@ -1108,6 +1140,9 @@ function openSettings(e) {
 
 
 
+// ── openKnown ──
+// Shows the mastered-words list overlay (sorted newest first).
+// Long-press LEFT on any word to restore it (remove from known list).
 function openKnown() {
 
     const list = document.getElementById('known-list');
@@ -1172,6 +1207,11 @@ function openKnown() {
 
 
 
+// ── openFavs ──
+// Shows the favorites overlay, organized by word with IPA.
+// Long-press a word title (750ms) to jump to that card.
+// Long-press an example sentence LEFT side (750ms) to unfavorite it.
+// Tapping the IPA text plays the word's audio.
 function openFavs() {
 
     const list = document.getElementById('fav-list');
@@ -1290,6 +1330,8 @@ function openFavs() {
 
 
 
+// ── closeOverlays ──
+// Hides all overlay panels (favorites, known, settings, quiz) and refreshes the main card.
 function closeOverlays() { 
 
     document.getElementById('fav-overlay').style.display = 'none'; 
@@ -1306,12 +1348,22 @@ function closeOverlays() {
 
 
 
+// ── resetDeleted ──
+// Restores all deleted example sentences after a confirmation dialog.
 function resetDeleted() { if(confirm("Restore all?")) { deletedExamples = []; saveAndSync(); alert("Restored!"); } }
 
+// ── flipCard ──
+// Toggles the 3D flip animation on the card by adding/removing the 'is-flipped' class.
+// Called when tapping the card front OR the back-header area.
 function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
 
+// ── playAudioFromEvent ──
+// Wrapper that stops event propagation (to prevent card flip) then plays audio.
 function playAudioFromEvent(e) { if(e) e.stopPropagation(); playAudioByIndex(currentIndex); }
 
+// ── playAudioByIndex ──
+// Plays the pronunciation MP3 for the word at the given index.
+// Audio files are split across 4 folders based on word number ranges.
 function playAudioByIndex(idx) {
 
     if (idx < 0 || idx >= wordData.length) return;
@@ -1332,6 +1384,9 @@ function playAudioByIndex(idx) {
 
 }
 
+// ── handleMoreClick ──
+// Cycles through alternate meanings on the card back.
+// Updates the meaning text and the "More X/Y" counter button label.
 function handleMoreClick(e) { 
 
     if(e) e.stopPropagation();
@@ -1344,6 +1399,9 @@ function handleMoreClick(e) {
 
 }
 
+// ── jumpPrompt ──
+// Prompts the user to enter a word number and jumps directly to that card.
+// Tapping the counter pill in the header triggers this.
 function jumpPrompt() {
 
     const val = prompt(`Jump to #:`);
@@ -1352,6 +1410,9 @@ function jumpPrompt() {
 
 }
 
+// ── pushSync ──
+// Debounced cloud sync: waits 1 second after the last change before pushing
+// deleted/favs/known state to JSONBin. Shows a sync status pill during the request.
 async function pushSync() {
 
     clearTimeout(syncTimeout);
@@ -1380,6 +1441,9 @@ async function pushSync() {
 
 }
 
+// ── saveAndSync ──
+// Saves all user state to localStorage immediately, then optionally triggers a cloud sync.
+// Pass shouldPush = false to skip the cloud push (e.g. on initial load merge).
 function saveAndSync(shouldPush = true) {
 
     localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
@@ -1392,6 +1456,9 @@ function saveAndSync(shouldPush = true) {
 
 }
 
+// ── toggleFav ──
+// Adds or removes an example ID from the favorites list, updates the element color,
+// and saves/syncs. The 'el' parameter is optional (the tapped DOM element).
 function toggleFav(id, el) {
 
     if (favExamples.includes(id)) {
@@ -1406,8 +1473,12 @@ function toggleFav(id, el) {
 
 }
 
+// ── deleteEx ──
+// Adds an example ID to the deleted list, saves/syncs, and removes the element from the DOM.
 function deleteEx(id, el) { deletedExamples.push(id); saveAndSync(); el.remove(); }
 
+// ── prevCard ──
+// Moves to the previous card, skipping any words already in the knownWords list.
 function prevCard() {
 
     let start = currentIndex;
@@ -1418,6 +1489,8 @@ function prevCard() {
 
 }
 
+// ── nextCard ──
+// Advances to the next card, skipping any words already in the knownWords list.
 function nextCard() {
 
     let start = currentIndex;
@@ -1428,6 +1501,8 @@ function nextCard() {
 
 }
 
+// ── shuffleCard ──
+// Jumps to a random card, making up to 100 attempts to avoid landing on a known word.
 function shuffleCard() {
 
     let attempts = 0; let newIdx;
