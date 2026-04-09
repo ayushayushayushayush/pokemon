@@ -1,1344 +1,764 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-
     
-
     <meta name="apple-mobile-web-app-capable" content="yes">
-
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
     <meta name="apple-mobile-web-app-title" content="WordFlow Pro">
-
     
-
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-
-
 
     <title>WordFlow Pro</title>
 
-
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
-
-
     <style>
-
         :root {
-
-            --primary: #0A84FF; 
-
-            --bg: #000000;      
-
+            --primary: #0A84FF; [cite: 1]
+            --bg: #000000; [cite: 2]
             --card-bg: #1C1C1E; 
-
             --text-main: #FFFFFF; 
-
             --text-secondary: #AEAEB2;
-
             --delete-red: #FF453A;
-
             --success-green: #30D158;
-
             --fav-indicator: #2C2C2E; 
-
             --example-bg: #2C2C2E;
-
             --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom); [cite: 2]
+        } [cite: 3]
 
-            --safe-bottom: env(safe-area-inset-bottom);
-
-        }
-
-
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
-
-
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; } [cite: 4]
 
         body, html {
-
-            margin: 0; padding: 0;
-
+            margin: 0; [cite: 4]
+            padding: 0; [cite: 5]
             width: 100%; height: 100%;
-
             background-color: var(--bg);
-
             color: var(--text-main);
-
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-
             display: flex; flex-direction: column;
-
-            overflow: hidden;
-
-            overscroll-behavior-y: none;
-
+            overflow: hidden; [cite: 5]
+            overscroll-behavior-y: none; [cite: 6]
         }
-
-
 
         #loading-screen {
-
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-
+            position: fixed; [cite: 6]
+            top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 3000;
-
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-
+            display: flex; flex-direction: column; align-items: center; justify-content: center; [cite: 7]
+            gap: 12px; [cite: 8]
         }
-
-
 
         #sync-status {
-
-            position: fixed; top: calc(var(--safe-top) + 8px); left: 50%;
-
+            position: fixed; [cite: 8]
+            top: calc(var(--safe-top) + 8px); left: 50%;
             transform: translateX(-50%); font-size: 0.75rem; font-weight: 600;
-
-            padding: 4px 12px; border-radius: 20px; z-index: 4000;
-
-            opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
-
+            padding: 4px 12px; border-radius: 20px; z-index: 4000; [cite: 9]
+            opacity: 0; transition: opacity 0.3s ease; pointer-events: none; [cite: 10]
         }
-
-        #sync-status.show { opacity: 1; }
-
-        #sync-status.syncing { background: #3a3a3c; color: var(--text-secondary); }
-
-        #sync-status.synced  { background: #1c3a1c; color: var(--success-green); }
-
-
+        #sync-status.show { opacity: 1; } [cite: 11]
+        #sync-status.syncing { background: #3a3a3c; color: var(--text-secondary); } [cite: 12]
+        #sync-status.synced  { background: #1c3a1c; color: var(--success-green); } [cite: 13]
 
         header {
-
-            padding: calc(var(--safe-top) + 15px) 20px 10px;
-
-            display: flex; justify-content: space-between; align-items: center;
-
+            padding: calc(var(--safe-top) + 15px) 20px 10px; [cite: 13]
+            display: flex; justify-content: space-between; align-items: center; [cite: 14]
         }
 
-
-
-        .header-btn { font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 12px; cursor: pointer; background: #2C2C2E; color: var(--text-main); border: 1px solid #3a3a3c; }
-
-        .fav-btn { font-size: 1.2rem; padding: 4px 14px; line-height: 1; }
-
-        .counter { font-size: 0.85rem; font-weight: 700; color: var(--text-main); background: #3a3a3c; padding: 6px 14px; border-radius: 20px; }
-
-
+        .header-btn { font-weight: 600; font-size: 0.8rem; [cite: 14]
+            padding: 6px 12px; border-radius: 12px; cursor: pointer; background: #2C2C2E; color: var(--text-main); border: 1px solid #3a3a3c; [cite: 15]
+        } [cite: 16]
+        .fav-btn { font-size: 1.2rem; padding: 4px 14px; line-height: 1; } [cite: 17]
+        .counter { font-size: 0.85rem; font-weight: 700; color: var(--text-main); background: #3a3a3c; [cite: 17]
+            padding: 6px 14px; border-radius: 20px; } [cite: 18]
 
         #fav-overlay, #known-overlay, #settings-overlay, #quiz-overlay {
+            position: fixed; [cite: 18]
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 2000; display: none; flex-direction: column; [cite: 19]
+        } [cite: 20]
 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        .list-container { flex: 1; overflow-y: auto; padding: 10px 20px 20px; -webkit-overflow-scrolling: touch; } [cite: 21]
 
-            background: var(--bg); z-index: 2000; display: none; flex-direction: column;
-
-        }
-
-
-
-        .list-container { flex: 1; overflow-y: auto; padding: 10px 20px 20px; -webkit-overflow-scrolling: touch; }
-
-
-
-        .settings-list { margin-top: 20px; }
-
+        .settings-list { margin-top: 20px; } [cite: 22]
         .settings-item {
-
-            background: var(--card-bg); padding: 18px; margin-bottom: 10px; border-radius: 15px;
-
-            display: flex; justify-content: space-between; align-items: center; font-weight: 600;
-
-        }
-
-        .settings-item:active { background: #2c2c2e; }
-
-        .chevron { color: var(--text-secondary); font-size: 1.2rem; }
-
-
+            background: var(--card-bg); [cite: 22]
+            padding: 18px; margin-bottom: 10px; border-radius: 15px;
+            display: flex; justify-content: space-between; align-items: center; font-weight: 600; [cite: 23]
+        } [cite: 24]
+        .settings-item:active { background: #2c2c2e; } [cite: 25]
+        .chevron { color: var(--text-secondary); font-size: 1.2rem; } [cite: 26]
 
         /* Quiz Styling Fixed for iPhone */
-
-        .quiz-container { padding: 15px; display: flex; flex-direction: column; gap: 15px; flex: 1; justify-content: flex-start; margin-top: 10px; }
-
+        .quiz-container { padding: 15px; [cite: 26]
+            display: flex; flex-direction: column; gap: 15px; flex: 1; justify-content: flex-start; margin-top: 10px; [cite: 27]
+        } [cite: 28]
         
-
         .quiz-sentence { 
-
-            font-size: 1.15rem; 
-
+            font-size: 1.15rem; [cite: 28]
             font-weight: 500; 
-
             line-height: 1.6; 
-
             color: var(--text-main); 
-
-            text-align: left; /* Better for reading sentences */
-
-            background: var(--card-bg); 
-
+            text-align: left; 
+            background: var(--card-bg); [cite: 29]
             padding: 25px 20px; 
-
             border-radius: 20px; 
-
             border: 1px solid #38383a; 
-
             min-height: 140px; 
-
-            display: block; /* Changed from flex to block for natural wrapping */
-
-            word-wrap: break-word;
-
-            overflow-wrap: break-word;
-
+            display: block; [cite: 30]
+            word-wrap: break-word; [cite: 31]
+            overflow-wrap: break-word; [cite: 32]
         }
-
         
-
         .quiz-sentence b { 
-
-            color: var(--primary); 
-
+            color: var(--primary); [cite: 32]
             font-weight: 800; 
-
             letter-spacing: 1px;
+            white-space: nowrap; 
+        } [cite: 33]
 
-            white-space: nowrap; /* Keep underscores together */
+        .quiz-meaning { background: #1C1C1E; [cite: 33]
+            border: 1px solid #38383a; border-radius: 14px; padding: 14px 18px; font-size: 0.95rem; color: var(--text-secondary); font-style: italic; line-height: 1.5; [cite: 34]
+        } [cite: 35]
+        .quiz-meaning span { color: var(--primary); font-weight: 700; font-style: normal; font-size: 0.7rem; [cite: 35]
+            text-transform: uppercase; letter-spacing: 0.5px; margin-right: 6px; } [cite: 36]
 
-        }
+        .options-grid { display: grid; [cite: 36]
+            grid-template-columns: 1fr 1fr; gap: 10px; } [cite: 37]
 
+        .option-btn { background: #2C2C2E; color: white; [cite: 37]
+            border: 1px solid #3a3a3c; padding: 16px 8px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; text-align: center; transition: background 0.2s ease; [cite: 38]
+            overflow: hidden; text-overflow: ellipsis; } [cite: 39]
 
+        .option-btn.correct { background: var(--success-green); border-color: var(--success-green); color: black; } [cite: 40]
 
-        .quiz-meaning { background: #1C1C1E; border: 1px solid #38383a; border-radius: 14px; padding: 14px 18px; font-size: 0.95rem; color: var(--text-secondary); font-style: italic; line-height: 1.5; }
-        .quiz-meaning span { color: var(--primary); font-weight: 700; font-style: normal; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 6px; }
-
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        .option-btn { background: #2C2C2E; color: white; border: 1px solid #3a3a3c; padding: 16px 8px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; text-align: center; transition: background 0.2s ease; overflow: hidden; text-overflow: ellipsis; }
-
-        .option-btn.correct { background: var(--success-green); border-color: var(--success-green); color: black; }
-
-        .option-btn.wrong { background: var(--delete-red); border-color: var(--delete-red); }
-
+        .option-btn.wrong { background: var(--delete-red); border-color: var(--delete-red); } [cite: 41]
         
+        .quiz-header-info { display: flex; [cite: 41]
+            justify-content: space-between; align-items: center; background: #1C1C1E; padding: 12px 18px; border-radius: 15px; margin-bottom: 5px; border: 1px solid #38383a; [cite: 42]
+        } [cite: 43]
 
-        .quiz-header-info { display: flex; justify-content: space-between; align-items: center; background: #1C1C1E; padding: 12px 18px; border-radius: 15px; margin-bottom: 5px; border: 1px solid #38383a; }
+        .quiz-stat { display: flex; flex-direction: column; align-items: center; } [cite: 44]
 
-        .quiz-stat { display: flex; flex-direction: column; align-items: center; }
+        .quiz-stat-val { font-size: 1rem; font-weight: 800; color: var(--text-main); } [cite: 45]
 
-        .quiz-stat-val { font-size: 1rem; font-weight: 800; color: var(--text-main); }
-
-        .quiz-stat-label { font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
-
-
+        .quiz-stat-label { font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; } [cite: 46]
 
         /* Rest of Styles */
+        .fav-group-header { margin: 20px 0 12px 5px; [cite: 46]
+            display: flex; align-items: baseline; gap: 10px; } [cite: 47]
 
-        .fav-group-header { margin: 20px 0 12px 5px; display: flex; align-items: baseline; gap: 10px; }
+        .fav-group-title { color: var(--delete-red); font-size: 1rem; [cite: 47]
+            text-transform: uppercase; letter-spacing: 1px; font-weight: 800; } [cite: 48]
 
-        .fav-group-title { color: var(--delete-red); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+        .fav-group-ipa { color: var(--text-secondary); font-size: 0.85rem; [cite: 48]
+            font-family: monospace; } [cite: 49]
 
-        .fav-group-ipa { color: var(--text-secondary); font-size: 0.85rem; font-family: monospace; }
+        .app-container { flex: 1; display: none; flex-direction: column; align-items: center; [cite: 49]
+            justify-content: center; } [cite: 50]
 
+        .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; [cite: 50]
+            margin-bottom: 20px; } [cite: 51]
 
+        .card { width: 100%; height: 100%; position: relative; [cite: 51]
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; } [cite: 52]
 
-        .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
-
-        .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 20px; }
-
-        .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; }
-
-        .card.is-flipped { transform: rotateY(180deg); }
-
-
+        .card.is-flipped { transform: rotateY(180deg); } [cite: 53]
 
         .card-face {
-
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-
+            position: absolute; [cite: 53]
+            width: 100%; height: 100%; backface-visibility: hidden;
             border-radius: 35px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-
-            background: var(--card-bg); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #38383a;
-
+            background: var(--card-bg); display: flex; flex-direction: column; [cite: 54]
+            overflow: hidden; border: 1px solid #38383a; [cite: 55]
         }
 
+        .card-front { justify-content: flex-start; align-items: center; [cite: 55]
+            text-align: center; padding: 60px 30px; } [cite: 56]
 
+        .word-display { font-size: 3.5rem; font-weight: 800; [cite: 56]
+            color: var(--text-main); margin: 0; } [cite: 57]
 
-        .card-front { justify-content: flex-start; align-items: center; text-align: center; padding: 60px 30px; }
-
-        .word-display { font-size: 3.5rem; font-weight: 800; color: var(--text-main); margin: 0; }
-
-        .ipa-sub { font-size: 1.2rem; color: var(--text-secondary); margin-top: 15px; font-family: monospace; display: flex; flex-direction: column; gap: 8px; }
-
-
+        .ipa-sub { font-size: 1.2rem; color: var(--text-secondary); margin-top: 15px; [cite: 57]
+            font-family: monospace; display: flex; flex-direction: column; gap: 8px; } [cite: 58]
 
         .mastery-controls {
-
-            position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%);
-
-            display: flex; gap: 20px; align-items: center; z-index: 100; transition: opacity 0.3s ease;
-
-        }
-
-        .card.is-flipped .mastery-controls { opacity: 0; pointer-events: none; }
-
-
+            position: absolute; [cite: 58]
+            bottom: 140px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 20px; align-items: center; z-index: 100; transition: opacity 0.3s ease; [cite: 59]
+        } [cite: 60]
+        .card.is-flipped .mastery-controls { opacity: 0; pointer-events: none; } [cite: 61]
 
         .mastery-btn {
-
-            background: #2C2C2E; width: 60px; height: 60px; border-radius: 50%;
-
+            background: #2C2C2E; [cite: 61]
+            width: 60px; height: 60px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
-
-            border: 1px solid #3a3a3c; box-shadow: 0 6px 15px rgba(0,0,0,0.4);
-
+            border: 1px solid #3a3a3c; [cite: 62]
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4); [cite: 63]
         }
+        .mastery-btn.known { color: var(--success-green); } [cite: 64]
+        .mastery-btn.quiz { color: #FFD60A; } [cite: 65]
 
-        .mastery-btn.known { color: var(--success-green); }
+        .flip-hint { position: absolute; bottom: 40px; font-size: 1.15rem; color: var(--primary); font-weight: 800; [cite: 65]
+            text-transform: uppercase; letter-spacing: 2px; padding: 20px; } [cite: 66]
 
-        .mastery-btn.quiz { color: #FFD60A; }
+        .card-back { transform: rotateY(180deg); display: flex; [cite: 66]
+            flex-direction: column; } [cite: 67]
 
+        .back-header { padding: 25px 25px 15px; border-bottom: 1px solid #38383a; [cite: 67]
+            flex-shrink: 0; position: relative; } [cite: 68]
 
+        .back-top-row { display: flex; align-items: center; justify-content: flex-start; [cite: 68]
+            gap: 12px; margin-bottom: 12px; position: relative; } [cite: 69]
 
-        .flip-hint { position: absolute; bottom: 40px; font-size: 1.15rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 20px; }
+        .back-word { font-size: 1.6rem; font-weight: 800; [cite: 69]
+            color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.5px; margin: 0; z-index: 5; [cite: 70]
+        } [cite: 71]
 
+        .more-btn { background: var(--primary); color: white; font-size: 0.65rem; font-weight: 800; [cite: 71]
+            padding: 6px 12px; border-radius: 12px; text-transform: uppercase; z-index: 5; } [cite: 72]
 
+        .meaning-container { display: flex; [cite: 72]
+            align-items: flex-start; justify-content: space-between; min-height: 60px; } [cite: 73]
 
-        .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
+        .meaning-text { flex: 1; font-size: 1.2rem; [cite: 73]
+            font-weight: 700; color: var(--text-main); line-height: 1.4; margin: 0; z-index: 5; [cite: 74]
+        } [cite: 75]
 
-        .back-header { padding: 25px 25px 15px; border-bottom: 1px solid #38383a; flex-shrink: 0; position: relative; }
+        .flip-zone-right { position: absolute; top: 0; right: 0; width: 40%; height: 100%; [cite: 75]
+            z-index: 2; } [cite: 76]
 
-        .back-top-row { display: flex; align-items: center; justify-content: flex-start; gap: 12px; margin-bottom: 12px; position: relative; }
+        #example-list { flex-grow: 1; overflow-y: auto; padding: 15px 25px 30px; [cite: 76]
+            -webkit-overflow-scrolling: touch; } [cite: 77]
 
-        .back-word { font-size: 1.6rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.5px; margin: 0; z-index: 5; }
+        .example-item { background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; [cite: 77]
+            color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; } [cite: 78]
 
-        .more-btn { background: var(--primary); color: white; font-size: 0.65rem; font-weight: 800; padding: 6px 12px; border-radius: 12px; text-transform: uppercase; z-index: 5; }
+        .example-item.is-fav { border-left: 4px solid var(--fav-indicator); } [cite: 79]
 
-        .meaning-container { display: flex; align-items: flex-start; justify-content: space-between; min-height: 60px; }
+        .controls { padding: 20px 20px calc(var(--safe-bottom) + 30px); margin-top: 10px; display: flex; [cite: 79]
+            gap: 10px; width: 100%; max-width: 420px; } [cite: 80]
 
-        .meaning-text { flex: 1; font-size: 1.2rem; font-weight: 700; color: var(--text-main); line-height: 1.4; margin: 0; z-index: 5; }
+        .nav-btn { flex: 1; height: 60px; [cite: 80]
+            border-radius: 18px; border: none; background: #2C2C2E; color: white; font-weight: 700; font-size: 0.9rem; [cite: 81]
+        } [cite: 82]
 
-        .flip-zone-right { position: absolute; top: 0; right: 0; width: 40%; height: 100%; z-index: 2; }
+        .nav-btn.primary { background: var(--primary); } [cite: 83]
 
+        .known-item { padding: 18px; border-bottom: 1px solid #1c1c1e; display: flex; justify-content: space-between; [cite: 83]
+            align-items: center; } [cite: 84]
 
+        .known-word { font-weight: 700; font-size: 1.1rem; } [cite: 85]
 
-        #example-list { flex-grow: 1; overflow-y: auto; padding: 15px 25px 30px; -webkit-overflow-scrolling: touch; }
-
-        .example-item { background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; }
-
-        .example-item.is-fav { border-left: 4px solid var(--fav-indicator); }
-
-
-
-        .controls { padding: 20px 20px calc(var(--safe-bottom) + 30px); margin-top: 10px; display: flex; gap: 10px; width: 100%; max-width: 420px; }
-
-        .nav-btn { flex: 1; height: 60px; border-radius: 18px; border: none; background: #2C2C2E; color: white; font-weight: 700; font-size: 0.9rem; }
-
-        .nav-btn.primary { background: var(--primary); }
-
-
-
-        .known-item { padding: 18px; border-bottom: 1px solid #1c1c1e; display: flex; justify-content: space-between; align-items: center; }
-
-        .known-word { font-weight: 700; font-size: 1.1rem; }
-
-        .known-ipa { color: var(--text-secondary); font-size: 0.9rem; font-family: monospace; }
-
+        .known-ipa { color: var(--text-secondary); font-size: 0.9rem; font-family: monospace; } [cite: 86]
     </style>
-
 </head>
-
 <body>
 
-
-
 <div id="sync-status"></div>
-
 <div id="loading-screen"><p>Loading...</p></div>
 
-
-
 <div id="settings-overlay">
-
     <header>
-
         <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
-
         <div style="font-weight:800;">Settings</div>
-
         <div style="width: 60px;"></div>
-
     </header>
-
     <div class="list-container">
-
         <div class="settings-list">
-
             <div class="settings-item" onclick="openKnown()">
-
                 <span>Mastered Words</span>
-
-                <span class="chevron">›</span>
-
+                <span class="chevron">›</span> [cite: 87]
             </div>
-
             <div class="settings-item" onclick="resetDeleted()">
-
                 <span style="color:var(--delete-red);">Restore Deleted Examples</span>
-
                 <span class="chevron">›</span>
-
             </div>
-
         </div>
-
     </div>
-
 </div>
-
-
 
 <div id="quiz-overlay">
-
     <header>
-
-        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
-
+        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div> [cite: 88]
         <div style="font-weight:800;">Quiz Mode</div>
-
         <div style="width: 60px;"></div>
-
     </header>
-
     <div class="quiz-container">
-
         <div class="quiz-header-info">
-
             <div class="quiz-stat">
-
                 <span id="quiz-score-display" class="quiz-stat-val">0</span>
-
                 <span class="quiz-stat-label">Score</span>
-
-            </div>
-
+            </div> [cite: 89]
             <div class="quiz-stat">
-
                 <span id="quiz-wrong-display" class="quiz-stat-val" style="color:var(--delete-red);">0</span>
-
                 <span class="quiz-stat-label">Got Wrong</span>
-
             </div>
-
             <div class="quiz-stat">
-
-                <span id="quiz-total-display" class="quiz-stat-val">0</span>
-
+                <span id="quiz-total-display" class="quiz-stat-val">0</span> [cite: 90]
                 <span class="quiz-stat-label">Total Favs</span>
-
             </div>
-
             <div class="quiz-stat">
-
                 <span id="quiz-remaining-display" class="quiz-stat-val">0</span>
-
                 <span class="quiz-stat-label">Left</span>
-
             </div>
-
-        </div>
-
+        </div> [cite: 91]
         <div id="quiz-question" class="quiz-sentence">Select a favorite...</div>
-
         <div id="quiz-meaning" class="quiz-meaning"><span>Meaning</span>—</div>
-
         <div id="quiz-options" class="options-grid"></div>
-
     </div>
-
 </div>
-
-
 
 <div id="fav-overlay">
-
     <header>
-
         <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
-
         <div style="font-weight:800;">Favorites</div>
-
         <div class="header-btn fav-btn" onclick="startQuiz(event)">💡</div>
-
     </header>
-
     <div id="fav-list" class="list-container"></div>
-
 </div>
-
-
 
 <div id="known-overlay">
-
     <header>
-
-        <div onclick="openSettings()" class="header-btn" style="color:var(--primary);">← Settings</div>
-
+        <div onclick="openSettings()" class="header-btn" style="color:var(--primary);">← Settings</div> [cite: 92]
         <div style="font-weight:800;">Mastered</div>
-
         <div style="width: 60px;"></div>
-
     </header>
-
     <div id="known-list" class="list-container"></div>
-
 </div>
-
-
 
 <header id="app-header" style="display:none;">
-
     <div class="header-btn" onclick="openSettings()">⚙️</div>
-
     <div class="header-btn fav-btn" onclick="openFavs()">★</div>
-
     <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
-
 </header>
 
-
-
 <div class="app-container" id="app">
-
     <div class="scene">
-
         <div class="card" id="card">
-
             <div class="card-face card-front">
-
-                <div class="word-container" onclick="playAudioFromEvent(event)">
-
+                <div class="word-container" onclick="playAudioFromEvent(event)"> [cite: 93]
                     <h1 id="f-word" class="word-display">...</h1>
-
                     <div class="ipa-sub">
-
                         <span id="f-ipa"></span>
-
                         <span id="f-phonetic"></span>
-
-                    </div>
-
+                    </div> [cite: 94]
                 </div>
-
                 <div class="flip-hint" onclick="flipCard()">Tap to Flip</div>
-
             </div>
-
             
-
             <div class="mastery-controls">
-
-                <div class="mastery-btn known" onclick="markAsKnown(event)">👍</div>
-
+                <div class="mastery-btn known" onclick="markAsKnown(event)">👍</div> [cite: 95]
             </div>
-
-
 
             <div class="card-face card-back">
-
                 <div class="back-header">
-
                     <div class="flip-zone-right" onclick="flipCard()"></div>
-
                     <div class="back-top-row">
-
-                        <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
-
+                        <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p> [cite: 96]
                         <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
-
                     </div>
-
                     <div class="meaning-container">
-
-                        <p id="b-meaning" class="meaning-text">...</p>
-
+                        <p id="b-meaning" class="meaning-text">...</p> [cite: 97]
                     </div>
-
                 </div>
-
                 <div id="example-list"></div>
-
             </div>
-
         </div>
-
     </div>
-
-
 
     <div class="controls">
-
-        <button class="nav-btn" onclick="prevCard()">Back</button>
-
+        <button class="nav-btn" onclick="prevCard()">Back</button> [cite: 98]
         <button class="nav-btn" onclick="shuffleCard()">Shuffle</button>
-
         <button class="nav-btn primary" onclick="nextCard()">Next</button>
-
     </div>
-
 </div>
 
-
-
 <script>
-
-const BIN_ID  = "69d3dacfaaba882197cd5a0e";
-
-const API_KEY = "$2a$10$2XIWmqUVHyv39zmLplK6YOCLf07sb3WyJIxxleZUrKRb61lugMCu6";
-
+const BIN_ID  = "69d3dacfaaba882197cd5a0e"; [cite: 98]
+const API_KEY = "$2a$10$2XIWmqUVHyv39zmLplK6YOCLf07sb3WyJIxxleZUrKRb61lugMCu6"; [cite: 99]
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-
-
 let wordData = [];
-
-let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
-
-let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
-
+let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]"); [cite: 99]
+let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]"); [cite: 100]
 let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
 
-
-
 let quizScore = 0;
-
-let quizWrong = 0;
-
-let currentQuizCorrect = "";
-
+let quizWrong = 0; [cite: 100]
+let currentQuizCorrect = ""; [cite: 101]
 let quizPool = []; 
-
 let isQuizLocked = false;
 
-
-
-let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
-
-let availableMeanings = [];
-
+let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0); [cite: 101]
+let availableMeanings = []; [cite: 102]
 let currentMeaningIdx = 0;
-
 let syncTimeout = null;
 
-
-
-function showSync(state, message) {
-
+function showSync(state, message) { [cite: 103]
     const el = document.getElementById('sync-status');
-
     el.className = `show ${state}`;
-
-    el.textContent = message;
-
-    setTimeout(() => { el.className = ''; }, 2000);
-
+    el.textContent = message; [cite: 103]
+    setTimeout(() => { el.className = ''; }, 2000); [cite: 104]
 }
-
-
 
 window.onload = () => {
-
     Papa.parse("words.csv", {
-
         download: true, header: true,
-
         complete: async function(results) {
-
             wordData = results.data.filter(row => row.WORD);
-
             fetch(BIN_URL + "/latest", { headers: { "X-Master-Key": API_KEY } })
-
                 .then(r => r.json())
-
-                .then(d => {
-
+                .then(d => { [cite: 105]
                     deletedExamples = Array.from(new Set([...(d.record?.deleted || []), ...deletedExamples]));
-
                     favExamples = Array.from(new Set([...(d.record?.favs || []), ...favExamples]));
-
                     knownWords = Array.from(new Set([...(d.record?.known || []), ...knownWords]));
-
-                    saveAndSync(false);
-
+                    saveAndSync(false); [cite: 106]
                 }).catch(() => {});
-
             document.getElementById('loading-screen').style.display = 'none';
-
             document.getElementById('app').style.display = 'flex';
-
-            document.getElementById('app-header').style.display = 'flex';
-
-            if(knownWords.includes(wordData[currentIndex].WORD.trim())) nextCard();
-
+            document.getElementById('app-header').style.display = 'flex'; [cite: 106]
+            if(knownWords.includes(wordData[currentIndex].WORD.trim())) nextCard(); [cite: 107]
             else updateCard();
-
         }
-
     });
-
 };
 
-
-
 function updateCard() {
-
-    const item = wordData[currentIndex];
-
-    const meaningEl = document.getElementById('b-meaning');
-
+    const item = wordData[currentIndex]; [cite: 107]
+    const meaningEl = document.getElementById('b-meaning'); [cite: 108]
     availableMeanings = [];
-
-    if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING.trim());
-
-    for(let i=1; i<=10; i++) {
-
+    if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING.trim()); [cite: 108]
+    for(let i=1; i<=10; i++) { [cite: 109]
         let val = item[`Meaning${i}`];
-
-        if(val && val.trim()) availableMeanings.push(val.trim());
-
-    }
-
+        if(val && val.trim()) availableMeanings.push(val.trim()); [cite: 109]
+    } [cite: 110]
     currentMeaningIdx = 0;
-
     document.getElementById('card').classList.remove('is-flipped');
-
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
-
     localStorage.setItem('wf_index_v6', currentIndex);
-
-    document.getElementById('f-word').textContent = item.WORD;
-
-    document.getElementById('f-ipa').textContent = item.IPA;
-
+    document.getElementById('f-word').textContent = item.WORD; [cite: 110]
+    document.getElementById('f-ipa').textContent = item.IPA; [cite: 111]
     document.getElementById('f-phonetic').textContent = item.PHONETIC;
-
     document.getElementById('b-word').textContent = item.WORD;
-
     meaningEl.innerText = availableMeanings[0] || "";
-
-    const moreBtn = document.getElementById('more-btn');
-
-    moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none';
-
+    const moreBtn = document.getElementById('more-btn'); [cite: 111]
+    moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none'; [cite: 112]
     if(moreBtn.style.display === 'block') moreBtn.textContent = `More 1/${availableMeanings.length}`;
-
-    renderExamples(item);
-
-}
-
-
+    renderExamples(item); [cite: 112]
+} [cite: 113]
 
 // --- QUIZ LOGIC ---
-
 function startQuiz(e) {
-
-    if(e) e.stopPropagation();
-
+    if(e) e.stopPropagation(); [cite: 114]
     if (favExamples.length < 1) {
-
         alert("Add some favorites first!");
-
-        return;
-
-    }
-
+        return; [cite: 114]
+    } [cite: 115]
     quizPool = [...favExamples];
-
     quizScore = 0;
-
     quizWrong = 0;
-
     document.getElementById('fav-overlay').style.display = 'none';
-
-    document.getElementById('quiz-overlay').style.display = 'flex';
-
-    document.getElementById('quiz-total-display').textContent = favExamples.length;
-
+    document.getElementById('quiz-overlay').style.display = 'flex'; [cite: 115]
+    document.getElementById('quiz-total-display').textContent = favExamples.length; [cite: 116]
     nextQuizQuestion();
-
 }
 
-
-
 function nextQuizQuestion() {
-
     if (quizPool.length === 0) {
-
-        alert("Well done! Restarting...");
-
-        quizPool = [...favExamples];
-
+        alert("Well done! Restarting..."); [cite: 116]
+        quizPool = [...favExamples]; [cite: 117]
     }
 
-
-
     isQuizLocked = false;
-
     document.getElementById('quiz-remaining-display').textContent = quizPool.length;
-
     
-
-    const poolIdx = Math.floor(Math.random() * quizPool.length);
-
-    const randomId = quizPool[poolIdx];
-
+    const poolIdx = Math.floor(Math.random() * quizPool.length); [cite: 117]
+    const randomId = quizPool[poolIdx]; [cite: 118]
     quizPool.splice(poolIdx, 1); 
 
-
-
     const [word, sentence] = randomId.split('|');
-
-    currentQuizCorrect = word.trim();
-
+    currentQuizCorrect = word.trim(); [cite: 118]
     const quizWordData = wordData.find(w => w.WORD.trim().toLowerCase() === currentQuizCorrect.toLowerCase());
-    const quizMeaning = quizWordData && quizWordData.MEANING && quizWordData.MEANING.trim() ? quizWordData.MEANING.trim() : '—';
-    document.getElementById('quiz-meaning').innerHTML = `<span>Meaning</span>${quizMeaning}`;
-
-
+    const quizMeaning = quizWordData && quizWordData.MEANING && quizWordData.MEANING.trim() ? quizWordData.MEANING.trim() : '—'; [cite: 119]
+    document.getElementById('quiz-meaning').innerHTML = `<span>Meaning</span>${quizMeaning}`; [cite: 120]
 
     const escapedWord = currentQuizCorrect.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const stem = escapedWord.endsWith('e') ? escapedWord.slice(0, -1) : escapedWord;
-    const regex = new RegExp(`\\b(?:${escapedWord}|${stem})\\w*`, 'gi');
-
-    // Using simple underscores
+    const regex = new RegExp(`\\b(?:${escapedWord}|${stem})\\w*`, 'gi'); [cite: 121]
 
     const maskedSentence = sentence.replace(regex, "<b>_________</b>");
-
-    document.getElementById('quiz-question').innerHTML = maskedSentence;
-
-
+    document.getElementById('quiz-question').innerHTML = maskedSentence; [cite: 122]
 
     let options = [currentQuizCorrect];
-
     while(options.length < 6) {
-
-        let randWord = wordData[Math.floor(Math.random() * wordData.length)].WORD.trim();
-
-        if(!options.includes(randWord)) options.push(randWord);
-
+        let randWord = wordData[Math.floor(Math.random() * wordData.length)].WORD.trim(); [cite: 122]
+        if(!options.includes(randWord)) options.push(randWord); [cite: 123]
     }
-
     options.sort(() => Math.random() - 0.5);
 
-
-
     const grid = document.getElementById('quiz-options');
-
-    grid.innerHTML = "";
-
-    options.forEach(opt => {
-
+    grid.innerHTML = ""; [cite: 123]
+    options.forEach(opt => { [cite: 124]
         const btn = document.createElement('div');
-
         btn.className = 'option-btn';
-
         btn.textContent = opt;
-
         btn.onclick = () => handleQuizTap(opt, btn);
-
         grid.appendChild(btn);
-
-    });
-
-}
-
-
+    }); [cite: 124]
+} [cite: 125]
 
 function handleQuizTap(selectedWord, btn) {
-
     if (isQuizLocked) return;
-
     isQuizLocked = true;
 
-
-
     const btns = document.querySelectorAll('.option-btn');
-
-    let correctBtn;
-
-    btns.forEach(b => { if(b.textContent === currentQuizCorrect) correctBtn = b; });
-
-
-
-    if(selectedWord === currentQuizCorrect) {
-
+    let correctBtn; [cite: 125]
+    btns.forEach(b => { if(b.textContent === currentQuizCorrect) correctBtn = b; }); [cite: 126]
+    if(selectedWord === currentQuizCorrect) { [cite: 127]
         btn.classList.add('correct');
-
-        quizScore += 1;
-
-    } else {
-
+        quizScore += 1; [cite: 127]
+    } else { [cite: 128]
         btn.classList.add('wrong');
-
         correctBtn.classList.add('correct');
-
-        quizScore = Math.max(0, quizScore - 1);
-
-        quizWrong += 1;
-
+        quizScore = Math.max(0, quizScore - 1); [cite: 128]
+        quizWrong += 1; [cite: 129]
     }
-
-
 
     document.getElementById('quiz-score-display').textContent = quizScore;
-
     document.getElementById('quiz-wrong-display').textContent = quizWrong;
-
-    setTimeout(nextQuizQuestion, 1200);
-
-}
-
-
+    setTimeout(nextQuizQuestion, 1200); [cite: 129]
+} [cite: 130]
 
 // --- APP CORE ---
-
 function markAsKnown(e) {
-
     if(e) e.stopPropagation();
-
-    const word = wordData[currentIndex].WORD.trim();
-
-    if(!knownWords.includes(word)) {
-
+    const word = wordData[currentIndex].WORD.trim(); [cite: 130]
+    if(!knownWords.includes(word)) { [cite: 131]
         knownWords.push(word);
-
         saveAndSync();
-
-        nextCard();
-
-    }
-
+        nextCard(); [cite: 131]
+    } [cite: 132]
 }
-
-
 
 function renderExamples(item) {
-
     const list = document.getElementById('example-list');
-
     list.innerHTML = "";
-
-    const cleanWord = item.WORD.trim();
-
-    const rows = [];
-
+    const cleanWord = item.WORD.trim(); [cite: 132]
+    const rows = []; [cite: 133]
     for (let i = 1; i <= 50; i++) {
-
-        const text = item[i.toString()];
-
-        if (text && text.trim().length > 1) {
-
-            const exId = `${cleanWord}|${text.trim()}`;
-
-            if (deletedExamples.includes(exId)) continue;
-
-            rows.push({ text: text.trim(), id: exId, isFav: favExamples.includes(exId) });
-
-        }
-
+        const text = item[i.toString()]; [cite: 133]
+        if (text && text.trim().length > 1) { [cite: 134]
+            const exId = `${cleanWord}|${text.trim()}`; [cite: 134]
+            if (deletedExamples.includes(exId)) continue; [cite: 135]
+            rows.push({ text: text.trim(), id: exId, isFav: favExamples.includes(exId) }); [cite: 135]
+        } [cite: 136]
     }
-
     rows.sort((a,b) => b.isFav - a.isFav).forEach((ex, idx) => {
-
         const div = document.createElement('div');
-
         div.className = `example-item ${ex.isFav ? 'is-fav' : ''}`;
-
         div.innerHTML = `<strong>${idx+1}.</strong> ${ex.text}`;
-
         let lastTap = 0;
-
         div.addEventListener('touchend', (e) => {
-
-            if (new Date().getTime() - lastTap < 300) toggleFav(ex.id, div);
-
-            lastTap = new Date().getTime();
-
+            if (new Date().getTime() - lastTap < 300) {
+                e.stopPropagation(); // FIXED: Prevents double-click from flipping the card
+                toggleFav(ex.id, div);
+            } [cite: 136]
+            lastTap = new Date().getTime(); [cite: 137]
         });
-
         let pressTimer;
-
         div.addEventListener('touchstart', (e) => {
-
             if (e.touches[0].clientX < window.innerWidth / 2) {
-
                 pressTimer = setTimeout(() => { if(confirm("Delete?")) deleteEx(ex.id, div); }, 750);
-
             }
-
-        }, {passive: true});
-
+        }, {passive: true}); [cite: 138]
         div.addEventListener('touchend', () => clearTimeout(pressTimer));
-
         list.appendChild(div);
-
-    });
-
-}
-
-
+    }); [cite: 138]
+} [cite: 139]
 
 function openSettings(e) {
-
     if(e) e.stopPropagation();
-
     document.getElementById('known-overlay').style.display = 'none';
-
-    document.getElementById('settings-overlay').style.display = 'flex';
-
-}
-
-
+    document.getElementById('settings-overlay').style.display = 'flex'; [cite: 139]
+} [cite: 140]
 
 function openKnown() {
-
     const list = document.getElementById('known-list');
-
     list.innerHTML = "";
-
     document.getElementById('settings-overlay').style.display = 'none';
-
-    document.getElementById('known-overlay').style.display = 'flex';
-
-    if (knownWords.length === 0) {
-
-        list.innerHTML = `<p style="text-align:center; color:gray; margin-top:50px;">No words mastered.</p>`;
-
-        return;
-
+    document.getElementById('known-overlay').style.display = 'flex'; [cite: 140]
+    if (knownWords.length === 0) { [cite: 141]
+        list.innerHTML = `<p style="text-align:center; color:gray; margin-top:50px;">No words mastered.</p>`; [cite: 141]
+        return; [cite: 142]
     }
-
     knownWords.slice().reverse().forEach(word => {
-
         const masterItem = wordData.find(w => w.WORD.trim() === word);
-
         const ipaText = masterItem ? masterItem.IPA : '';
-
         const div = document.createElement('div');
-
         div.className = 'known-item';
-
         div.innerHTML = `<span class="known-word">${word}</span><span class="known-ipa">${ipaText}</span>`;
-
         let pressTimer;
-
         div.addEventListener('touchstart', (e) => {
-
-            if (e.touches[0].clientX < window.innerWidth / 2) {
-
-                pressTimer = setTimeout(() => {
-
+            if (e.touches[0].clientX < window.innerWidth / 2) { [cite: 142]
+                pressTimer = setTimeout(() => { [cite: 143]
                     if(confirm(`Restore "${word}"?`)) {
-
                         knownWords = knownWords.filter(w => w !== word);
-
-                        saveAndSync();
-
-                        openKnown();
-
+                        saveAndSync(); [cite: 143]
+                        openKnown(); [cite: 144]
                     }
-
                 }, 750);
-
             }
-
         }, {passive: true});
-
         div.addEventListener('touchend', () => clearTimeout(pressTimer));
-
-        list.appendChild(div);
-
-    });
-
+        list.appendChild(div); [cite: 144]
+    }); [cite: 145]
 }
-
-
 
 function openFavs() {
-
-    const list = document.getElementById('fav-list');
-
-    list.innerHTML = "";
-
+    const list = document.getElementById('fav-list'); [cite: 145]
+    list.innerHTML = ""; [cite: 146]
     document.getElementById('fav-overlay').style.display = 'flex';
-
     if (favExamples.length === 0) {
-
-        list.innerHTML = `<p style="text-align:center; color:var(--text-secondary); margin-top:50px;">No favorites.</p>`;
-
-        return;
-
+        list.innerHTML = `<p style="text-align:center; color:var(--text-secondary); margin-top:50px;">No favorites.</p>`; [cite: 146]
+        return; [cite: 147]
     }
-
     const organized = {};
-
     favExamples.forEach(id => {
-
         const parts = id.split('|');
-
         if (parts.length < 2) return;
-
         const word = parts[0].trim();
-
         const text = parts[1].trim();
-
         if (!organized[word]) {
-
             const master = wordData.find(w => w.WORD.trim().toLowerCase() === word.toLowerCase());
-
-            organized[word] = { index: wordData.indexOf(master), ipa: master ? master.IPA : '', items: [] };
-
+            organized[word] = { 
+                index: wordData.indexOf(master), ipa: master ? master.IPA : '', items: [] }; [cite: 147]
         }
-
         organized[word].items.push({id, text});
-
-    });
-
-    Object.keys(organized).forEach(word => {
-
+    }); [cite: 148]
+    Object.keys(organized).forEach(word => { [cite: 149]
         const groupHeader = document.createElement('div');
-
         groupHeader.className = 'fav-group-header';
-
         const title = document.createElement('div');
-
         title.className = 'fav-group-title';
-
         title.textContent = word;
-
         const ipaSpan = document.createElement('div');
-
         ipaSpan.className = 'fav-group-ipa';
-
         ipaSpan.textContent = organized[word].ipa;
-
         let headerTimer;
-
-        title.addEventListener('touchstart', () => {
-
-            headerTimer = setTimeout(() => {
-
+        title.addEventListener('touchstart', () => { [cite: 149]
+            headerTimer = setTimeout(() => { [cite: 150]
                 const idx = organized[word].index;
-
                 if (idx !== -1) { currentIndex = idx; closeOverlays(); setTimeout(() => document.getElementById('card').classList.add('is-flipped'), 50); }
-
             }, 750);
-
         }, {passive: true});
-
-        title.addEventListener('touchend', () => clearTimeout(headerTimer));
-
+        title.addEventListener('touchend', () => clearTimeout(headerTimer)); [cite: 150]
         ipaSpan.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
-
-        groupHeader.appendChild(title);
-
-        groupHeader.appendChild(ipaSpan);
-
+        groupHeader.appendChild(title); [cite: 151]
+        groupHeader.appendChild(ipaSpan); [cite: 152]
         list.appendChild(groupHeader);
-
         organized[word].items.forEach(itemObj => {
-
             const item = document.createElement('div');
-
             item.className = 'example-item is-fav';
-
             item.textContent = itemObj.text;
-
             let exTimer;
-
             item.addEventListener('touchstart', (e) => {
-
                 if (e.touches[0].clientX < window.innerWidth / 2) {
-
-                    exTimer = setTimeout(() => {
-
+                    exTimer = setTimeout(() => { [cite: 152]
                         if (confirm("Unfavorite?")) { favExamples = favExamples.filter(x => x !== itemObj.id); saveAndSync(); item.remove(); }
-
-                    }, 750);
-
+                    }, 750); [cite: 153]
                 }
-
-            }, {passive: true});
-
+            }, {passive: true}); [cite: 154]
             item.addEventListener('touchend', () => clearTimeout(exTimer));
-
             list.appendChild(item);
-
-        });
-
-    });
-
+        }); [cite: 154]
+    }); [cite: 155]
 }
-
-
 
 function closeOverlays() { 
-
     document.getElementById('fav-overlay').style.display = 'none'; 
-
     document.getElementById('known-overlay').style.display = 'none'; 
-
     document.getElementById('settings-overlay').style.display = 'none'; 
-
-    document.getElementById('quiz-overlay').style.display = 'none';
-
-    updateCard(); 
-
+    document.getElementById('quiz-overlay').style.display = 'none'; [cite: 155]
+    updateCard(); [cite: 156]
 }
 
-
-
 function resetDeleted() { if(confirm("Restore all?")) { deletedExamples = []; saveAndSync(); alert("Restored!"); } }
-
-function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
-
+function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); } [cite: 156]
 function playAudioFromEvent(e) { if(e) e.stopPropagation(); playAudioByIndex(currentIndex); }
-
 function playAudioByIndex(idx) {
-
-    if (idx < 0 || idx >= wordData.length) return;
-
-    const word = wordData[idx].WORD;
-
+    if (idx < 0 || idx >= wordData.length) return; [cite: 157]
+    const word = wordData[idx].WORD; [cite: 158]
     const num = idx + 1;
-
-    let f = "audio-file";
-
-    if (num >= 1019 && num <= 2026) f = "audio-file-2";
-
-    else if (num >= 2027 && num <= 3034) f = "audio-file-3";
-
-    else if (num >= 3035) f = "audio-file-4";
-
-    new Audio(`${f}/${word}.mp3`).play().catch(()=>{});
-
+    let f = "audio-file"; [cite: 158]
+    if (num >= 1019 && num <= 2026) f = "audio-file-2"; [cite: 159]
+    else if (num >= 2027 && num <= 3034) f = "audio-file-3"; [cite: 160]
+    else if (num >= 3035) f = "audio-file-4"; [cite: 160]
+    new Audio(`${f}/${word}.mp3`).play().catch(()=>{}); [cite: 161]
 }
 
 function handleMoreClick(e) { 
-
     if(e) e.stopPropagation();
-
-    currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
-
-    document.getElementById('b-meaning').innerText = availableMeanings[currentMeaningIdx];
-
+    currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length; [cite: 161]
+    document.getElementById('b-meaning').innerText = availableMeanings[currentMeaningIdx]; [cite: 162]
     document.getElementById('more-btn').textContent = `More ${currentMeaningIdx+1}/${availableMeanings.length}`;
-
 }
 
 function jumpPrompt() {
-
-    const val = prompt(`Jump to #:`);
-
-    if (val && !isNaN(val)) { currentIndex = Math.max(0, Math.min(wordData.length - 1, parseInt(val) - 1)); updateCard(); }
-
+    const val = prompt(`Jump to #:`); [cite: 162]
+    if (val && !isNaN(val)) { currentIndex = Math.max(0, Math.min(wordData.length - 1, parseInt(val) - 1)); updateCard(); [cite: 163] } [cite: 164]
 }
 
 async function pushSync() {
-
     clearTimeout(syncTimeout);
-
     syncTimeout = setTimeout(async () => {
-
         showSync('syncing', 'Syncing...');
-
         try {
-
             await fetch(BIN_URL, {
-
                 method: "PUT",
-
                 headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
-
-                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords })
-
-            });
-
+                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords }) [cite: 164]
+            }); [cite: 165]
             showSync('synced', 'Synced');
-
         } catch {}
-
-    }, 1000);
-
-}
+    }, 1000); [cite: 165]
+} [cite: 166]
 
 function saveAndSync(shouldPush = true) {
-
     localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
-
     localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
-
     localStorage.setItem('wf_known_words', JSON.stringify(knownWords));
-
-    if(shouldPush) pushSync();
-
-}
+    if(shouldPush) pushSync(); [cite: 166]
+} [cite: 167]
 
 function toggleFav(id, el) {
-
     if (favExamples.includes(id)) favExamples = favExamples.filter(x => x !== id);
-
     else favExamples.push(id);
-
     saveAndSync();
-
-    updateCard();
-
-}
+    updateCard(); [cite: 167]
+} [cite: 168]
 
 function deleteEx(id, el) { deletedExamples.push(id); saveAndSync(); el.remove(); }
-
 function prevCard() {
-
-    let start = currentIndex;
-
-    do { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
-
-    updateCard();
-
-}
+    let start = currentIndex; [cite: 168]
+    do { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim())); [cite: 169]
+    updateCard(); [cite: 169]
+} [cite: 170]
 
 function nextCard() {
-
     let start = currentIndex;
-
-    do { currentIndex = (currentIndex + 1) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
-
+    do { currentIndex = (currentIndex + 1) % wordData.length; [cite: 170]
+    if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim())); [cite: 171]
     updateCard();
-
 }
 
 function shuffleCard() {
-
-    let attempts = 0; let newIdx;
-
-    do { newIdx = Math.floor(Math.random() * wordData.length); attempts++; } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
-
+    let attempts = 0; let newIdx; [cite: 171]
+    do { newIdx = Math.floor(Math.random() * wordData.length); attempts++; } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100); [cite: 172]
     currentIndex = newIdx; updateCard();
-
 }
-
 </script>
-
 </body>
-
 </html>
