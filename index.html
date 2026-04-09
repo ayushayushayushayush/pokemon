@@ -332,7 +332,7 @@
 
         .example-item { background: var(--example-bg); padding: 16px; font-size: 0.95rem; line-height: 1.5; color: #E5E5EA; margin-bottom: 12px; border-radius: 12px; }
 
-        .example-item.is-fav { color: var(--delete-red); }
+        .example-item.is-fav { color: #FF453A !important; }
 
 
 
@@ -976,23 +976,20 @@ function renderExamples(item) {
 
         div.innerHTML = `<strong>${idx+1}.</strong> ${ex.text}`;
 
-        // Double-tap (mobile) or dblclick (desktop) to favorite
-        let lastTap = 0;
-        let pressTimer;
-        let touchX = 0;
-
         div.dataset.exId = ex.id;
 
-        div.addEventListener('dblclick', (e) => {
-            toggleFav(ex.id, div);
-        });
+        let lastTap = 0;
+        let lastTapY = 0;
+        let pressTimer;
+        let touchX = 0;
+        let touchY = 0;
 
         div.addEventListener('touchstart', (e) => {
             touchX = e.touches[0].clientX;
-            const capturedDiv = div;
+            touchY = e.touches[0].clientY;
             pressTimer = setTimeout(() => {
                 if (touchX < window.innerWidth / 2) {
-                    if(confirm("Delete?")) deleteEx(ex.id, capturedDiv);
+                    if(confirm("Delete?")) deleteEx(ex.id, div);
                 }
             }, 750);
         }, {passive: true});
@@ -1000,10 +997,17 @@ function renderExamples(item) {
         div.addEventListener('touchend', (e) => {
             clearTimeout(pressTimer);
             const now = Date.now();
-            if (now - lastTap < 350) {
+            const endY = e.changedTouches[0].clientY;
+            // Only count as double-tap if taps are close in time AND close in position
+            if (now - lastTap < 400 && Math.abs(endY - lastTapY) < 60) {
                 toggleFav(ex.id, div);
             }
             lastTap = now;
+            lastTapY = endY;
+        });
+
+        div.addEventListener('dblclick', (e) => {
+            toggleFav(ex.id, div);
         });
 
         list.appendChild(div);
@@ -1314,19 +1318,11 @@ function toggleFav(id, el) {
 
     if (favExamples.includes(id)) {
         favExamples = favExamples.filter(x => x !== id);
+        el.classList.remove('is-fav');
     } else {
         favExamples.push(id);
+        el.classList.add('is-fav');
     }
-
-    // Look up all example items and update their color based on current favExamples
-    document.querySelectorAll('#example-list .example-item').forEach(item => {
-        const itemId = item.dataset.exId;
-        if (favExamples.includes(itemId)) {
-            item.classList.add('is-fav');
-        } else {
-            item.classList.remove('is-fav');
-        }
-    });
 
     saveAndSync();
 
