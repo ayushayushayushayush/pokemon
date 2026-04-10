@@ -2,20 +2,37 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- IMPORTANT: Do NOT modify the viewport meta tag. user-scalable=no prevents unwanted zoom on input focus.
+         viewport-fit=cover is required for iPhone notch/safe-area support. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     
+    <!-- IMPORTANT: These three meta tags are required for the app to function as a
+         fullscreen PWA (Progressive Web App) when added to an iOS home screen.
+         Removing them will break the standalone/fullscreen experience on iPhone. -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WordFlow Pro">
     
+    <!-- IMPORTANT: apple-touch-icon.png must exist in the same directory for the
+         home screen icon to appear correctly on iOS. -->
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
     <title>WordFlow Pro</title>
 
+    <!-- IMPORTANT: PapaParse is required to parse the words.csv data file.
+         Do NOT remove this script tag — the entire app will fail to load without it. -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
+    <!-- IMPORTANT: Both Google Fonts (Playfair Display + Lora) are actively used throughout
+         the UI. Removing either will degrade the typography significantly. -->
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
     <style>
+        /* ── CSS Custom Properties (Design Tokens) ──────────────────────────────
+           IMPORTANT: All colors, radii, and safe-area values are defined here.
+           These variables are used throughout the stylesheet — do NOT remove or
+           rename them, as doing so will break the visual design system.
+           --safe-top / --safe-bottom use env() to handle iPhone notch/home-bar
+           insets. These are critical for layout on modern iPhones. */
         :root {
             --primary: #4D9EFF;
             --primary-dim: rgba(77,158,255,0.12);
@@ -42,8 +59,14 @@
             --radius-xl: 32px;
         }
 
+        /* IMPORTANT: -webkit-tap-highlight-color and -webkit-touch-callout are
+           required to suppress the native iOS tap flash and callout popups on
+           long-press. Removing these will cause unwanted native UI to appear. */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 
+        /* IMPORTANT: overflow:hidden on body/html is intentional — the app uses
+           a fixed-height layout with internal scrolling. overscroll-behavior-y:none
+           prevents the iOS "rubber band" bounce on the root document. */
         body, html {
             margin: 0;
             padding: 0; width: 100%; height: 100%;
@@ -55,7 +78,10 @@
             overscroll-behavior-y: none;
         }
 
-        /* ── Loading ── */
+        /* ── Loading Screen ──────────────────────────────────────────────────────
+           IMPORTANT: The loading screen (#loading-screen) is shown at z-index:3000
+           until the CSV is fully parsed. It is hidden via JS in window.onload.
+           The pulse animation indicates data is being fetched. */
         #loading-screen {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -71,7 +97,13 @@
         }
         @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
 
-        /* ── Sync pill ── */
+        /* ── Sync Status Pill ────────────────────────────────────────────────────
+           IMPORTANT: #sync-status is a floating pill that shows cloud sync state.
+           It uses calc(var(--safe-top) + 10px) to sit below the iPhone notch.
+           The .show / .syncing / .synced classes are toggled by showSync() in JS.
+           opacity:0 + pointer-events:none keeps it invisible and non-interactive
+           when not active. Do NOT remove the z-index:4000 — it must appear above
+           all overlays. */
         #sync-status {
             position: fixed;
             top: calc(var(--safe-top) + 10px); left: 50%;
@@ -84,13 +116,17 @@
         #sync-status.syncing { background: var(--surface-4); color: var(--text-secondary); }
         #sync-status.synced  { background: rgba(46,204,113,0.15); color: var(--success-green); border: 1px solid rgba(46,204,113,0.3); }
 
-        /* ── Header ── */
+        /* ── App Header ──────────────────────────────────────────────────────────
+           IMPORTANT: The top padding uses calc(var(--safe-top) + 16px) to push
+           header content below the iPhone status bar / notch. */
         header {
             padding: calc(var(--safe-top) + 16px) 20px 12px;
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        /* TWEAK: Zero padding, larger font size for main header buttons */
+        /* TWEAK: Zero padding, larger font size for main header buttons.
+           IMPORTANT: padding:0 and font-size:1.7rem are intentional for emoji icon sizing.
+           The fixed 46x46px dimensions keep all header buttons the same visual weight. */
         .header-btn {
             display: flex; align-items: center; justify-content: center;
             width: 46px; height: 46px; border-radius: var(--radius-sm); cursor: pointer;
@@ -102,12 +138,15 @@
         }
         .header-btn:active { background: var(--surface-4); border-color: var(--border-bright); }
         
-        /* TWEAK: Text-based buttons inside overlays get their padding back */
+        /* TWEAK: Text-based buttons inside overlays (e.g. "← Back") get their
+           padding restored and auto sizing, overriding the icon-button defaults above. */
         .header-btn.overlay-nav {
             width: auto; height: auto; padding: 8px 14px; font-size: 0.85rem; font-weight: 700;
         }
 
-        /* TWEAK: Counter is bigger and bolder */
+        /* TWEAK: Counter pill in the main header — bigger and bolder than default.
+           IMPORTANT: The counter is clickable (calls jumpPrompt()) so do not remove
+           the height/display:flex centering, which ensures a proper tap target. */
         .counter {
             font-family: 'Playfair Display', serif;
             font-size: 1rem; font-weight: 800; letter-spacing: 0.02em;
@@ -117,17 +156,28 @@
             height: 40px; display: flex; align-items: center; justify-content: center;
         }
 
-        /* ── Overlays ── */
+        /* ── Full-Screen Overlays ────────────────────────────────────────────────
+           IMPORTANT: All four overlays use position:fixed + z-index:2000 to layer
+           above the main card UI. They start with display:none and are shown/hidden
+           via inline style in JS (openFavs, openSettings, openKnown, startQuiz,
+           closeOverlays). Do NOT change display:none to visibility:hidden — the JS
+           checks style.display directly. */
         #fav-overlay, #known-overlay, #settings-overlay, #quiz-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 2000; display: none; flex-direction: column;
         }
 
+        /* IMPORTANT: -webkit-overflow-scrolling:touch enables momentum (inertial)
+           scrolling inside list containers on iOS. Removing it makes lists feel
+           sluggish on iPhone. */
         .list-container { flex: 1; overflow-y: auto; padding: 8px 18px 24px; -webkit-overflow-scrolling: touch; }
+
+        /* IMPORTANT: user-select:none on #fav-overlay prevents text selection
+           when the user long-presses to favorite/unfavorite an example sentence. */
         #fav-overlay { user-select: none; -webkit-user-select: none; }
 
-        /* ── Settings ── */
+        /* ── Settings Overlay ────────────────────────────────────────────────── */
         .settings-list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
         .settings-item {
             background: var(--surface-2);
@@ -140,7 +190,7 @@
         .settings-item:active { background: var(--surface-3); }
         .chevron { color: var(--text-dim); font-size: 1.3rem; }
 
-        /* ── Quiz ── */
+        /* ── Quiz Overlay ────────────────────────────────────────────────────── */
         .quiz-container { padding: 12px 16px 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; }
         .quiz-header-info {
             display: flex; justify-content: space-between; align-items: center;
@@ -151,6 +201,8 @@
         .quiz-stat-val { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 800; color: var(--text-main); }
         .quiz-stat-label { font-size: 0.55rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
 
+        /* IMPORTANT: The quiz-sentence min-height:120px prevents the card from
+           jumping in height as different-length sentences are displayed. */
         .quiz-sentence {
             font-size: 1.1rem; font-weight: 400; line-height: 1.7;
             color: var(--text-main); text-align: left;
@@ -158,8 +210,13 @@
             border: 1px solid var(--border); min-height: 120px; display: block;
             word-wrap: break-word; overflow-wrap: break-word;
         }
+        /* IMPORTANT: .quiz-sentence b styles the masked word blank (_________).
+           white-space:nowrap prevents the underscores from wrapping mid-blank. */
         .quiz-sentence b { color: var(--primary); font-weight: 800; letter-spacing: 0.05em; white-space: nowrap; }
 
+        /* IMPORTANT: .quiz-meaning is tappable — it cycles through multiple
+           definitions (quizMeaningIdx). The onclick is set in the HTML, not JS.
+           cursor:pointer and user-select:none are intentional. */
         .quiz-meaning {
             background: var(--surface-2); border: 1px solid var(--border);
             border-left: 3px solid var(--primary); border-radius: var(--radius-sm);
@@ -170,8 +227,14 @@
         .quiz-meaning:active { background: var(--surface-3); }
         .quiz-meaning span { color: var(--primary); font-weight: 700; font-style: normal; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; margin-right: 8px; }
 
+        /* IMPORTANT: The options grid is 2 columns (6 options total = 3 rows).
+           Do not change grid-template-columns without also updating the JS that
+           generates exactly 6 option buttons in nextQuizQuestion(). */
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         
+        /* IMPORTANT: .option-btn.correct and .option-btn.wrong classes are added
+           by handleQuizTap() to visually reveal right/wrong answers.
+           Do NOT remove these classes — they are the sole visual feedback mechanism. */
         .option-btn {
             background: var(--surface-2); color: var(--text-main);
             border: 1px solid var(--border); padding: 14px 8px; border-radius: var(--radius-md);
@@ -180,10 +243,14 @@
             overflow: hidden; display: flex; flex-direction: column; align-items: center; 
             justify-content: center; gap: 4px; min-height: 90px;
         }
+        /* IMPORTANT: .opt-word uses text-overflow:ellipsis to handle very long words
+           without breaking the grid layout. */
         .option-btn .opt-word { 
             font-size: 1.2rem; font-weight: 700; 
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; 
         }
+        /* IMPORTANT: .opt-ipa allows white-space:normal so IPA that was split on
+           commas (see nextQuizQuestion logic) can wrap to a second line. */
         .option-btn .opt-ipa { 
             font-family: monospace; font-weight: 400; color: #888; 
             white-space: normal; overflow: visible; width: 100%; 
@@ -193,17 +260,31 @@
         .option-btn.correct { background: rgba(46,204,113,0.18); border-color: var(--success-green); color: var(--success-green); font-weight: 700; }
         .option-btn.wrong { background: rgba(255,69,69,0.18); border-color: var(--delete-red); color: var(--delete-red); }
 
-        /* ── Favorites list ── */
+        /* ── Favorites List ──────────────────────────────────────────────────── */
         .fav-group-header { margin: 22px 0 10px 4px; display: flex; align-items: baseline; gap: 10px; }
         .fav-group-title { font-family: 'Playfair Display', serif; color: var(--delete-red); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; }
         .fav-group-ipa { color: var(--text-dim); font-size: 0.82rem; font-family: monospace; }
 
-        /* ── Main card area ── */
+        /* ── Main Card Area ──────────────────────────────────────────────────────
+           IMPORTANT: .app-container starts with display:none and is set to
+           display:flex by JS in window.onload after the CSV is loaded.
+           Do NOT change the initial display — the loading screen relies on this. */
         .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
+
+        /* IMPORTANT: perspective:1500px on .scene is what creates the 3D depth
+           for the card flip animation. Removing it collapses the flip to 2D. */
         .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 18px; }
+
+        /* IMPORTANT: transform-style:preserve-3d on .card is required for the
+           front/back faces to exist in 3D space. The cubic-bezier timing gives
+           the flip its characteristic "snappy overshoot" feel.
+           .card.is-flipped is toggled by flipCard() — do NOT rename this class. */
         .card { width: 100%; height: 100%; position: relative; transition: transform 0.65s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; }
         .card.is-flipped { transform: rotateY(180deg); }
 
+        /* IMPORTANT: backface-visibility:hidden hides each face when it is
+           rotated away from the viewer. Without this, both faces show through
+           each other during the flip animation. */
         .card-face {
             position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
             border-radius: var(--radius-xl); background: var(--surface-1);
@@ -212,30 +293,60 @@
             box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 20px 60px rgba(0,0,0,0.8);
         }
 
-        /* Card front */
+        /* Card front — clicking the word container plays audio; clicking elsewhere flips.
+           See handleCardFrontClick() for the logic that differentiates the two tap zones. */
         .card-front { justify-content: center; align-items: center; text-align: center; padding: 40px 30px; cursor: pointer; }
+
+        /* IMPORTANT: user-select:none on .word-container prevents text selection
+           on long-press, which would interfere with the mastery long-press gesture
+           managed by setupMasteryGesture(). */
         .word-container { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; width: 100%; }
         .word-display { font-family: 'Playfair Display', serif; font-size: 3.6rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: 0.01em; }
         .ipa-sub { font-size: 1rem; color: var(--text-secondary); margin-top: 18px; font-family: monospace; display: flex; flex-direction: column; gap: 6px; line-height: 1.5; }
 
-        /* Card back */
+        /* IMPORTANT: .card-back must have transform:rotateY(180deg) to start
+           face-down. It is revealed when the parent .card gets .is-flipped. */
         .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
+
+        /* IMPORTANT: clicking .back-header flips the card back (flipCard()).
+           position:relative is needed for child z-index stacking to work correctly. */
         .back-header { padding: 24px 24px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; position: relative; cursor: pointer; user-select: none; }
         .back-top-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; margin-bottom: 12px; position: relative; }
+
+        /* IMPORTANT: clicking #b-word plays audio (playAudioFromEvent).
+           z-index:5 ensures it sits above any sibling overlapping elements. */
         .back-word { font-family: 'Playfair Display', serif; font-size: 1.55rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.04em; margin: 0; z-index: 5; }
+
+        /* IMPORTANT: #more-btn cycles through multiple meanings via handleMoreClick().
+           It is shown/hidden in updateCard() based on availableMeanings.length > 1. */
         .more-btn { background: var(--primary-dim); color: var(--primary); font-size: 0.6rem; font-weight: 700; padding: 5px 11px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.05em; z-index: 5; border: 1px solid rgba(77,158,255,0.2); }
+
+        /* IMPORTANT: #type-badge is shown/hidden in updateCard() based on
+           whether item.Type has a value. Its display:none default is set via JS. */
         .type-badge { background: var(--surface-4); color: var(--text-secondary); font-size: 0.58rem; font-weight: 700; padding: 5px 10px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.06em; z-index: 5; border: 1px solid var(--border); }
         .meaning-container { display: flex; align-items: flex-start; justify-content: space-between; min-height: 55px; }
         .meaning-text { flex: 1; font-size: 1.1rem; font-weight: 500; color: var(--text-main); line-height: 1.5; margin: 0; z-index: 5; }
 
+        /* IMPORTANT: #example-list uses flex-grow:1 so it fills remaining card
+           height below the back-header. overflow-y:auto + -webkit-overflow-scrolling
+           enables momentum scrolling of the example sentences on iOS. */
         #example-list { flex-grow: 1; overflow-y: auto; padding: 14px 20px 28px; -webkit-overflow-scrolling: touch; }
-        .example-item { background: var(--surface-2); padding: 14px 16px; font-size: 0.9rem; line-height: 1.6; color: #C0C0C8; margin-bottom: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); user-select: none; -webkit-user-select: none; transition: border-color 0.2s; }
-        .example-item.is-fav { color: #FF4545 !important; border-color: rgba(255,69,69,0.25); }
 
-        /* ── Nav controls ── */
+        /* IMPORTANT: .example-item.is-fav uses !important to override the default
+           color. This class is NOT actively used in JS — instead, inline style
+           is set directly (div.style.color = '#FF453A'). The class is kept for
+           reference and potential future use. */
+        .example-item { background: var(--surface-2); padding: 14px 16px; font-size: 0.9rem; line-height: 1.6; color: #C0C0C8; margin-bottom: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); user-select: none; -webkit-user-select: none; transition: border-color 0.2s; }
+        .example-item.is-fav { color: #FF453A !important; border-color: rgba(255,69,69,0.25); }
+
+        /* ── Nav Controls (Bottom Buttons) ──────────────────────────────────────
+           IMPORTANT: padding-bottom uses calc(var(--safe-bottom) + 28px) to push
+           buttons above the iPhone home indicator bar. */
         .controls { padding: 16px 18px calc(var(--safe-bottom) + 28px); display: flex; gap: 10px; width: 100%; max-width: 420px; }
         
-        /* TWEAK: Taller, bolder nav buttons with zero padding */
+        /* TWEAK: Taller, bolder nav buttons with zero padding.
+           IMPORTANT: padding:0 is intentional — text is centered via flexbox.
+           The .primary variant (Next button) has a colored background and shadow. */
         .nav-btn { 
             flex: 1; height: 62px; border-radius: var(--radius-md); border: none; 
             background: var(--surface-3); color: var(--text-main); 
@@ -248,12 +359,13 @@
         .nav-btn.primary { background: var(--primary); color: #fff; border-color: transparent; box-shadow: 0 4px 20px rgba(77,158,255,0.3); }
         .nav-btn.primary:active { background: #3a8fe8; }
 
-        /* ── Known/Mastered list ── */
+        /* ── Known/Mastered Words List ──────────────────────────────────────── */
         .known-item { padding: 16px 4px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-between; align-items: center; }
         .known-word { font-weight: 600; font-size: 1rem; }
         .known-ipa { color: var(--text-dim); font-size: 0.85rem; font-family: monospace; }
 
-        /* ── Scrollbar ── */
+        /* ── Custom Scrollbar ─────────────────────────────────────────────────
+           Kept intentionally thin (2px) to be unobtrusive. */
         ::-webkit-scrollbar { width: 2px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 4px; }
@@ -263,9 +375,19 @@
 
 <body>
 
+<!-- IMPORTANT: #sync-status pill floats above everything (z-index:4000).
+     Its visibility is controlled exclusively by showSync() in JS via className.
+     Do NOT remove this element — pushSync() references it. -->
 <div id="sync-status"></div>
+
+<!-- IMPORTANT: #loading-screen is visible on initial load (z-index:3000).
+     It is hidden via JS (style.display='none') once the CSV finishes parsing.
+     Do NOT remove this element. -->
 <div id="loading-screen"><p>Loading...</p></div>
 
+<!-- ── Settings Overlay ────────────────────────────────────────────────────────
+     Shown by openSettings(), hidden by closeOverlays().
+     Contains navigation to "Mastered Words" (openKnown) and "Restore Deleted" (resetDeleted). -->
 <div id="settings-overlay">
     <header>
         <div onclick="closeOverlays()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
@@ -286,6 +408,15 @@
     </div>
 </div>
 
+<!-- ── Quiz Overlay ────────────────────────────────────────────────────────────
+     Shown by startQuiz() (launched from the Favorites overlay via the 💡 button).
+     Hidden by closeOverlays().
+     IMPORTANT: The four stat spans (#quiz-score-display, #quiz-wrong-display,
+     #quiz-total-display, #quiz-remaining-display) are updated by JS throughout
+     the quiz. Do NOT rename their IDs.
+     #quiz-question displays the sentence with the masked word (innerHTML set by JS).
+     #quiz-meaning is tappable to cycle through definitions (onclick in HTML).
+     #quiz-options is the grid container — JS clears and rebuilds it each question. -->
 <div id="quiz-overlay">
     <header>
         <div onclick="closeOverlays()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
@@ -311,12 +442,24 @@
                 <span class="quiz-stat-label">Left</span>
             </div>
         </div>
+        <!-- IMPORTANT: quiz-question innerHTML is set by nextQuizQuestion() — it
+             contains a sentence with the target word replaced by <b>_________</b>. -->
         <div id="quiz-question" class="quiz-sentence">Select a favorite...</div>
+        <!-- IMPORTANT: The onclick here cycles quizMeaningIdx and calls renderQuizMeaning().
+             This must remain an inline onclick — it references module-level JS variables. -->
         <div id="quiz-meaning" class="quiz-meaning" onclick="quizMeaningIdx=(quizMeaningIdx+1)%quizMeanings.length; renderQuizMeaning();"><span>Meaning</span>—</div>
+        <!-- IMPORTANT: #quiz-options is emptied and rebuilt as a 2-column grid
+             of .option-btn elements by nextQuizQuestion() on every new question. -->
         <div id="quiz-options" class="options-grid"></div>
     </div>
 </div>
 
+<!-- ── Favorites Overlay ───────────────────────────────────────────────────────
+     Shown by openFavs(), hidden by closeOverlays().
+     The 💡 button in the header launches startQuiz().
+     IMPORTANT: user-select:none is set on #fav-overlay via CSS to prevent text
+     selection interfering with long-press unfavoriting.
+     #fav-list is populated dynamically by openFavs(). -->
 <div id="fav-overlay">
     <header>
         <div onclick="closeOverlays()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
@@ -326,6 +469,10 @@
     <div id="fav-list" class="list-container"></div>
 </div>
 
+<!-- ── Known/Mastered Words Overlay ───────────────────────────────────────────
+     Opened by openKnown() (from Settings). Back button returns to Settings.
+     "Remove All" button calls removeAllKnown().
+     #known-list is populated dynamically by openKnown(). -->
 <div id="known-overlay">
     <header>
         <div onclick="openSettings()" class="header-btn overlay-nav" style="color:var(--primary);">← Settings</div>
@@ -335,41 +482,81 @@
     <div id="known-list" class="list-container"></div>
 </div>
 
+<!-- ── Main App Header ─────────────────────────────────────────────────────────
+     IMPORTANT: starts with display:none and is shown by JS (window.onload) once
+     data is loaded. Do NOT remove the id="app-header" — JS references it.
+     #counter shows "currentIndex+1 / total" and is clickable to jumpPrompt(). -->
 <header id="app-header" style="display:none;">
     <div class="header-btn" onclick="openSettings()">⚙️</div>
     <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
     <div class="header-btn fav-btn" onclick="openFavs()">★</div>
 </header>
 
+<!-- ── Main App Container ─────────────────────────────────────────────────────
+     IMPORTANT: starts with display:none and is set to display:flex by JS.
+     .scene provides 3D perspective context for the card flip.
+     #card receives/loses the .is-flipped class via flipCard(). -->
 <div class="app-container" id="app">
     <div class="scene">
         <div class="card" id="card">
+
+            <!-- ── Card Front ──────────────────────────────────────────────────
+                 IMPORTANT: onclick is handleCardFrontClick(event) — this function
+                 checks whether the tap was inside #front-word-container (plays audio)
+                 or outside it (flips card). Do NOT simplify this to a plain flipCard()
+                 call or audio playback will be lost.
+                 The long-press mastery gesture is attached to #front-word-container
+                 by setupMasteryGesture() on load. Do NOT remove that element's id. -->
             <div class="card-face card-front" onclick="handleCardFrontClick(event)">
                 <div class="word-container" id="front-word-container">
                     <h1 id="f-word" class="word-display">...</h1>
                     <div class="ipa-sub">
+                        <!-- #f-ipa shows the IPA transcription; #f-phonetic shows a
+                             plain-English phonetic spelling. Both are set by updateCard(). -->
                         <span id="f-ipa"></span>
                         <span id="f-phonetic"></span>
                     </div>
                 </div>
             </div>
 
+            <!-- ── Card Back ───────────────────────────────────────────────────
+                 IMPORTANT: clicking .back-header calls flipCard() to flip back.
+                 #b-word is also independently clickable to play audio (playAudioFromEvent).
+                 e.stopPropagation() in playAudioFromEvent prevents the click from
+                 bubbling up to .back-header and triggering an unwanted flip. -->
             <div class="card-face card-back">
                 <div class="back-header" onclick="flipCard()">
                     <div class="back-top-row">
+                        <!-- IMPORTANT: #b-word onclick calls playAudioFromEvent(event).
+                             stopPropagation is essential here — see playAudioFromEvent(). -->
                         <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
+                        <!-- IMPORTANT: #more-btn is shown only when availableMeanings.length > 1.
+                             onclick calls handleMoreClick(event) which cycles meanings. -->
                         <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
+                        <!-- IMPORTANT: #type-badge shows the word's grammatical type (noun,
+                             verb, etc.) if available. Shown/hidden in updateCard(). -->
                         <div id="type-badge" class="type-badge" style="display:none;"></div>
                     </div>
                     <div class="meaning-container">
+                        <!-- IMPORTANT: #b-meaning is updated by updateCard() (initial meaning)
+                             and handleMoreClick() (subsequent meanings). Use innerText not
+                             innerHTML — meanings may contain characters that need escaping. -->
                         <p id="b-meaning" class="meaning-text">...</p>
                     </div>
                 </div>
+                <!-- IMPORTANT: #example-list is rebuilt from scratch by renderExamples()
+                     every time updateCard() is called. It holds all example sentences
+                     for the current word, with long-press interactions for
+                     favoriting (right half) and deleting (left half). -->
                 <div id="example-list"></div>
             </div>
         </div>
     </div>
 
+    <!-- ── Navigation Buttons ─────────────────────────────────────────────────
+         Back/Shuffle/Next skip over words in knownWords array (mastered words).
+         IMPORTANT: Do NOT remove the .primary class from the Next button —
+         it controls the colored styling. -->
     <div class="controls">
         <button class="nav-btn" onclick="prevCard()">Back</button>
         <button class="nav-btn" onclick="shuffleCard()">Shuffle</button>
@@ -378,18 +565,39 @@
 </div>
 
 <script>
-// ── Cloud Sync Config ──
+// ══════════════════════════════════════════════════════════════════════════════
+// IMPORTANT — Cloud Sync Config
+// BIN_ID and API_KEY connect to a JSONBin.io bin that stores the user's
+// deleted examples, favorited examples, and mastered words across devices.
+// Do NOT remove or change these — the pushSync() and window.onload fetch
+// depend on them. BIN_URL is derived from BIN_ID.
+// ══════════════════════════════════════════════════════════════════════════════
 const BIN_ID  = "69d3dacfaaba882197cd5a0e";
 const API_KEY = "$2a$10$2XIWmqUVHyv39zmLplK6YOCLf07sb3WyJIxxleZUrKRb61lugMCu6";
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-// ── App State ──
+// ══════════════════════════════════════════════════════════════════════════════
+// IMPORTANT — App State
+// wordData: full CSV rows parsed by PapaParse. Populated once in window.onload.
+// deletedExamples: array of "WORD|sentence" IDs the user has deleted.
+// favExamples: array of "WORD|sentence" IDs the user has favorited.
+// knownWords: array of WORD strings the user has marked as mastered (hidden).
+// All three arrays are persisted to localStorage AND synced to JSONBin.
+// ══════════════════════════════════════════════════════════════════════════════
 let wordData = [];
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
 let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
 
-// ── Quiz State ──
+// ══════════════════════════════════════════════════════════════════════════════
+// IMPORTANT — Quiz State
+// quizScore / quizWrong: running tally for the current quiz session.
+// currentQuizCorrect: the correct answer word for the active question.
+// quizPool: copy of favExamples that shrinks as questions are used; refills on empty.
+// isQuizLocked: prevents double-tapping an option after one is selected.
+// quizMeanings / quizMeaningIdx: array of definitions for the current quiz word,
+//   cycled by tapping the meaning card.
+// ══════════════════════════════════════════════════════════════════════════════
 let quizScore = 0;
 let quizWrong = 0;
 let currentQuizCorrect = "";
@@ -398,17 +606,31 @@ let isQuizLocked = false;
 let quizMeanings = [];
 let quizMeaningIdx = 0;
 
-// ── Card State ──
+// ══════════════════════════════════════════════════════════════════════════════
+// IMPORTANT — Card State
+// currentIndex: index into wordData for the currently displayed card.
+//   Persisted to localStorage key 'wf_index_v6' (v6 prevents conflicts with
+//   older storage keys if the data format changed).
+// availableMeanings: array of all meanings for the current word (MEANING + Meaning1..10).
+// currentMeaningIdx: which meaning is currently shown on the card back.
+// syncTimeout: debounce handle for pushSync() — cleared/reset on each save.
+// ══════════════════════════════════════════════════════════════════════════════
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
 let availableMeanings = [];
 let currentMeaningIdx = 0;
 let syncTimeout = null;
 
-// Gestures for Mastery
+// IMPORTANT — Mastery Gesture State
+// masteryTimer / masteryMoved are used by setupMasteryGesture() to implement a
+// 750ms long-press on the card front that triggers confirmMastery().
+// masteryMoved prevents the mastery action from firing if the user scrolls/swipes.
 let masteryTimer = null;
 let masteryMoved = false;
 
-// ── showSync ──
+// ── showSync ──────────────────────────────────────────────────────────────────
+// Shows the sync status pill with a given state ('syncing' or 'synced') and
+// message, then auto-hides it after 2 seconds by clearing the className.
+// IMPORTANT: The class names match the CSS rules exactly — do NOT rename them.
 function showSync(state, message) {
     const el = document.getElementById('sync-status');
     el.className = `show ${state}`;
@@ -416,9 +638,19 @@ function showSync(state, message) {
     setTimeout(() => { el.className = ''; }, 2000);
 }
 
-// ── window.onload ──
+// ── window.onload ─────────────────────────────────────────────────────────────
+// Entry point. Order matters:
+// 1. setupMasteryGesture() must run before the card is shown so gesture listeners
+//    are attached to #front-word-container immediately.
+// 2. PapaParse downloads and parses words.csv (header:true = column names as keys).
+// 3. After parse, a JSONBin fetch merges cloud state into local state (union of
+//    deleted/favs/known from both sources), then calls saveAndSync(false) to
+//    persist without triggering another cloud push.
+// 4. Loading screen is hidden, app UI is shown.
+// 5. If the saved currentIndex points to a known/mastered word, skip to next.
+// IMPORTANT: Do NOT reorder these steps — the UI must not show before data is ready.
 window.onload = () => {
-    // Initialize our new mastery gesture listeners immediately
+    // Attach mastery long-press listeners before the card renders
     setupMasteryGesture();
 
     Papa.parse("words.csv", {
@@ -426,19 +658,22 @@ window.onload = () => {
         complete: async function(results) {
             wordData = results.data.filter(row => row.WORD);
 
+            // Merge cloud state with local state (union/dedup via Set)
             fetch(BIN_URL + "/latest", { headers: { "X-Master-Key": API_KEY } })
                 .then(r => r.json())
                 .then(d => {
                     deletedExamples = Array.from(new Set([...(d.record?.deleted || []), ...deletedExamples]));
                     favExamples = Array.from(new Set([...(d.record?.favs || []), ...favExamples]));
                     knownWords = Array.from(new Set([...(d.record?.known || []), ...knownWords]));
-                    saveAndSync(false);
-                }).catch(() => {});
+                    saveAndSync(false); // Persist merged state locally without pushing back to cloud
+                }).catch(() => {}); // Silently fail if offline — local state is already loaded
 
+            // Show the app now that data is ready
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('app').style.display = 'flex';
             document.getElementById('app-header').style.display = 'flex';
 
+            // Skip mastered words on initial load
             if(knownWords.includes(wordData[currentIndex].WORD.trim())) {
                 nextCard();
             } else {
@@ -448,7 +683,11 @@ window.onload = () => {
     });
 };
 
-// ── setupMasteryGesture ──
+// ── setupMasteryGesture ───────────────────────────────────────────────────────
+// Attaches a 750ms long-press gesture to #front-word-container.
+// IMPORTANT: Uses {passive:true} on touchstart/touchmove for iOS scroll performance.
+// masteryMoved is set to true on touchmove so that scrolling does NOT trigger mastery.
+// The timer is always cleared on touchend/touchmove to prevent unwanted firing.
 function setupMasteryGesture() {
     const container = document.getElementById('front-word-container');
     
@@ -471,7 +710,10 @@ function setupMasteryGesture() {
     });
 }
 
-// ── confirmMastery ──
+// ── confirmMastery ────────────────────────────────────────────────────────────
+// Called after the mastery long-press gesture fires.
+// Adds the current word to knownWords, saves, then advances to the next card.
+// The guard (!knownWords.includes(word)) prevents duplicates.
 function confirmMastery() {
     const word = wordData[currentIndex].WORD.trim();
     if (confirm(`Mark "${word}" as mastered and hide it?`)) {
@@ -483,7 +725,11 @@ function confirmMastery() {
     }
 }
 
-// ── handleCardFrontClick ──
+// ── handleCardFrontClick ──────────────────────────────────────────────────────
+// IMPORTANT: This function differentiates two tap zones on the card front:
+// - Tapping ON the word/IPA container (#front-word-container) → plays audio.
+// - Tapping ANYWHERE ELSE on the card front → flips the card.
+// Do NOT simplify this to a single action — audio and flip are both required.
 function handleCardFrontClick(e) {
     if (e.target.closest('#front-word-container')) {
         playAudioByIndex(currentIndex);
@@ -492,11 +738,22 @@ function handleCardFrontClick(e) {
     }
 }
 
-// ── updateCard ──
+// ── updateCard ────────────────────────────────────────────────────────────────
+// Renders the current word (wordData[currentIndex]) onto both card faces.
+// IMPORTANT: Called after every navigation action (nextCard, prevCard, shuffleCard,
+// jumpPrompt, closeOverlays, confirmMastery).
+// Steps:
+// 1. Collects all available meanings (MEANING column + Meaning1..Meaning10 columns).
+// 2. Resets currentMeaningIdx to 0.
+// 3. Unflips the card (removes .is-flipped).
+// 4. Updates counter, saves currentIndex to localStorage.
+// 5. Populates front (word, IPA, phonetic) and back (word, meaning, more-btn, type-badge).
+// 6. Calls renderExamples() to rebuild the example sentence list.
 function updateCard() {
     const item = wordData[currentIndex];
     const meaningEl = document.getElementById('b-meaning');
 
+    // Collect all meanings: primary MEANING column + up to 10 Meaning1..Meaning10 columns
     availableMeanings = [];
     if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING.trim());
     
@@ -509,21 +766,25 @@ function updateCard() {
 
     document.getElementById('card').classList.remove('is-flipped');
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
-    localStorage.setItem('wf_index_v6', currentIndex);
+    localStorage.setItem('wf_index_v6', currentIndex); // Persist position across sessions
 
+    // Populate card front
     document.getElementById('f-word').textContent = item.WORD;
     document.getElementById('f-ipa').textContent = item.IPA;
     document.getElementById('f-phonetic').textContent = item.PHONETIC;
 
+    // Populate card back
     document.getElementById('b-word').textContent = item.WORD;
     meaningEl.innerText = availableMeanings[0] || "";
 
+    // Show/hide "More X/Y" button based on whether multiple meanings exist
     const moreBtn = document.getElementById('more-btn');
     moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none';
     if(moreBtn.style.display === 'block') {
         moreBtn.textContent = `More 1/${availableMeanings.length}`;
     }
 
+    // Show/hide grammatical type badge (noun, verb, adj, etc.)
     const typeBadge = document.getElementById('type-badge');
     if (item.Type && item.Type.trim()) {
         typeBadge.textContent = item.Type.trim();
@@ -535,7 +796,10 @@ function updateCard() {
     renderExamples(item);
 }
 
-// ── renderQuizMeaning ──
+// ── renderQuizMeaning ─────────────────────────────────────────────────────────
+// Updates the #quiz-meaning element to show the current meaning (quizMeanings[quizMeaningIdx]).
+// Also appends a small counter (e.g. "2/3") when multiple meanings exist.
+// IMPORTANT: Uses innerHTML — the counter uses <em> styling.
 function renderQuizMeaning() {
     const el = document.getElementById('quiz-meaning');
     const counter = quizMeanings.length > 1
@@ -544,7 +808,12 @@ function renderQuizMeaning() {
     el.innerHTML = `<span>Meaning</span>${quizMeanings[quizMeaningIdx]}${counter}`;
 }
 
-// ── startQuiz ──
+// ── startQuiz ─────────────────────────────────────────────────────────────────
+// Initializes and opens the quiz overlay from the Favorites overlay.
+// IMPORTANT: e.stopPropagation() prevents the click from bubbling to the
+// parent fav-overlay header and triggering an unintended closeOverlays().
+// quizPool is a fresh copy of favExamples — it shrinks as questions are asked
+// and refills (in nextQuizQuestion) when exhausted.
 function startQuiz(e) {
     if(e) e.stopPropagation();
     if (favExamples.length < 1) {
@@ -562,7 +831,14 @@ function startQuiz(e) {
     nextQuizQuestion();
 }
 
-// ── nextQuizQuestion ──
+// ── nextQuizQuestion ──────────────────────────────────────────────────────────
+// Picks a random item from quizPool, builds the masked sentence, gathers meanings,
+// and generates 6 answer options (1 correct + 5 random distractors).
+// IMPORTANT: The regex for masking the word handles root stemming (strips trailing 'e')
+// so that inflected forms (e.g. "running" from "run") are also masked.
+// The IPA comma-split logic adds a <br> so long IPA strings wrap cleanly in the grid.
+// isQuizLocked is reset to false at the start so the new question is interactive.
+// When quizPool is empty, it refills from favExamples and alerts the user.
 function nextQuizQuestion() {
     if (quizPool.length === 0) {
         alert("Well done! Restarting...");
@@ -572,6 +848,7 @@ function nextQuizQuestion() {
     isQuizLocked = false;
     document.getElementById('quiz-remaining-display').textContent = quizPool.length;
     
+    // Pick and remove a random item from the pool
     const poolIdx = Math.floor(Math.random() * quizPool.length);
     const randomId = quizPool[poolIdx];
     quizPool.splice(poolIdx, 1); 
@@ -579,6 +856,7 @@ function nextQuizQuestion() {
     const [word, sentence] = randomId.split('|');
     currentQuizCorrect = word.trim();
 
+    // Gather all meanings for the correct word
     const quizWordData = wordData.find(w => w.WORD.trim().toLowerCase() === currentQuizCorrect.toLowerCase());
     quizMeanings = [];
     if (quizWordData) {
@@ -592,6 +870,7 @@ function nextQuizQuestion() {
     quizMeaningIdx = 0;
     renderQuizMeaning();
 
+    // Build regex to mask the target word and its inflected forms in the sentence
     const escapedWord = currentQuizCorrect.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const stem = escapedWord.endsWith('e') ? escapedWord.slice(0, -1) : escapedWord;
     const regex = new RegExp(`\\b(?:${escapedWord}|${stem})\\w*`, 'gi');
@@ -599,6 +878,7 @@ function nextQuizQuestion() {
     const maskedSentence = sentence.replace(regex, "<b>_________</b>");
     document.getElementById('quiz-question').innerHTML = maskedSentence;
 
+    // Build 6 options: 1 correct + 5 unique random distractors
     let options = [currentQuizCorrect];
     while(options.length < 6) {
         let randWord = wordData[Math.floor(Math.random() * wordData.length)].WORD.trim();
@@ -615,7 +895,8 @@ function nextQuizQuestion() {
         const optData = wordData.find(w => w.WORD.trim() === opt);
         
         let optIpa = optData && optData.IPA ? optData.IPA.trim() : '';
-        // Split IPA if it contains a comma and move content to new line
+        // IMPORTANT: Split IPA on commas and insert <br> so long IPA strings
+        // wrap to a second line inside the option button instead of overflowing.
         if (optIpa.includes(',')) {
             optIpa = optIpa.split(',').join(',<br>');
         }
@@ -626,11 +907,20 @@ function nextQuizQuestion() {
     });
 }
 
-// ── handleQuizTap ──
+// ── handleQuizTap ─────────────────────────────────────────────────────────────
+// Called when the user taps an answer option button.
+// IMPORTANT: isQuizLocked prevents any action if the user taps again before the
+// 1.2s delay has elapsed and the next question loads.
+// Logic:
+// - Correct tap: adds .correct to the tapped button, increments quizScore.
+// - Wrong tap: adds .wrong to tapped button, .correct to the correct button,
+//   decrements quizScore (min 0), increments quizWrong.
+// Score displays are updated immediately. Next question loads after 1200ms.
 function handleQuizTap(selectedWord, btn) {
     if (isQuizLocked) return;
     isQuizLocked = true;
 
+    // Find the correct answer button by matching text content of .opt-word span
     const btns = document.querySelectorAll('.option-btn');
     let correctBtn;
     btns.forEach(b => { 
@@ -644,7 +934,7 @@ function handleQuizTap(selectedWord, btn) {
     } else {
         btn.classList.add('wrong');
         correctBtn.classList.add('correct');
-        quizScore = Math.max(0, quizScore - 1);
+        quizScore = Math.max(0, quizScore - 1); // Score cannot go below 0
         quizWrong += 1;
     }
 
@@ -654,28 +944,42 @@ function handleQuizTap(selectedWord, btn) {
     setTimeout(nextQuizQuestion, 1200);
 }
 
-// ── renderExamples ──
+// ── renderExamples ────────────────────────────────────────────────────────────
+// Builds the example sentence list for the current word on the card back.
+// IMPORTANT: Called by updateCard() every time the card changes. Clears #example-list first.
+// Data source: columns "1" through "50" in the CSV row for the current word.
+// Filtering: skips deleted examples (deletedExamples array) and blank/short values.
+// Sorting: favorited examples rise to the top (sorted by isFav desc).
+// Touch interaction (per example item):
+//   - Long press LEFT half (750ms): confirm → delete example.
+//   - Long press RIGHT half (1200ms): toggle favorite (red color + favExamples array).
+//   - touchmove: sets moved=true, clears timer to prevent accidental trigger on scroll.
+// IMPORTANT: The 1200ms delay on right-side favoring (vs 750ms for delete) is
+// intentional — it gives users time to scroll without accidentally favoriting.
 function renderExamples(item) {
     const list = document.getElementById('example-list');
     list.innerHTML = "";
     const cleanWord = item.WORD.trim();
     const rows = [];
     
+    // Collect example sentences from columns "1" through "50"
     for (let i = 1; i <= 50; i++) {
         const text = item[i.toString()];
         if (text && text.trim().length > 1) {
             const exId = `${cleanWord}|${text.trim()}`;
-            if (deletedExamples.includes(exId)) continue;
+            if (deletedExamples.includes(exId)) continue; // Skip deleted examples
             rows.push({ text: text.trim(), id: exId, isFav: favExamples.includes(exId) });
         }
     }
 
+    // Favorites appear first
     rows.sort((a,b) => b.isFav - a.isFav).forEach((ex, idx) => {
         const div = document.createElement('div');
         div.className = 'example-item';
         div.dataset.exId = ex.id;
         div.innerHTML = `<strong>${idx+1}.</strong> ${ex.text}`;
 
+        // Apply red color immediately if this sentence is already favorited
         if (ex.isFav) div.style.color = '#FF453A';
 
         let pressTimer = null;
@@ -686,11 +990,12 @@ function renderExamples(item) {
             moved = false;
             startX = e.touches[0].clientX;
             const isRightSide = startX > window.innerWidth / 2;
-            const delay = isRightSide ? 1200 : 750;
+            const delay = isRightSide ? 1200 : 750; // Longer delay for fav to avoid accidental trigger
             
             pressTimer = setTimeout(() => {
-                if (moved) return;
+                if (moved) return; // User scrolled — do not act
                 if (isRightSide) {
+                    // Toggle favorite status
                     if (favExamples.includes(ex.id)) {
                         favExamples = favExamples.filter(x => x !== ex.id);
                         div.style.color = '';
@@ -700,6 +1005,7 @@ function renderExamples(item) {
                     }
                     saveAndSync();
                 } else {
+                    // Confirm delete
                     if (confirm("Delete?")) deleteEx(ex.id, div);
                 }
             }, delay);
@@ -707,7 +1013,7 @@ function renderExamples(item) {
         
         div.addEventListener('touchmove', () => {
             moved = true;
-            clearTimeout(pressTimer);
+            clearTimeout(pressTimer); // Cancel long-press if user scrolls
         }, {passive: true});
         
         div.addEventListener('touchend', () => {
@@ -718,14 +1024,22 @@ function renderExamples(item) {
     });
 }
 
-// ── openSettings ──
+// ── openSettings ──────────────────────────────────────────────────────────────
+// Shows the settings overlay. Also hides the known-overlay in case it was open
+// (used as the back-navigation target from the known-overlay header).
+// IMPORTANT: e.stopPropagation() prevents the click from bubbling if called
+// from a child element inside another overlay.
 function openSettings(e) {
     if(e) e.stopPropagation();
     document.getElementById('known-overlay').style.display = 'none';
     document.getElementById('settings-overlay').style.display = 'flex';
 }
 
-// ── openKnown ──
+// ── openKnown ─────────────────────────────────────────────────────────────────
+// Shows the "Mastered Words" overlay and populates #known-list.
+// Words are shown in reverse-added order (most recently mastered first).
+// IMPORTANT: Long-press on the LEFT half of a known-word item (750ms) prompts
+// to restore it — removing it from knownWords and re-enabling it in the card flow.
 function openKnown() {
     const list = document.getElementById('known-list');
     list.innerHTML = "";
@@ -738,6 +1052,7 @@ function openKnown() {
         return;
     }
 
+    // Show most recently mastered words first
     knownWords.slice().reverse().forEach(word => {
         const masterItem = wordData.find(w => w.WORD.trim() === word);
         const ipaText = masterItem ? masterItem.IPA : '';
@@ -748,12 +1063,13 @@ function openKnown() {
 
         let pressTimer;
         div.addEventListener('touchstart', (e) => {
+            // Only trigger restore gesture on left-half touch
             if (e.touches[0].clientX < window.innerWidth / 2) {
                 pressTimer = setTimeout(() => {
                     if(confirm(`Restore "${word}"?`)) {
                         knownWords = knownWords.filter(w => w !== word);
                         saveAndSync();
-                        openKnown();
+                        openKnown(); // Re-render the list after restoring
                     }
                 }, 750);
             }
@@ -764,17 +1080,27 @@ function openKnown() {
     });
 }
 
-// ── removeAllKnown ──
+// ── removeAllKnown ────────────────────────────────────────────────────────────
+// Clears the entire knownWords array after confirmation.
+// Guard: returns early if the list is already empty to avoid unnecessary confirm dialog.
 function removeAllKnown() {
     if (knownWords.length === 0) return;
     if (confirm("Remove all mastered words?")) {
         knownWords = [];
         saveAndSync();
-        openKnown();
+        openKnown(); // Re-render the now-empty list
     }
 }
 
-// ── openFavs ──
+// ── openFavs ──────────────────────────────────────────────────────────────────
+// Shows the Favorites overlay and populates #fav-list.
+// Favorites are grouped by word. Within each group, the word header shows the
+// word name (Playfair, red) and IPA. Tapping IPA plays audio for that word.
+// Long-pressing (750ms) the word title navigates to that card.
+// Long-pressing (750ms) LEFT half of a sentence item prompts to unfavorite it.
+// IMPORTANT: The composite ID format is "WORD|sentence text" — both parts are
+// needed to identify a specific example. This format is used consistently across
+// favExamples, deletedExamples, and the quiz.
 function openFavs() {
     const list = document.getElementById('fav-list');
     list.innerHTML = "";
@@ -785,6 +1111,7 @@ function openFavs() {
         return;
     }
 
+    // Group favorite sentences by their word
     const organized = {};
     favExamples.forEach(id => {
         const parts = id.split('|');
@@ -811,6 +1138,7 @@ function openFavs() {
         ipaSpan.className = 'fav-group-ipa';
         ipaSpan.textContent = organized[word].ipa;
 
+        // Long-press (750ms) on the word title navigates to that card
         let headerTimer;
         title.addEventListener('touchstart', () => {
             headerTimer = setTimeout(() => {
@@ -818,12 +1146,14 @@ function openFavs() {
                 if (idx !== -1) { 
                     currentIndex = idx; 
                     closeOverlays(); 
+                    // Small delay before flipping to allow overlay close animation
                     setTimeout(() => document.getElementById('card').classList.add('is-flipped'), 50); 
                 }
             }, 750);
         }, {passive: true});
         
         title.addEventListener('touchend', () => clearTimeout(headerTimer));
+        // Tapping the IPA span plays audio for this word
         ipaSpan.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
 
         groupHeader.appendChild(title);
@@ -835,6 +1165,7 @@ function openFavs() {
             item.className = 'example-item';
             item.textContent = itemObj.text;
 
+            // Long-press LEFT half (750ms) to unfavorite
             let exTimer;
             item.addEventListener('touchstart', (e) => {
                 if (e.touches[0].clientX < window.innerWidth / 2) {
@@ -854,7 +1185,10 @@ function openFavs() {
     });
 }
 
-// ── closeOverlays ──
+// ── closeOverlays ─────────────────────────────────────────────────────────────
+// Hides all four overlays and re-renders the current card.
+// IMPORTANT: updateCard() is called at the end to refresh the card in case
+// favorites or deletions changed while an overlay was open.
 function closeOverlays() { 
     document.getElementById('fav-overlay').style.display = 'none'; 
     document.getElementById('known-overlay').style.display = 'none'; 
@@ -863,7 +1197,9 @@ function closeOverlays() {
     updateCard();
 }
 
-// ── resetDeleted ──
+// ── resetDeleted ──────────────────────────────────────────────────────────────
+// Clears the deletedExamples array, restoring all previously deleted sentences.
+// Called from the Settings overlay "Restore Deleted Examples" item.
 function resetDeleted() { 
     if(confirm("Restore all?")) { 
         deletedExamples = []; 
@@ -872,18 +1208,34 @@ function resetDeleted() {
     } 
 }
 
-// ── flipCard ──
+// ── flipCard ──────────────────────────────────────────────────────────────────
+// Toggles the .is-flipped class on #card to animate the 3D flip.
+// IMPORTANT: The CSS transition on .card handles the animation — do NOT use JS
+// animation here or the smooth cubic-bezier flip will break.
 function flipCard() { 
     document.getElementById('card').classList.toggle('is-flipped'); 
 }
 
-// ── playAudioFromEvent ──
+// ── playAudioFromEvent ────────────────────────────────────────────────────────
+// Wrapper called by the #b-word click handler on the card back.
+// IMPORTANT: e.stopPropagation() is critical here — without it, the click bubbles
+// up to .back-header and triggers flipCard(), causing the card to flip when the
+// user only intended to play audio.
 function playAudioFromEvent(e) { 
     if(e) e.stopPropagation(); 
     playAudioByIndex(currentIndex); 
 }
 
-// ── playAudioByIndex ──
+// ── playAudioByIndex ──────────────────────────────────────────────────────────
+// Plays the pronunciation MP3 for the word at the given index.
+// IMPORTANT: Audio files are split across 4 folders by word number:
+//   audio-file/      → words 1–1018
+//   audio-file-2/    → words 1019–2026
+//   audio-file-3/    → words 2027–3034
+//   audio-file-4/    → words 3035+
+// Do NOT change these folder name or range boundaries — they must match the
+// actual file system structure on the server.
+// .catch(()=>{}) silently suppresses errors for missing audio files.
 function playAudioByIndex(idx) {
     if (idx < 0 || idx >= wordData.length) return;
     const word = wordData[idx].WORD;
@@ -895,7 +1247,11 @@ function playAudioByIndex(idx) {
     new Audio(`${f}/${word}.mp3`).play().catch(()=>{});
 }
 
-// ── handleMoreClick ──
+// ── handleMoreClick ───────────────────────────────────────────────────────────
+// Cycles to the next meaning in availableMeanings (wraps around).
+// Updates #b-meaning text and the "More X/Y" button label.
+// IMPORTANT: e.stopPropagation() prevents the click from bubbling to .back-header
+// and triggering flipCard().
 function handleMoreClick(e) { 
     if(e) e.stopPropagation();
     currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
@@ -903,7 +1259,10 @@ function handleMoreClick(e) {
     document.getElementById('more-btn').textContent = `More ${currentMeaningIdx+1}/${availableMeanings.length}`;
 }
 
-// ── jumpPrompt ──
+// ── jumpPrompt ────────────────────────────────────────────────────────────────
+// Prompts the user to enter a word number and jumps directly to that card.
+// Input is 1-based (user sees "1 / N") but currentIndex is 0-based internally.
+// Clamped to [0, wordData.length - 1] to prevent out-of-bounds access.
 function jumpPrompt() {
     const val = prompt(`Jump to #:`);
     if (val && !isNaN(val)) { 
@@ -912,7 +1271,13 @@ function jumpPrompt() {
     }
 }
 
-// ── pushSync ──
+// ── pushSync ──────────────────────────────────────────────────────────────────
+// Debounced cloud sync: waits 1000ms after the last saveAndSync() call before
+// pushing data to JSONBin. This batches rapid successive saves (e.g. bulk delete)
+// into a single network request.
+// IMPORTANT: The PUT body must match the shape expected by window.onload's fetch:
+// { deleted: [...], favs: [...], known: [...] }
+// Do NOT rename these keys without updating the read side in window.onload.
 async function pushSync() {
     clearTimeout(syncTimeout);
     syncTimeout = setTimeout(async () => {
@@ -924,11 +1289,16 @@ async function pushSync() {
                 body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords })
             });
             showSync('synced', 'Synced');
-        } catch {}
+        } catch {} // Silently fail if offline — localStorage already has the data
     }, 1000);
 }
 
-// ── saveAndSync ──
+// ── saveAndSync ───────────────────────────────────────────────────────────────
+// Persists all three state arrays to localStorage, then optionally triggers
+// a cloud sync via pushSync().
+// IMPORTANT: Pass shouldPush=false when you only want to persist locally
+// (e.g. after merging cloud state on load — no need to push back immediately).
+// localStorage keys must NOT be changed — they are the source of truth on reload.
 function saveAndSync(shouldPush = true) {
     localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
     localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
@@ -936,34 +1306,46 @@ function saveAndSync(shouldPush = true) {
     if(shouldPush) pushSync();
 }
 
-// ── deleteEx ──
+// ── deleteEx ─────────────────────────────────────────────────────────────────
+// Adds an example ID to deletedExamples, saves/syncs, and removes the DOM element.
+// IMPORTANT: The element is removed immediately (optimistic UI) — no need to
+// re-render the full example list.
 function deleteEx(id, el) { 
     deletedExamples.push(id); 
     saveAndSync(); 
     el.remove(); 
 }
 
-// ── prevCard ──
+// ── prevCard ──────────────────────────────────────────────────────────────────
+// Moves to the previous card, skipping over mastered (known) words.
+// IMPORTANT: The do-while loop with a start-index guard prevents infinite loops
+// if ALL remaining words are in knownWords (it stops after one full cycle).
 function prevCard() {
     let start = currentIndex;
     do { 
         currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; 
-        if(currentIndex === start) break; 
+        if(currentIndex === start) break; // Full cycle — no non-known words found
     } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
     updateCard();
 }
 
-// ── nextCard ──
+// ── nextCard ──────────────────────────────────────────────────────────────────
+// Moves to the next card, skipping over mastered (known) words.
+// Same loop guard as prevCard() to handle the all-known edge case.
 function nextCard() {
     let start = currentIndex;
     do { 
         currentIndex = (currentIndex + 1) % wordData.length;
-        if(currentIndex === start) break; 
+        if(currentIndex === start) break; // Full cycle — no non-known words found
     } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
     updateCard();
 }
 
-// ── shuffleCard ──
+// ── shuffleCard ───────────────────────────────────────────────────────────────
+// Picks a random card index, retrying up to 100 times to avoid landing on a
+// mastered word.
+// IMPORTANT: The 100-attempt limit prevents an infinite loop if most/all words
+// are mastered. After 100 attempts it accepts whatever index was last picked.
 function shuffleCard() {
     let attempts = 0; let newIdx;
     do { 
