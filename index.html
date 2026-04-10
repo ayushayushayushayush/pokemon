@@ -336,6 +336,7 @@
            color. This class is NOT actively used in JS — instead, inline style
            is set directly (div.style.color = '#FF453A'). The class is kept for
            reference and potential future use. */
+        .word-ipa-hint { font-size: 0.72rem; color: #666; font-family: monospace; margin-left: 1px; vertical-align: baseline; }
         .example-item { background: var(--surface-2); padding: 14px 16px; font-size: 0.9rem; line-height: 1.6; color: #C0C0C8; margin-bottom: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); user-select: none; -webkit-user-select: none; transition: border-color 0.2s; }
         .example-item.is-fav { color: #FF453A !important; border-color: rgba(255,69,69,0.25); }
 
@@ -582,6 +583,7 @@ const WORKER_URL = "https://dark-sky-e62b.iamayushdhakal.workers.dev";
 // All three arrays are persisted to localStorage AND synced to GitHub Gist.
 // ══════════════════════════════════════════════════════════════════════════════
 let wordData = [];
+let ipaMap = {}; // word (lowercase) → IPA string, built after CSV loads
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
 let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
@@ -654,6 +656,14 @@ window.onload = () => {
         download: true, header: true,
         complete: async function(results) {
             wordData = results.data.filter(row => row.WORD);
+
+            // Build a lowercase word → IPA lookup map for inline annotations in examples
+            wordData.forEach(row => {
+                if (row.WORD && row.IPA) {
+                    ipaMap[row.WORD.trim().toLowerCase()] = row.IPA.trim();
+                }
+            });
+
 
             // Merge cloud state with local state (union/dedup via Set)
             fetch(WORKER_URL)
@@ -941,6 +951,53 @@ function handleQuizTap(selectedWord, btn) {
     setTimeout(nextQuizQuestion, 1200);
 }
 
+// ── annotateWithIPA ──────────────────────────────────────────────────────────
+// Takes an example sentence string and the current card's word (to skip annotating it).
+// Returns an HTML string where each vocabulary word found in ipaMap is followed by
+// a subtle IPA annotation in parentheses.
+// Matches whole words only (word boundary), case-insensitive.
+// Also tries stemmed forms: strips common suffixes to catch inflections like
+// "running" → "run", "studies" → "study", etc.
+function annotateWithIPA(text, skipWord) {
+    const skipLower = skipWord.toLowerCase();
+
+    // Build a sorted list of words to try (longest first to avoid partial matches)
+    const vocabWords = Object.keys(ipaMap).sort((a, b) => b.length - a.length);
+
+    // We'll do a token-by-token replacement to avoid double-annotating
+    // Split on word boundaries, keeping delimiters
+    return text.replace(/[A-Za-z'-]+/g, (match) => {
+        const lower = match.toLowerCase();
+        if (lower === skipLower) return match; // Don't annotate the current card's word
+
+        // Try exact match first
+        if (ipaMap[lower]) {
+            return `${match}<span class="word-ipa-hint">(${ipaMap[lower]})</span>`;
+        }
+
+        // Try common suffix stripping to catch inflected forms
+        const stems = [];
+        if (lower.endsWith('ing'))  stems.push(lower.slice(0, -3), lower.slice(0, -3) + 'e');
+        if (lower.endsWith('ed'))   stems.push(lower.slice(0, -2), lower.slice(0, -1), lower.slice(0, -2) + 'e');
+        if (lower.endsWith('s') && !lower.endsWith('ss'))   stems.push(lower.slice(0, -1));
+        if (lower.endsWith('es'))   stems.push(lower.slice(0, -2));
+        if (lower.endsWith('ies'))  stems.push(lower.slice(0, -3) + 'y');
+        if (lower.endsWith('er'))   stems.push(lower.slice(0, -2), lower.slice(0, -2) + 'e');
+        if (lower.endsWith('est'))  stems.push(lower.slice(0, -3), lower.slice(0, -3) + 'e');
+        if (lower.endsWith('ly'))   stems.push(lower.slice(0, -2));
+        if (lower.endsWith('tion')) stems.push(lower.slice(0, -4) + 'te', lower.slice(0, -4));
+        if (lower.endsWith('ness')) stems.push(lower.slice(0, -4));
+
+        for (const stem of stems) {
+            if (stem.length >= 3 && ipaMap[stem] && stem !== skipLower) {
+                return `${match}<span class="word-ipa-hint">(${ipaMap[stem]})</span>`;
+            }
+        }
+
+        return match;
+    });
+}
+
 // ── renderExamples ────────────────────────────────────────────────────────────
 // Builds the example sentence list for the current word on the card back.
 // IMPORTANT: Called by updateCard() every time the card changes. Clears #example-list first.
@@ -974,7 +1031,7 @@ function renderExamples(item) {
         const div = document.createElement('div');
         div.className = 'example-item';
         div.dataset.exId = ex.id;
-        div.innerHTML = `<strong>${idx+1}.</strong> ${ex.text}`;
+        div.innerHTML = `<strong>${idx+1}.</strong> ${annotateWithIPA(ex.text, cleanWord)}`;
 
         // Apply red color immediately if this sentence is already favorited
         if (ex.isFav) div.style.color = '#FF453A';
