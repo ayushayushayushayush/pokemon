@@ -567,11 +567,16 @@
 <script>
 // ══════════════════════════════════════════════════════════════════════════════
 // IMPORTANT — Cloud Sync Config
-// WORKER_URL points to a Cloudflare Worker that proxies requests to GitHub Gist.
-// The GitHub token is stored securely in the Worker — NOT in this file.
+// GIST_ID and GITHUB_TOKEN connect to a GitHub Gist that stores the user's
+// deleted examples, favorited examples, and mastered words across devices.
+// The Gist must contain a file named "wordflow_data.json" with the shape:
+// { "deleted": [], "favs": [], "known": [] }
 // Do NOT remove or change these — pushSync() and window.onload fetch depend on them.
 // ══════════════════════════════════════════════════════════════════════════════
-const WORKER_URL = "https://dark-sky-e62b.iamayushdhakal.workers.dev";
+const GIST_ID     = "dec683a1e322e3613451a1b7750ef432";
+const GITHUB_TOKEN = "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";
+const GIST_FILE   = "wordflow_data.json";
+const GIST_API_URL = `https://api.github.com/gists/${GIST_ID}`;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // IMPORTANT — App State
@@ -656,9 +661,16 @@ window.onload = () => {
             wordData = results.data.filter(row => row.WORD);
 
             // Merge cloud state with local state (union/dedup via Set)
-            fetch(WORKER_URL)
+            fetch(GIST_API_URL, {
+                headers: {
+                    "Authorization": `token ${GITHUB_TOKEN}`,
+                    "Accept": "application/vnd.github+json"
+                }
+            })
                 .then(r => r.json())
-                .then(d => {
+                .then(gist => {
+                    const raw = gist.files?.[GIST_FILE]?.content;
+                    const d = raw ? JSON.parse(raw) : {};
                     deletedExamples = Array.from(new Set([...(d.deleted || []), ...deletedExamples]));
                     favExamples = Array.from(new Set([...(d.favs || []), ...favExamples]));
                     knownWords = Array.from(new Set([...(d.known || []), ...knownWords]));
@@ -1270,18 +1282,30 @@ function jumpPrompt() {
 
 // ── pushSync ──────────────────────────────────────────────────────────────────
 // Debounced cloud sync: waits 1000ms after the last saveAndSync() call before
-// pushing data via the Cloudflare Worker proxy to GitHub Gist.
-// IMPORTANT: The POST body shape { deleted, favs, known } must match the read
-// side in window.onload. Do NOT rename these keys.
+// pushing data to GitHub Gist. This batches rapid successive saves (e.g. bulk
+// delete) into a single network request.
+// IMPORTANT: The PATCH body updates only the wordflow_data.json file inside the
+// Gist. The shape { deleted, favs, known } must match the read side in window.onload.
+// Do NOT rename these keys without updating the read side in window.onload.
 async function pushSync() {
     clearTimeout(syncTimeout);
     syncTimeout = setTimeout(async () => {
         showSync('syncing', 'Syncing...');
         try {
-            await fetch(WORKER_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords })
+            await fetch(GIST_API_URL, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `token ${GITHUB_TOKEN}`,
+                    "Accept": "application/vnd.github+json"
+                },
+                body: JSON.stringify({
+                    files: {
+                        [GIST_FILE]: {
+                            content: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords })
+                        }
+                    }
+                })
             });
             showSync('synced', 'Synced');
         } catch {} // Silently fail if offline — localStorage already has the data
