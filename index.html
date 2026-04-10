@@ -84,28 +84,37 @@
         #sync-status.syncing { background: var(--surface-4); color: var(--text-secondary); }
         #sync-status.synced  { background: rgba(46,204,113,0.15); color: var(--success-green); border: 1px solid rgba(46,204,113,0.3); }
 
-        /* ── Header Reorganized ── */
+        /* ── Header ── */
         header {
             padding: calc(var(--safe-top) + 16px) 20px 12px;
             display: flex; justify-content: space-between; align-items: center;
         }
 
+        /* TWEAK: Zero padding, larger font size for main header buttons */
         .header-btn {
-            font-family: 'Lora', Georgia, serif;
-            font-weight: 600; font-size: 0.78rem; letter-spacing: 0.02em;
-            padding: 8px 14px; border-radius: var(--radius-sm); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            width: 46px; height: 46px; border-radius: var(--radius-sm); cursor: pointer;
             background: var(--surface-3); color: var(--text-main);
             border: 1px solid var(--border); transition: background 0.15s, border-color 0.15s;
+            padding: 0; 
+            font-size: 1.7rem; 
+            line-height: 1;
         }
         .header-btn:active { background: var(--surface-4); border-color: var(--border-bright); }
-        .fav-btn { font-size: 1.15rem; padding: 6px 14px; line-height: 1; }
+        
+        /* TWEAK: Text-based buttons inside overlays get their padding back */
+        .header-btn.overlay-nav {
+            width: auto; height: auto; padding: 8px 14px; font-size: 0.85rem; font-weight: 700;
+        }
 
+        /* TWEAK: Counter is bigger and bolder */
         .counter {
             font-family: 'Playfair Display', serif;
-            font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em;
-            color: var(--text-secondary); background: var(--surface-2);
-            padding: 7px 16px; border-radius: 20px;
+            font-size: 1rem; font-weight: 800; letter-spacing: 0.02em;
+            color: var(--text-main); background: var(--surface-2);
+            padding: 0 18px; border-radius: 20px;
             border: 1px solid var(--border);
+            height: 40px; display: flex; align-items: center; justify-content: center;
         }
 
         /* ── Overlays ── */
@@ -146,7 +155,7 @@
             font-size: 1.1rem; font-weight: 400; line-height: 1.7;
             color: var(--text-main); text-align: left;
             background: var(--surface-2); padding: 22px 20px; border-radius: var(--radius-md);
-            border: 1px solid var(--border); min-height: 110px; display: block;
+            border: 1px solid var(--border); min-height: 120px; display: block;
             word-wrap: break-word; overflow-wrap: break-word;
         }
         .quiz-sentence b { color: var(--primary); font-weight: 800; letter-spacing: 0.05em; white-space: nowrap; }
@@ -161,29 +170,26 @@
         .quiz-meaning:active { background: var(--surface-3); }
         .quiz-meaning span { color: var(--primary); font-weight: 700; font-style: normal; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; margin-right: 8px; }
 
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         
         .option-btn {
             background: var(--surface-2); color: var(--text-main);
-            border: 1px solid var(--border-bright); padding: 14px 10px; border-radius: var(--radius-md);
-            font-family: 'Lora', Georgia, serif; 
-            text-align: center; transition: background 0.18s, border-color 0.18s, transform 0.1s;
+            border: 1px solid var(--border); padding: 14px 8px; border-radius: var(--radius-md);
+            font-family: 'Lora', Georgia, serif; text-align: center;
+            transition: background 0.18s, border-color 0.18s, transform 0.1s;
             overflow: hidden; display: flex; flex-direction: column; align-items: center; 
-            justify-content: center; gap: 6px; min-height: 90px;
+            justify-content: center; gap: 4px; min-height: 90px;
         }
         .option-btn .opt-word { 
-            font-size: 1.2rem;
-            font-weight: 700;
+            font-size: 1.2rem; font-weight: 700; 
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; 
         }
         .option-btn .opt-ipa { 
-            font-family: monospace; font-weight: 400; 
-            color: #888;
+            font-family: monospace; font-weight: 400; color: #888; 
             white-space: normal; overflow: visible; width: 100%; 
-            font-size: 0.85rem;
-            line-height: 1.2; 
+            font-size: 0.85rem; line-height: 1.2; 
         }
-        .option-btn:active { transform: scale(0.97); background: var(--surface-3); }
+        .option-btn:active { transform: scale(0.97); }
         .option-btn.correct { background: rgba(46,204,113,0.18); border-color: var(--success-green); color: var(--success-green); font-weight: 700; }
         .option-btn.wrong { background: rgba(255,69,69,0.18); border-color: var(--delete-red); color: var(--delete-red); }
 
@@ -208,7 +214,7 @@
 
         /* Card front */
         .card-front { justify-content: center; align-items: center; text-align: center; padding: 40px 30px; cursor: pointer; }
-        .word-container { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+        .word-container { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; width: 100%; }
         .word-display { font-family: 'Playfair Display', serif; font-size: 3.6rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: 0.01em; }
         .ipa-sub { font-size: 1rem; color: var(--text-secondary); margin-top: 18px; font-family: monospace; display: flex; flex-direction: column; gap: 6px; line-height: 1.5; }
 
@@ -228,15 +234,26 @@
 
         /* ── Nav controls ── */
         .controls { padding: 16px 18px calc(var(--safe-bottom) + 28px); display: flex; gap: 10px; width: 100%; max-width: 420px; }
-        .nav-btn { flex: 1; height: 58px; border-radius: var(--radius-md); border: none; background: var(--surface-3); color: var(--text-main); font-family: 'Lora', Georgia, serif; font-weight: 700; font-size: 0.88rem; letter-spacing: 0.02em; border: 1px solid var(--border); transition: background 0.15s, transform 0.1s; }
+        
+        /* TWEAK: Taller, bolder nav buttons with zero padding */
+        .nav-btn { 
+            flex: 1; height: 62px; border-radius: var(--radius-md); border: none; 
+            background: var(--surface-3); color: var(--text-main); 
+            font-family: 'Lora', Georgia, serif; 
+            font-weight: 800; font-size: 1.1rem; letter-spacing: 0.02em; 
+            border: 1px solid var(--border); transition: background 0.15s, transform 0.1s; 
+            padding: 0; display: flex; align-items: center; justify-content: center;
+        }
         .nav-btn:active { transform: scale(0.97); }
         .nav-btn.primary { background: var(--primary); color: #fff; border-color: transparent; box-shadow: 0 4px 20px rgba(77,158,255,0.3); }
         .nav-btn.primary:active { background: #3a8fe8; }
 
+        /* ── Known/Mastered list ── */
         .known-item { padding: 16px 4px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-between; align-items: center; }
         .known-word { font-weight: 600; font-size: 1rem; }
         .known-ipa { color: var(--text-dim); font-size: 0.85rem; font-family: monospace; }
 
+        /* ── Scrollbar ── */
         ::-webkit-scrollbar { width: 2px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 4px; }
@@ -251,7 +268,7 @@
 
 <div id="settings-overlay">
     <header>
-        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
+        <div onclick="closeOverlays()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
         <div style="font-weight:800;">Settings</div>
         <div style="width: 60px;"></div>
     </header>
@@ -271,7 +288,7 @@
 
 <div id="quiz-overlay">
     <header>
-        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
+        <div onclick="closeOverlays()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
         <div style="font-weight:800;">Quiz Mode</div>
         <div style="width: 60px;"></div>
     </header>
@@ -302,18 +319,18 @@
 
 <div id="fav-overlay">
     <header>
-        <div onclick="closeOverlays()" class="header-btn" style="color:var(--primary);">← Back</div>
+        <div onclick="closeOverlays()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
         <div style="font-weight:800;">Favorites</div>
-        <div class="header-btn fav-btn" onclick="startQuiz(event)">💡</div>
+        <div class="header-btn overlay-nav" style="font-size: 1.15rem;" onclick="startQuiz(event)">💡</div>
     </header>
     <div id="fav-list" class="list-container"></div>
 </div>
 
 <div id="known-overlay">
     <header>
-        <div onclick="openSettings()" class="header-btn" style="color:var(--primary);">← Settings</div>
+        <div onclick="openSettings()" class="header-btn overlay-nav" style="color:var(--primary);">← Settings</div>
         <div style="font-weight:800;">Mastered</div>
-        <div onclick="removeAllKnown()" class="header-btn" style="color:var(--delete-red);">Remove All</div>
+        <div onclick="removeAllKnown()" class="header-btn overlay-nav" style="color:var(--delete-red);">Remove All</div>
     </header>
     <div id="known-list" class="list-container"></div>
 </div>
@@ -336,7 +353,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="card-face card-back">
                 <div class="back-header" onclick="flipCard()">
                     <div class="back-top-row">
@@ -361,16 +378,18 @@
 </div>
 
 <script>
-
+// ── Cloud Sync Config ──
 const BIN_ID  = "69d3dacfaaba882197cd5a0e";
 const API_KEY = "$2a$10$2XIWmqUVHyv39zmLplK6YOCLf07sb3WyJIxxleZUrKRb61lugMCu6";
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
+// ── App State ──
 let wordData = [];
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
 let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
 
+// ── Quiz State ──
 let quizScore = 0;
 let quizWrong = 0;
 let currentQuizCorrect = "";
@@ -379,6 +398,7 @@ let isQuizLocked = false;
 let quizMeanings = [];
 let quizMeaningIdx = 0;
 
+// ── Card State ──
 let currentIndex = parseInt(localStorage.getItem('wf_index_v6') || 0);
 let availableMeanings = [];
 let currentMeaningIdx = 0;
@@ -388,6 +408,7 @@ let syncTimeout = null;
 let masteryTimer = null;
 let masteryMoved = false;
 
+// ── showSync ──
 function showSync(state, message) {
     const el = document.getElementById('sync-status');
     el.className = `show ${state}`;
@@ -395,12 +416,16 @@ function showSync(state, message) {
     setTimeout(() => { el.className = ''; }, 2000);
 }
 
+// ── window.onload ──
 window.onload = () => {
+    // Initialize our new mastery gesture listeners immediately
     setupMasteryGesture();
+
     Papa.parse("words.csv", {
         download: true, header: true,
         complete: async function(results) {
             wordData = results.data.filter(row => row.WORD);
+
             fetch(BIN_URL + "/latest", { headers: { "X-Master-Key": API_KEY } })
                 .then(r => r.json())
                 .then(d => {
@@ -409,15 +434,21 @@ window.onload = () => {
                     knownWords = Array.from(new Set([...(d.record?.known || []), ...knownWords]));
                     saveAndSync(false);
                 }).catch(() => {});
+
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('app').style.display = 'flex';
             document.getElementById('app-header').style.display = 'flex';
-            if(knownWords.includes(wordData[currentIndex].WORD.trim())) nextCard();
-            else updateCard();
+
+            if(knownWords.includes(wordData[currentIndex].WORD.trim())) {
+                nextCard();
+            } else {
+                updateCard();
+            }
         }
     });
 };
 
+// ── setupMasteryGesture ──
 function setupMasteryGesture() {
     const container = document.getElementById('front-word-container');
     
@@ -440,6 +471,7 @@ function setupMasteryGesture() {
     });
 }
 
+// ── confirmMastery ──
 function confirmMastery() {
     const word = wordData[currentIndex].WORD.trim();
     if (confirm(`Mark "${word}" as mastered and hide it?`)) {
@@ -451,9 +483,8 @@ function confirmMastery() {
     }
 }
 
+// ── handleCardFrontClick ──
 function handleCardFrontClick(e) {
-    // If the click is on the word container, it's for audio.
-    // Otherwise, flip the card.
     if (e.target.closest('#front-word-container')) {
         playAudioByIndex(currentIndex);
     } else {
@@ -461,27 +492,38 @@ function handleCardFrontClick(e) {
     }
 }
 
+// ── updateCard ──
 function updateCard() {
     const item = wordData[currentIndex];
     const meaningEl = document.getElementById('b-meaning');
+
     availableMeanings = [];
     if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING.trim());
+    
     for(let i=1; i<=10; i++) {
         let val = item[`Meaning${i}`];
         if(val && val.trim()) availableMeanings.push(val.trim());
     }
+    
     currentMeaningIdx = 0;
+
     document.getElementById('card').classList.remove('is-flipped');
     document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
     localStorage.setItem('wf_index_v6', currentIndex);
+
     document.getElementById('f-word').textContent = item.WORD;
     document.getElementById('f-ipa').textContent = item.IPA;
     document.getElementById('f-phonetic').textContent = item.PHONETIC;
+
     document.getElementById('b-word').textContent = item.WORD;
     meaningEl.innerText = availableMeanings[0] || "";
+
     const moreBtn = document.getElementById('more-btn');
     moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none';
-    if(moreBtn.style.display === 'block') moreBtn.textContent = `More 1/${availableMeanings.length}`;
+    if(moreBtn.style.display === 'block') {
+        moreBtn.textContent = `More 1/${availableMeanings.length}`;
+    }
+
     const typeBadge = document.getElementById('type-badge');
     if (item.Type && item.Type.trim()) {
         typeBadge.textContent = item.Type.trim();
@@ -489,15 +531,20 @@ function updateCard() {
     } else {
         typeBadge.style.display = 'none';
     }
+
     renderExamples(item);
 }
 
+// ── renderQuizMeaning ──
 function renderQuizMeaning() {
     const el = document.getElementById('quiz-meaning');
-    const counter = quizMeanings.length > 1 ? ` <em style="font-size:0.62rem;opacity:0.45;font-style:normal;">${quizMeaningIdx + 1}/${quizMeanings.length}</em>` : '';
+    const counter = quizMeanings.length > 1
+        ? ` <em style="font-size:0.62rem;opacity:0.45;font-style:normal;">${quizMeaningIdx + 1}/${quizMeanings.length}</em>`
+        : '';
     el.innerHTML = `<span>Meaning</span>${quizMeanings[quizMeaningIdx]}${counter}`;
 }
 
+// ── startQuiz ──
 function startQuiz(e) {
     if(e) e.stopPropagation();
     if (favExamples.length < 1) {
@@ -507,24 +554,31 @@ function startQuiz(e) {
     quizPool = [...favExamples];
     quizScore = 0;
     quizWrong = 0;
+
     document.getElementById('fav-overlay').style.display = 'none';
     document.getElementById('quiz-overlay').style.display = 'flex';
     document.getElementById('quiz-total-display').textContent = favExamples.length;
+
     nextQuizQuestion();
 }
 
+// ── nextQuizQuestion ──
 function nextQuizQuestion() {
     if (quizPool.length === 0) {
         alert("Well done! Restarting...");
         quizPool = [...favExamples];
     }
+
     isQuizLocked = false;
     document.getElementById('quiz-remaining-display').textContent = quizPool.length;
+    
     const poolIdx = Math.floor(Math.random() * quizPool.length);
     const randomId = quizPool[poolIdx];
     quizPool.splice(poolIdx, 1); 
+
     const [word, sentence] = randomId.split('|');
     currentQuizCorrect = word.trim();
+
     const quizWordData = wordData.find(w => w.WORD.trim().toLowerCase() === currentQuizCorrect.toLowerCase());
     quizMeanings = [];
     if (quizWordData) {
@@ -541,6 +595,7 @@ function nextQuizQuestion() {
     const escapedWord = currentQuizCorrect.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const stem = escapedWord.endsWith('e') ? escapedWord.slice(0, -1) : escapedWord;
     const regex = new RegExp(`\\b(?:${escapedWord}|${stem})\\w*`, 'gi');
+    
     const maskedSentence = sentence.replace(regex, "<b>_________</b>");
     document.getElementById('quiz-question').innerHTML = maskedSentence;
 
@@ -553,29 +608,36 @@ function nextQuizQuestion() {
 
     const grid = document.getElementById('quiz-options');
     grid.innerHTML = "";
+    
     options.forEach(opt => {
         const btn = document.createElement('div');
         btn.className = 'option-btn';
         const optData = wordData.find(w => w.WORD.trim() === opt);
+        
         let optIpa = optData && optData.IPA ? optData.IPA.trim() : '';
+        // Split IPA if it contains a comma and move content to new line
         if (optIpa.includes(',')) {
             optIpa = optIpa.split(',').join(',<br>');
         }
+
         btn.innerHTML = `<span class="opt-word">${opt}</span>${optIpa ? `<span class="opt-ipa">${optIpa}</span>` : ''}`;
         btn.onclick = () => handleQuizTap(opt, btn);
         grid.appendChild(btn);
     });
 }
 
+// ── handleQuizTap ──
 function handleQuizTap(selectedWord, btn) {
     if (isQuizLocked) return;
     isQuizLocked = true;
+
     const btns = document.querySelectorAll('.option-btn');
     let correctBtn;
     btns.forEach(b => { 
         const wordSpan = b.querySelector('.opt-word');
         if ((wordSpan ? wordSpan.textContent : b.textContent).trim() === currentQuizCorrect) correctBtn = b;
     });
+
     if(selectedWord === currentQuizCorrect) {
         btn.classList.add('correct');
         quizScore += 1;
@@ -585,16 +647,20 @@ function handleQuizTap(selectedWord, btn) {
         quizScore = Math.max(0, quizScore - 1);
         quizWrong += 1;
     }
+
     document.getElementById('quiz-score-display').textContent = quizScore;
     document.getElementById('quiz-wrong-display').textContent = quizWrong;
+    
     setTimeout(nextQuizQuestion, 1200);
 }
 
+// ── renderExamples ──
 function renderExamples(item) {
     const list = document.getElementById('example-list');
     list.innerHTML = "";
     const cleanWord = item.WORD.trim();
     const rows = [];
+    
     for (let i = 1; i <= 50; i++) {
         const text = item[i.toString()];
         if (text && text.trim().length > 1) {
@@ -603,20 +669,25 @@ function renderExamples(item) {
             rows.push({ text: text.trim(), id: exId, isFav: favExamples.includes(exId) });
         }
     }
+
     rows.sort((a,b) => b.isFav - a.isFav).forEach((ex, idx) => {
         const div = document.createElement('div');
         div.className = 'example-item';
         div.dataset.exId = ex.id;
         div.innerHTML = `<strong>${idx+1}.</strong> ${ex.text}`;
+
         if (ex.isFav) div.style.color = '#FF453A';
+
         let pressTimer = null;
         let moved = false;
         let startX = 0;
+
         div.addEventListener('touchstart', (e) => {
             moved = false;
             startX = e.touches[0].clientX;
             const isRightSide = startX > window.innerWidth / 2;
             const delay = isRightSide ? 1200 : 750;
+            
             pressTimer = setTimeout(() => {
                 if (moved) return;
                 if (isRightSide) {
@@ -633,38 +704,48 @@ function renderExamples(item) {
                 }
             }, delay);
         }, {passive: true});
+        
         div.addEventListener('touchmove', () => {
             moved = true;
             clearTimeout(pressTimer);
         }, {passive: true});
+        
         div.addEventListener('touchend', () => {
             clearTimeout(pressTimer);
         });
+        
         list.appendChild(div);
     });
 }
 
+// ── openSettings ──
 function openSettings(e) {
     if(e) e.stopPropagation();
     document.getElementById('known-overlay').style.display = 'none';
     document.getElementById('settings-overlay').style.display = 'flex';
 }
 
+// ── openKnown ──
 function openKnown() {
     const list = document.getElementById('known-list');
     list.innerHTML = "";
+
     document.getElementById('settings-overlay').style.display = 'none';
     document.getElementById('known-overlay').style.display = 'flex';
+
     if (knownWords.length === 0) {
         list.innerHTML = `<p style="text-align:center; color:gray; margin-top:50px;">No words mastered.</p>`;
         return;
     }
+
     knownWords.slice().reverse().forEach(word => {
         const masterItem = wordData.find(w => w.WORD.trim() === word);
         const ipaText = masterItem ? masterItem.IPA : '';
+
         const div = document.createElement('div');
         div.className = 'known-item';
         div.innerHTML = `<span class="known-word">${word}</span><span class="known-ipa">${ipaText}</span>`;
+
         let pressTimer;
         div.addEventListener('touchstart', (e) => {
             if (e.touches[0].clientX < window.innerWidth / 2) {
@@ -677,11 +758,13 @@ function openKnown() {
                 }, 750);
             }
         }, {passive: true});
+
         div.addEventListener('touchend', () => clearTimeout(pressTimer));
         list.appendChild(div);
     });
 }
 
+// ── removeAllKnown ──
 function removeAllKnown() {
     if (knownWords.length === 0) return;
     if (confirm("Remove all mastered words?")) {
@@ -691,65 +774,87 @@ function removeAllKnown() {
     }
 }
 
+// ── openFavs ──
 function openFavs() {
     const list = document.getElementById('fav-list');
     list.innerHTML = "";
     document.getElementById('fav-overlay').style.display = 'flex';
+
     if (favExamples.length === 0) {
         list.innerHTML = `<p style="text-align:center; color:var(--text-secondary); margin-top:50px;">No favorites.</p>`;
         return;
     }
+
     const organized = {};
     favExamples.forEach(id => {
         const parts = id.split('|');
         if (parts.length < 2) return;
         const word = parts[0].trim();
         const text = parts[1].trim();
+
         if (!organized[word]) {
             const master = wordData.find(w => w.WORD.trim().toLowerCase() === word.toLowerCase());
             organized[word] = { index: wordData.indexOf(master), ipa: master ? master.IPA : '', items: [] };
         }
         organized[word].items.push({id, text});
     });
+
     Object.keys(organized).forEach(word => {
         const groupHeader = document.createElement('div');
         groupHeader.className = 'fav-group-header';
+        
         const title = document.createElement('div');
         title.className = 'fav-group-title';
         title.textContent = word;
+
         const ipaSpan = document.createElement('div');
         ipaSpan.className = 'fav-group-ipa';
         ipaSpan.textContent = organized[word].ipa;
+
         let headerTimer;
         title.addEventListener('touchstart', () => {
             headerTimer = setTimeout(() => {
                 const idx = organized[word].index;
-                if (idx !== -1) { currentIndex = idx; closeOverlays(); setTimeout(() => document.getElementById('card').classList.add('is-flipped'), 50); }
+                if (idx !== -1) { 
+                    currentIndex = idx; 
+                    closeOverlays(); 
+                    setTimeout(() => document.getElementById('card').classList.add('is-flipped'), 50); 
+                }
             }, 750);
         }, {passive: true});
+        
         title.addEventListener('touchend', () => clearTimeout(headerTimer));
         ipaSpan.onclick = (e) => { e.stopPropagation(); playAudioByIndex(organized[word].index); };
+
         groupHeader.appendChild(title);
         groupHeader.appendChild(ipaSpan);
         list.appendChild(groupHeader);
+
         organized[word].items.forEach(itemObj => {
             const item = document.createElement('div');
             item.className = 'example-item';
             item.textContent = itemObj.text;
+
             let exTimer;
             item.addEventListener('touchstart', (e) => {
                 if (e.touches[0].clientX < window.innerWidth / 2) {
                     exTimer = setTimeout(() => {
-                        if (confirm("Unfavorite?")) { favExamples = favExamples.filter(x => x !== itemObj.id); saveAndSync(); item.remove(); }
+                        if (confirm("Unfavorite?")) { 
+                            favExamples = favExamples.filter(x => x !== itemObj.id); 
+                            saveAndSync(); 
+                            item.remove(); 
+                        }
                     }, 750);
                 }
             }, {passive: true});
+            
             item.addEventListener('touchend', () => clearTimeout(exTimer));
             list.appendChild(item);
         });
     });
 }
 
+// ── closeOverlays ──
 function closeOverlays() { 
     document.getElementById('fav-overlay').style.display = 'none'; 
     document.getElementById('known-overlay').style.display = 'none'; 
@@ -758,10 +863,27 @@ function closeOverlays() {
     updateCard();
 }
 
-function resetDeleted() { if(confirm("Restore all?")) { deletedExamples = []; saveAndSync(); alert("Restored!"); } }
-function flipCard() { document.getElementById('card').classList.toggle('is-flipped'); }
-function playAudioFromEvent(e) { if(e) e.stopPropagation(); playAudioByIndex(currentIndex); }
+// ── resetDeleted ──
+function resetDeleted() { 
+    if(confirm("Restore all?")) { 
+        deletedExamples = []; 
+        saveAndSync(); 
+        alert("Restored!"); 
+    } 
+}
 
+// ── flipCard ──
+function flipCard() { 
+    document.getElementById('card').classList.toggle('is-flipped'); 
+}
+
+// ── playAudioFromEvent ──
+function playAudioFromEvent(e) { 
+    if(e) e.stopPropagation(); 
+    playAudioByIndex(currentIndex); 
+}
+
+// ── playAudioByIndex ──
 function playAudioByIndex(idx) {
     if (idx < 0 || idx >= wordData.length) return;
     const word = wordData[idx].WORD;
@@ -773,6 +895,7 @@ function playAudioByIndex(idx) {
     new Audio(`${f}/${word}.mp3`).play().catch(()=>{});
 }
 
+// ── handleMoreClick ──
 function handleMoreClick(e) { 
     if(e) e.stopPropagation();
     currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
@@ -780,11 +903,16 @@ function handleMoreClick(e) {
     document.getElementById('more-btn').textContent = `More ${currentMeaningIdx+1}/${availableMeanings.length}`;
 }
 
+// ── jumpPrompt ──
 function jumpPrompt() {
     const val = prompt(`Jump to #:`);
-    if (val && !isNaN(val)) { currentIndex = Math.max(0, Math.min(wordData.length - 1, parseInt(val) - 1)); updateCard(); }
+    if (val && !isNaN(val)) { 
+        currentIndex = Math.max(0, Math.min(wordData.length - 1, parseInt(val) - 1)); 
+        updateCard(); 
+    }
 }
 
+// ── pushSync ──
 async function pushSync() {
     clearTimeout(syncTimeout);
     syncTimeout = setTimeout(async () => {
@@ -800,6 +928,7 @@ async function pushSync() {
     }, 1000);
 }
 
+// ── saveAndSync ──
 function saveAndSync(shouldPush = true) {
     localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
     localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
@@ -807,24 +936,42 @@ function saveAndSync(shouldPush = true) {
     if(shouldPush) pushSync();
 }
 
-function deleteEx(id, el) { deletedExamples.push(id); saveAndSync(); el.remove(); }
+// ── deleteEx ──
+function deleteEx(id, el) { 
+    deletedExamples.push(id); 
+    saveAndSync(); 
+    el.remove(); 
+}
 
+// ── prevCard ──
 function prevCard() {
     let start = currentIndex;
-    do { currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
+    do { 
+        currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; 
+        if(currentIndex === start) break; 
+    } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
     updateCard();
 }
 
+// ── nextCard ──
 function nextCard() {
     let start = currentIndex;
-    do { currentIndex = (currentIndex + 1) % wordData.length; if(currentIndex === start) break; } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
+    do { 
+        currentIndex = (currentIndex + 1) % wordData.length;
+        if(currentIndex === start) break; 
+    } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
     updateCard();
 }
 
+// ── shuffleCard ──
 function shuffleCard() {
     let attempts = 0; let newIdx;
-    do { newIdx = Math.floor(Math.random() * wordData.length); attempts++; } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
-    currentIndex = newIdx; updateCard();
+    do { 
+        newIdx = Math.floor(Math.random() * wordData.length); 
+        attempts++;
+    } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
+    currentIndex = newIdx; 
+    updateCard();
 }
 
 </script>
