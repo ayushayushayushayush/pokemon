@@ -578,6 +578,122 @@
             cursor: pointer;
             text-align: center;
         }
+
+        /* ══════════════════════════════════════════════════════════════════════
+           SEARCH OVERLAY
+        ══════════════════════════════════════════════════════════════════════ */
+        #search-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 2000; display: none; flex-direction: column;
+        }
+        #search-overlay.active { display: flex; }
+        #search-header {
+            padding: calc(var(--safe-top) + 14px) 18px 12px;
+            display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+            border-bottom: 1px solid var(--border);
+        }
+        #search-input {
+            flex: 1; background: var(--surface-2); border: 1px solid var(--border-bright);
+            border-radius: var(--radius-md); padding: 12px 16px;
+            font-family: 'Lora', serif; font-size: 1rem; color: var(--text-main);
+            outline: none; -webkit-appearance: none;
+        }
+        #search-input::placeholder { color: var(--text-dim); }
+        #search-cancel {
+            color: var(--primary); font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; white-space: nowrap; padding: 8px 0;
+        }
+        #search-results {
+            flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding: 8px 0;
+        }
+        .search-result-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 20px; border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .search-result-item:active { background: var(--surface-2); }
+        .search-result-word {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.05rem; font-weight: 700; color: var(--text-main);
+        }
+        .search-result-word mark {
+            background: none; color: var(--primary); font-style: normal;
+        }
+        .search-result-meta {
+            display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+        }
+        .search-result-ipa {
+            font-family: monospace; font-size: 0.72rem; color: var(--text-secondary);
+        }
+        .search-result-num {
+            font-size: 0.62rem; color: var(--text-dim);
+        }
+        #search-empty {
+            padding: 60px 20px; text-align: center;
+            font-size: 0.9rem; color: var(--text-secondary);
+            display: none;
+        }
+
+        /* ══════════════════════════════════════════════════════════════════════
+           DECK PICKER OVERLAY
+        ══════════════════════════════════════════════════════════════════════ */
+        #deck-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 2100; display: none; flex-direction: column;
+        }
+        #deck-overlay.active { display: flex; }
+        .deck-item {
+            padding: 18px 20px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            cursor: pointer;
+        }
+        .deck-item:active { background: var(--surface-2); }
+        .deck-item-left { display: flex; flex-direction: column; gap: 3px; }
+        .deck-item-name { font-weight: 700; font-size: 1rem; color: var(--text-main); }
+        .deck-item-desc { font-size: 0.72rem; color: var(--text-secondary); }
+        .deck-item-count { font-size: 0.75rem; color: var(--text-dim); font-family: monospace; }
+        .deck-check { color: var(--primary); font-size: 1.2rem; opacity: 0; }
+        .deck-item.active-deck .deck-check { opacity: 1; }
+        .deck-item.active-deck .deck-item-name { color: var(--primary); }
+        #deck-active-banner {
+            padding: 10px 20px; background: var(--primary-dim);
+            border-bottom: 1px solid rgba(77,158,255,0.2);
+            font-size: 0.72rem; color: var(--primary); font-weight: 600;
+            letter-spacing: 0.04em; display: none;
+        }
+
+        /* ══════════════════════════════════════════════════════════════════════
+           SELF-RATING BUTTONS
+        ══════════════════════════════════════════════════════════════════════ */
+        #rating-bar {
+            display: none; flex-shrink: 0;
+            padding: 10px 16px 14px;
+            gap: 8px;
+            border-top: 1px solid var(--border);
+            background: #000;
+        }
+        .card.is-flipped #rating-bar { display: flex; }
+        #rating-label {
+            font-size: 0.58rem; color: var(--text-dim); text-transform: uppercase;
+            letter-spacing: 0.1em; text-align: center; margin-bottom: 2px;
+            width: 100%;
+        }
+        #rating-buttons { display: flex; gap: 8px; width: 100%; }
+        .rating-btn {
+            flex: 1; padding: 11px 0; border: 1px solid var(--border);
+            border-radius: var(--radius-md); font-family: 'Lora', serif;
+            font-size: 0.82rem; font-weight: 700; cursor: pointer;
+            background: var(--surface-2); transition: background 0.15s, border-color 0.15s;
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+        }
+        .rating-btn span { font-size: 0.58rem; font-weight: 400; opacity: 0.6; }
+        .rating-btn.hard { color: #FF6B6B; }
+        .rating-btn.hard:active, .rating-btn.hard.selected { background: rgba(255,107,107,0.12); border-color: rgba(255,107,107,0.4); }
+        .rating-btn.okay { color: var(--accent-gold); }
+        .rating-btn.okay:active, .rating-btn.okay.selected { background: rgba(255,214,10,0.1); border-color: rgba(255,214,10,0.35); }
+        .rating-btn.easy { color: var(--success-green); }
+        .rating-btn.easy:active, .rating-btn.easy.selected { background: rgba(46,204,113,0.1); border-color: rgba(46,204,113,0.35); }
     </style>
 
 </head>
@@ -634,6 +750,27 @@
 
 <div id="loading-screen"><p>Loading...</p></div>
 
+<!-- ── Search Overlay ─────────────────────────────────────────────────────────── -->
+<div id="search-overlay">
+    <div id="search-header">
+        <input id="search-input" type="search" placeholder="Search words…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" oninput="onSearchInput()" />
+        <div id="search-cancel" onclick="closeSearch()">Cancel</div>
+    </div>
+    <div id="search-empty">No words found</div>
+    <div id="search-results"></div>
+</div>
+
+<!-- ── Deck Picker Overlay ─────────────────────────────────────────────────────── -->
+<div id="deck-overlay">
+    <header>
+        <div onclick="closeDeckPicker()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
+        <div style="font-weight:800;">Choose Deck</div>
+        <div style="width:60px;"></div>
+    </header>
+    <div id="deck-active-banner">Active deck filter applied — nav stays within this deck</div>
+    <div id="deck-list" class="list-container" style="padding-top:0;"></div>
+</div>
+
 <!-- ── Settings Overlay ────────────────────────────────────────────────────────
      Shown by openSettings(), hidden by closeOverlays().
      Contains navigation to "Mastered Words" (openKnown) and "Restore Deleted" (resetDeleted). -->
@@ -645,6 +782,10 @@
     </header>
     <div class="list-container">
         <div class="settings-list">
+            <div class="settings-item" onclick="openDeckPicker()">
+                <span>Themed Decks</span>
+                <span class="chevron">›</span>
+            </div>
             <div class="settings-item" onclick="openKnown()">
                 <span>Mastered Words</span>
                 <span class="chevron">›</span>
@@ -737,7 +878,7 @@
      #counter shows "currentIndex+1 / total" and is clickable to jumpPrompt(). -->
 <header id="app-header" style="display:none;">
     <div class="header-btn" onclick="openSettings()">⚙️</div>
-    <div id="counter" class="counter" onclick="jumpPrompt()">0 / 0</div>
+    <div id="counter" class="counter" onclick="openSearch()">0 / 0</div>
     <div style="display:flex;align-items:center;gap:8px;">
         <div id="streak-badge" title="Your streak">🔥 <span id="streak-count">0</span></div>
         <div class="header-btn fav-btn" onclick="openFavs()">★</div>
@@ -809,6 +950,14 @@
                      for the current word, with long-press interactions for
                      favoriting (right half) and deleting (left half). -->
                 <div id="example-list"></div>
+                <div id="rating-bar">
+                    <div id="rating-label">How well did you know this?</div>
+                    <div id="rating-buttons">
+                        <button class="rating-btn hard" onclick="rateWord('hard')">Hard<span>Show more often</span></button>
+                        <button class="rating-btn okay" onclick="rateWord('okay')">Okay<span>Normal frequency</span></button>
+                        <button class="rating-btn easy" onclick="rateWord('easy')">Easy<span>Show less often</span></button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -818,9 +967,9 @@
          IMPORTANT: Do NOT remove the .primary class from the Next button —
          it controls the colored styling. -->
     <div class="controls">
-        <button class="nav-btn" onclick="prevCard()">Back</button>
-        <button class="nav-btn" onclick="shuffleCard()">Shuffle</button>
-        <button class="nav-btn primary" onclick="nextCard()">Next</button>
+        <button class="nav-btn" onclick="prevCardInDeck()">Back</button>
+        <button class="nav-btn" onclick="shuffleCardInDeck()">Shuffle</button>
+        <button class="nav-btn primary" onclick="nextCardInDeck()">Next</button>
     </div>
 </div>
 
@@ -1064,7 +1213,10 @@ function updateCard() {
     currentMeaningIdx = 0;
 
     document.getElementById('card').classList.remove('is-flipped');
-    document.getElementById('counter').textContent = `${currentIndex + 1} / ${wordData.length}`;
+    const deckLabel = activeDeckId !== 'all' && activeDeckIndices.length > 0
+        ? `${activeDeckIndices.indexOf(currentIndex) + 1} / ${activeDeckIndices.length}`
+        : `${currentIndex + 1} / ${wordData.length}`;
+    document.getElementById('counter').textContent = deckLabel;
     localStorage.setItem('wf_index_v6', currentIndex); // Persist position across sessions
 
     // Populate card front
@@ -1093,6 +1245,7 @@ function updateCard() {
     }
 
     renderExamples(item);
+    updateRatingButtons();
 }
 
 // ── renderQuizMeaning ─────────────────────────────────────────────────────────
@@ -1924,10 +2077,279 @@ function initEngagement() {
     // Record session start favs count for summary delta
     sessionFavsStart = favExamples.length;
 
+    // Apply saved deck filter
+    applyDeck(activeDeckId);
+
     // Show Word of the Day modal
     showWotd();
 }
 
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SEARCH
+// ══════════════════════════════════════════════════════════════════════════════
+
+function openSearch() {
+    const overlay = document.getElementById('search-overlay');
+    overlay.classList.add('active');
+    const input = document.getElementById('search-input');
+    input.value = '';
+    renderSearchResults('');
+    // Focus after transition so keyboard appears
+    setTimeout(() => input.focus(), 80);
+}
+
+function closeSearch() {
+    document.getElementById('search-overlay').classList.remove('active');
+    document.getElementById('search-input').blur();
+}
+
+function onSearchInput() {
+    const q = document.getElementById('search-input').value.trim();
+    renderSearchResults(q);
+}
+
+function renderSearchResults(query) {
+    const container = document.getElementById('search-results');
+    const empty = document.getElementById('search-empty');
+    container.innerHTML = '';
+
+    const q = query.toLowerCase();
+    // Filter to active deck indices, then search
+    const pool = activeDeckIndices.length > 0
+        ? activeDeckIndices.map(i => ({ item: wordData[i], idx: i }))
+        : wordData.map((item, i) => ({ item, idx: i }));
+
+    const matches = q.length === 0
+        ? pool.slice(0, 60) // Show first 60 when no query
+        : pool.filter(({ item }) => item.WORD.toLowerCase().includes(q)).slice(0, 80);
+
+    if (matches.length === 0) {
+        empty.style.display = 'block';
+        return;
+    }
+    empty.style.display = 'none';
+
+    matches.forEach(({ item, idx }) => {
+        const div = document.createElement('div');
+        div.className = 'search-result-item';
+
+        // Highlight matching portion
+        const word = item.WORD;
+        let displayWord = word;
+        if (q.length > 0) {
+            const matchIdx = word.toLowerCase().indexOf(q);
+            if (matchIdx >= 0) {
+                displayWord = word.slice(0, matchIdx)
+                    + '<mark>' + word.slice(matchIdx, matchIdx + q.length) + '</mark>'
+                    + word.slice(matchIdx + q.length);
+            }
+        }
+
+        // Show current rating if any
+        const rating = wordRatings[item.WORD.trim()];
+        const ratingDot = rating === 'hard' ? ' 🔴' : rating === 'easy' ? ' 🟢' : '';
+
+        div.innerHTML = `
+            <div class="search-result-word">${displayWord}${ratingDot}</div>
+            <div class="search-result-meta">
+                <span class="search-result-ipa">${item.IPA || ''}</span>
+                <span class="search-result-num">#${idx + 1}</span>
+            </div>`;
+
+        div.addEventListener('click', () => {
+            currentIndex = idx;
+            updateCard();
+            closeSearch();
+        });
+
+        container.appendChild(div);
+    });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// THEMED DECKS
+// ══════════════════════════════════════════════════════════════════════════════
+
+let activeDeckId = localStorage.getItem('wf_active_deck') || 'all';
+let activeDeckIndices = []; // populated by applyDeck()
+
+// Deck definitions — each has an id, name, description, and a filter function
+// that receives (wordRow, index, wordData) and returns true if included.
+const DECKS = [
+    {
+        id: 'all',
+        name: 'All Words',
+        desc: 'The full 3,563-word vocabulary list',
+        filter: () => true,
+    },
+    {
+        id: 'sources',
+        name: 'Words from Sources',
+        desc: 'Words 1–500 with real newspaper examples',
+        filter: (row, idx) => idx <= 499 && word2Data[row.WORD.trim().toLowerCase()],
+    },
+    {
+        id: 'unfavorited',
+        name: 'Never Favorited',
+        desc: 'Words where you haven't saved any example',
+        filter: (row) => {
+            const w = row.WORD.trim();
+            return !favExamples.some(id => id.startsWith(w + '|'));
+        },
+    },
+    {
+        id: 'hard',
+        name: 'Hard Words',
+        desc: 'Words you've rated as Hard',
+        filter: (row) => wordRatings[row.WORD.trim()] === 'hard',
+    },
+    {
+        id: 'easy',
+        name: 'Easy Words',
+        desc: 'Words you've rated as Easy',
+        filter: (row) => wordRatings[row.WORD.trim()] === 'easy',
+    },
+    {
+        id: 'unrated',
+        name: 'Unrated Words',
+        desc: 'Words you haven't rated yet',
+        filter: (row) => !wordRatings[row.WORD.trim()],
+    },
+];
+
+function applyDeck(deckId) {
+    activeDeckId = deckId;
+    localStorage.setItem('wf_active_deck', deckId);
+    const deck = DECKS.find(d => d.id === deckId) || DECKS[0];
+
+    activeDeckIndices = deckId === 'all'
+        ? [] // empty = no filter, use full wordData
+        : wordData.reduce((acc, row, idx) => {
+            if (!knownWords.includes(row.WORD.trim()) && deck.filter(row, idx, wordData))
+                acc.push(idx);
+            return acc;
+        }, []);
+
+    // Update active deck banner
+    const banner = document.getElementById('deck-active-banner');
+    if (deckId === 'all') {
+        banner.style.display = 'none';
+    } else {
+        banner.style.display = 'block';
+        banner.textContent = `Active: ${deck.name} (${activeDeckIndices.length} words)`;
+    }
+
+    // If current card not in deck, jump to first deck card
+    if (activeDeckIndices.length > 0 && !activeDeckIndices.includes(currentIndex)) {
+        currentIndex = activeDeckIndices[0];
+        updateCard();
+    }
+}
+
+function openDeckPicker() {
+    document.getElementById('settings-overlay').style.display = 'none';
+    const overlay = document.getElementById('deck-overlay');
+    overlay.classList.add('active');
+    renderDeckList();
+}
+
+function closeDeckPicker() {
+    document.getElementById('deck-overlay').classList.remove('active');
+    document.getElementById('settings-overlay').style.display = 'flex';
+}
+
+function renderDeckList() {
+    const list = document.getElementById('deck-list');
+    list.innerHTML = '';
+
+    DECKS.forEach(deck => {
+        // Count matching words (excluding known)
+        let count;
+        if (deck.id === 'all') {
+            count = wordData.length - knownWords.length;
+        } else {
+            count = wordData.filter((row, idx) =>
+                !knownWords.includes(row.WORD.trim()) && deck.filter(row, idx, wordData)
+            ).length;
+        }
+
+        const div = document.createElement('div');
+        div.className = 'deck-item' + (activeDeckId === deck.id ? ' active-deck' : '');
+        div.innerHTML = `
+            <div class="deck-item-left">
+                <div class="deck-item-name">${deck.name}</div>
+                <div class="deck-item-desc">${deck.desc}</div>
+                <div class="deck-item-count">${count} word${count !== 1 ? 's' : ''}</div>
+            </div>
+            <div class="deck-check">✓</div>`;
+
+        div.addEventListener('click', () => {
+            applyDeck(deck.id);
+            renderDeckList(); // re-render to update checkmarks
+            setTimeout(closeDeckPicker, 200);
+        });
+
+        list.appendChild(div);
+    });
+}
+
+// Override nextCard/prevCard/shuffleCard to respect deck filter
+function nextCardInDeck() {
+    if (activeDeckIndices.length === 0) { nextCard(); return; }
+    const pos = activeDeckIndices.indexOf(currentIndex);
+    currentIndex = activeDeckIndices[(pos + 1) % activeDeckIndices.length];
+    updateCard();
+    recordCardReviewed();
+}
+
+function prevCardInDeck() {
+    if (activeDeckIndices.length === 0) { prevCard(); return; }
+    const pos = activeDeckIndices.indexOf(currentIndex);
+    currentIndex = activeDeckIndices[(pos - 1 + activeDeckIndices.length) % activeDeckIndices.length];
+    updateCard();
+    recordCardReviewed();
+}
+
+function shuffleCardInDeck() {
+    if (activeDeckIndices.length === 0) { shuffleCard(); return; }
+    const pos = Math.floor(Math.random() * activeDeckIndices.length);
+    currentIndex = activeDeckIndices[pos];
+    updateCard();
+    recordCardReviewed();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SELF-RATING
+// ══════════════════════════════════════════════════════════════════════════════
+
+let wordRatings = JSON.parse(localStorage.getItem('wf_ratings') || '{}');
+
+function rateWord(rating) {
+    const word = wordData[currentIndex].WORD.trim();
+    // Toggle off if same rating tapped again
+    if (wordRatings[word] === rating) {
+        delete wordRatings[word];
+    } else {
+        wordRatings[word] = rating;
+    }
+    localStorage.setItem('wf_ratings', JSON.stringify(wordRatings));
+    updateRatingButtons();
+
+    // If active deck is hard/easy/unrated, refresh its indices
+    if (['hard', 'easy', 'unrated'].includes(activeDeckId)) {
+        applyDeck(activeDeckId);
+    }
+}
+
+function updateRatingButtons() {
+    const word = wordData[currentIndex].WORD.trim();
+    const rating = wordRatings[word];
+    document.querySelectorAll('.rating-btn').forEach(btn => {
+        btn.classList.remove('selected');
+        if (btn.classList.contains(rating)) btn.classList.add('selected');
+    });
+}
 
 </script>
 </body>
