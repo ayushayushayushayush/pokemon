@@ -721,11 +721,10 @@
             display: none;
         }
 
-        /* Shuffle button glows gold while Animation Style overlay is open */
-        #shuffle-btn.anim-open {
-            background: var(--accent-gold);
-            border-color: var(--accent-gold);
-            color: #000;
+        /* streak-badge glows when animation is active */
+        #streak-badge.anim-on {
+            color: var(--accent-gold);
+            text-shadow: 0 0 8px rgba(255,214,10,0.6);
         }
 
         /* ── Confetti Settings Overlay ──────────────────────────────────────────
@@ -1185,7 +1184,7 @@
     <div class="header-btn" onclick="openSettings()">⚙️</div>
     <div id="counter" class="counter" onclick="openSearch()">0 / 0</div>
     <div style="display:flex;align-items:center;gap:8px;">
-        <div id="streak-badge" title="Your streak">🔥 <span id="streak-count">0</span></div>
+        <div id="streak-badge" title="Tap to toggle animation" onclick="toggleConfetti()" style="cursor:pointer;">🔥 <span id="streak-count">0</span></div>
         <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     </div>
 </header>
@@ -1298,7 +1297,7 @@
          it controls the colored styling. -->
     <div class="controls">
         <button class="nav-btn" onclick="prevCardInDeck()">Back</button>
-        <button class="nav-btn" id="shuffle-btn" style="user-select:none;-webkit-user-select:none;">Shuffle</button>
+        <button class="nav-btn" id="shuffle-btn" onclick="shuffleCardInDeck()">Shuffle</button>
         <button class="nav-btn primary" onclick="nextCardInDeck()">Next</button>
     </div>
 </div>
@@ -3252,6 +3251,7 @@ function drawConfetti() {
 // ── Toggle on/off ─────────────────────────────────────────────────────────────
 function toggleConfetti() {
     confettiActive = !confettiActive;
+    document.getElementById('streak-badge').classList.toggle('anim-on', confettiActive);
     if (confettiActive) {
         resizeConfettiCanvas();
         confettiCanvas.style.display = 'block';
@@ -3407,38 +3407,7 @@ function bgmSetVolume(val) {
     if (valEl) valEl.textContent = val + '%';
 }
 
-// ── Shuffle button: tap = shuffle, long-press (600ms) = open Animation Style ──
-function setupShuffleBtn() {
-    const btn = document.getElementById('shuffle-btn');
-    if (!btn) return;
-    let pressTimer   = null;
-    let didLongPress = false;
-
-    function startPress() {
-        didLongPress = false;
-        pressTimer = setTimeout(() => {
-            didLongPress = true;
-            openConfettiSettings();
-        }, 600);
-    }
-
-    function endPress() {
-        clearTimeout(pressTimer);
-        if (didLongPress) return;
-        shuffleCardInDeck();
-    }
-
-    function cancelPress() { clearTimeout(pressTimer); didLongPress = true; }
-
-    btn.addEventListener('touchstart',  startPress,  { passive: true });
-    btn.addEventListener('touchend',    endPress,    { passive: true });
-    btn.addEventListener('touchcancel', cancelPress);
-    btn.addEventListener('mousedown',   startPress);
-    btn.addEventListener('mouseup',     endPress);
-    btn.addEventListener('mouseleave',  cancelPress);
-    btn.addEventListener('contextmenu', e => e.preventDefault());
-    btn.addEventListener('selectstart', e => e.preventDefault());
-}
+// setupShuffleBtn — no longer needed (shuffle is a plain onclick button)
 
 // ── Update the settings page animation status badge ───────────────────────────
 function updateAnimSettingsBadge() {
