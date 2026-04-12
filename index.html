@@ -966,8 +966,8 @@
                     <span class="cs-toggle-track"></span>
                 </label>
             </div>
-            <!-- Volume -->
-            <div class="cs-slider-row">
+            <!-- Volume — slider shown on desktop only; iOS does not allow JS volume control -->
+            <div class="cs-slider-row" id="bgm-vol-row">
                 <div class="cs-slider-header">
                     <span class="cs-slider-label">Volume</span>
                     <span class="cs-slider-val" id="bgm-vol-val">60%</span>
@@ -975,6 +975,10 @@
                 <input type="range" class="cs-slider" id="bgm-vol-slider"
                        min="0" max="100" step="5" value="60"
                        oninput="bgmSetVolume(this.value)" onchange="bgmSetVolume(this.value)">
+            </div>
+            <!-- iOS notice shown instead of slider on iPhone/iPad -->
+            <div id="bgm-ios-note" style="display:none; font-size:0.75rem; color:var(--text-secondary); padding: 4px 2px 8px; line-height:1.5;">
+                Use your device's physical volume buttons to adjust music volume.
             </div>
         </div>
 
@@ -3385,6 +3389,7 @@ function bgmUpdateUI() {
         note.style.animationPlayState = bgmPlaying ? 'running' : 'paused';
         note.style.opacity = bgmPlaying ? '1' : '0.4';
     }
+    bgmCheckIosVolume();
 }
 
 function bgmTogglePlay(enabled) {
@@ -3405,6 +3410,24 @@ function bgmSetVolume(val) {
     localStorage.setItem('wf_bgm_vol', val);
     const valEl = document.getElementById('bgm-vol-val');
     if (valEl) valEl.textContent = val + '%';
+}
+
+// ── bgmCheckIosVolume ─────────────────────────────────────────────────────────
+// iOS Safari silently ignores audio.volume — it is always 1.0 on iPhone/iPad.
+// This function detects that and swaps the slider for an explanatory note.
+// Called once after the audio element exists and the settings UI is in the DOM.
+function bgmCheckIosVolume() {
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const volRow  = document.getElementById('bgm-vol-row');
+    const iosNote = document.getElementById('bgm-ios-note');
+    if (!volRow || !iosNote) return;
+    if (isIos) {
+        volRow.style.display  = 'none';
+        iosNote.style.display = 'block';
+    } else {
+        volRow.style.display  = '';
+        iosNote.style.display = 'none';
+    }
 }
 
 // setupShuffleBtn — no longer needed (shuffle is a plain onclick button)
