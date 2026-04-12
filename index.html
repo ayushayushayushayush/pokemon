@@ -3213,6 +3213,7 @@ function drawAnimFrame() {
 
 // ── Main animation loop ───────────────────────────────────────────────────────
 let lightningNextStrike = 0; // frame counter until next lightning bolt
+let confettiSpawnTick   = 0; // frame counter for trickle spawn pacing
 
 function drawConfetti() {
     const masterOpacity = currentOpacity();
@@ -3231,8 +3232,16 @@ function drawConfetti() {
                 lightningNextStrike = Math.floor((30 + Math.random() * 90) * speedFactor / (confettiMax / 30));
             }
         } else {
-            const toSpawn = Math.min(3, confettiMax - confettiParticles.length);
-            for (let i = 0; i < toSpawn; i++) confettiParticles.push(spawnParticle());
+            // Trickle: spawn 1 particle every N frames so the screen fills
+            // gradually and stays evenly distributed rather than flooding at once.
+            // N scales with confettiMax so denser settings still feel denser,
+            // but the burst is replaced by a smooth, continuous drizzle.
+            const spawnInterval = Math.max(2, Math.round(60 / Math.max(1, confettiMax / 15)));
+            confettiSpawnTick++;
+            if (confettiSpawnTick >= spawnInterval && confettiParticles.length < confettiMax) {
+                confettiParticles.push(spawnParticle());
+                confettiSpawnTick = 0;
+            }
         }
     }
 
@@ -3262,6 +3271,7 @@ function toggleConfetti() {
         confettiCanvas.style.display = 'block';
         confettiParticles = [];
         lightningNextStrike = 0;
+        confettiSpawnTick = 0;
         if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
         drawConfetti();
     } else {
@@ -3301,6 +3311,10 @@ function openConfettiSettings() {
     document.getElementById('cs-opacity-back-val').textContent = opacityBack + '%';
     document.getElementById('cs-random-toggle').checked    = randomModeOnFlip;
     updateModeUI();
+    // Sync BGM controls
+    document.getElementById('bgm-vol-slider').value = bgmVolume;
+    document.getElementById('bgm-vol-val').textContent = bgmVolume + '%';
+    bgmUpdateUI();
     document.getElementById('confetti-settings-overlay').classList.add('active');
 }
 
@@ -3405,15 +3419,6 @@ function bgmSetVolume(val) {
     bgmAudio.volume = bgmVolume / 100;
     localStorage.setItem('wf_bgm_vol', val);
     document.getElementById('bgm-vol-val').textContent = val + '%';
-}
-
-// Restore volume slider display when settings open
-const _origOpenConfettiSettings = openConfettiSettings;
-function openConfettiSettings() {
-    _origOpenConfettiSettings();
-    document.getElementById('bgm-vol-slider').value = bgmVolume;
-    document.getElementById('bgm-vol-val').textContent = bgmVolume + '%';
-    bgmUpdateUI();
 }
 
 // ── Double-tap + long-press fire button ───────────────────────────────────────
