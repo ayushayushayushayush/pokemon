@@ -64,6 +64,15 @@
            long-press. Removing these will cause unwanted native UI to appear. */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 
+        /* iPhone: prevent double-tap zoom on all tappable elements.
+           touch-action:manipulation disables double-tap-to-zoom while keeping
+           scroll and pinch-zoom intact — ideal for button-heavy PWAs. */
+        button, [onclick], .header-btn, .nav-btn, .option-btn, .rating-btn,
+        .cs-mode-btn, .settings-item, .deck-item,
+        .search-result-item, .example-item, .cs-toggle-track, .cs-slider {
+            touch-action: manipulation;
+        }
+
         /* IMPORTANT: overflow:hidden on body/html is intentional — the app uses
            a fixed-height layout with internal scrolling. overscroll-behavior-y:none
            prevents the iOS "rubber band" bounce on the root document. */
@@ -778,17 +787,18 @@
         }
         .cs-slider {
             -webkit-appearance: none; appearance: none;
-            width: 100%; height: 4px; border-radius: 2px;
+            width: 100%; height: 6px; border-radius: 3px;
             background: var(--surface-4); outline: none; cursor: pointer;
+            touch-action: none; /* prevents iOS scroll stealing the drag */
         }
         .cs-slider::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none;
-            width: 22px; height: 22px; border-radius: 50%;
+            width: 28px; height: 28px; border-radius: 50%;
             background: var(--primary); cursor: pointer;
-            box-shadow: 0 0 6px rgba(77,158,255,0.5);
+            box-shadow: 0 0 8px rgba(77,158,255,0.6);
         }
         .cs-slider::-moz-range-thumb {
-            width: 22px; height: 22px; border-radius: 50%;
+            width: 28px; height: 28px; border-radius: 50%;
             background: var(--primary); cursor: pointer; border: none;
         }
 
@@ -837,18 +847,6 @@
         @media (max-width: 360px) { .cs-mode-grid { grid-template-columns: repeat(2, 1fr); } }
 
         /* ── BGM Track Buttons ──────────────────────────────────────────────── */
-        .bgm-track-btn {
-            flex: 1; background: var(--surface-2); border: 2px solid var(--border);
-            border-radius: var(--radius-md); padding: 14px 8px 12px;
-            display: flex; flex-direction: column; align-items: center; gap: 6px;
-            cursor: pointer; transition: background 0.15s, border-color 0.15s;
-        }
-        .bgm-track-btn:active { background: var(--surface-3); }
-        .bgm-track-btn.selected { border-color: var(--primary); background: var(--primary-dim); }
-        .bgm-track-label {
-            font-size: 0.68rem; font-weight: 700; color: var(--text-main);
-            text-transform: uppercase; letter-spacing: 0.06em;
-        }
         @keyframes bgmPulse { 0%,100%{opacity:0.35;transform:scale(1)} 50%{opacity:1;transform:scale(1.15)} }
     </style>
 
@@ -979,7 +977,8 @@
                     <span class="cs-slider-val" id="bgm-vol-val">60%</span>
                 </div>
                 <input type="range" class="cs-slider" id="bgm-vol-slider"
-                       min="0" max="100" step="5" value="60">
+                       min="0" max="100" step="5" value="60"
+                       oninput="bgmSetVolume(this.value)" onchange="bgmSetVolume(this.value)">
             </div>
         </div>
 
@@ -1188,7 +1187,7 @@
         <div id="streak-badge" title="Your streak">🔥 <span id="streak-count">0</span></div>
         <!-- IMPORTANT: #fire-toggle toggles confetti on tap, opens settings on long-press.
              Long-press is wired in JS by setupFireToggle(). -->
-        <div id="fire-toggle" class="header-btn" title="Toggle animation / hold for settings" style="font-size:1.4rem;">✨</div>
+        <div id="fire-toggle" class="header-btn" title="Toggle animation / hold for settings" style="font-size:1.4rem;user-select:none;-webkit-user-select:none;">✨</div>
         <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     </div>
 </header>
@@ -3267,9 +3266,13 @@ function toggleConfetti() {
 // randomModeOnFlip: change animation only when flipping TO the back face
 // (i.e. revealing a new word's examples). Flipping back to front never changes
 // the mode, so navigating the same card doesn't cycle animations.
+let _lastRandomModeIndex = -1;
 function onCardFlip(isFlipped) {
     cardIsFlipped = isFlipped;
-    if (confettiActive && randomModeOnFlip && isFlipped) {
+    // Only pick a new mode when flipping TO the back for the first time on THIS
+    // word. Flipping the same card back and forth keeps the same animation.
+    if (confettiActive && randomModeOnFlip && isFlipped && currentIndex !== _lastRandomModeIndex) {
+        _lastRandomModeIndex = currentIndex;
         const modes = ALL_MODES.filter(m => m !== confettiMode);
         confettiMode = modes[Math.floor(Math.random() * modes.length)];
         confettiParticles = [];
@@ -3301,7 +3304,6 @@ function openConfettiSettings() {
     document.getElementById('bgm-vol-slider').value = bgmVolume;
     document.getElementById('bgm-vol-val').textContent = bgmVolume + '%';
     bgmUpdateUI();
-    bgmBindVolumeSlider();
     document.getElementById('confetti-settings-overlay').classList.add('active');
 }
 
@@ -3399,16 +3401,6 @@ function bgmSetVolume(val) {
     if (valEl) valEl.textContent = val + '%';
 }
 
-// Wire volume slider with addEventListener (reliable across all browsers/iOS)
-// Done inside openConfettiSettings so the element is guaranteed to exist in DOM
-function bgmBindVolumeSlider() {
-    const slider = document.getElementById('bgm-vol-slider');
-    if (!slider || slider._bgmBound) return;
-    slider._bgmBound = true;
-    slider.addEventListener('input', () => bgmSetVolume(slider.value));
-    slider.addEventListener('change', () => bgmSetVolume(slider.value)); // iOS fallback
-}
-
 // ── Double-tap + long-press fire button ───────────────────────────────────────
 // Double-tap  → toggle confetti on/off
 // Long-press  → open settings (600ms hold)
@@ -3455,6 +3447,27 @@ function setupFireToggle() {
 
 window.addEventListener('resize', () => {
     if (confettiActive || confettiParticles.length > 0) resizeConfettiCanvas();
+});
+
+// ── iOS range-slider fix ──────────────────────────────────────────────────────
+// On iOS Safari, dragging a range input inside an overflow:auto container can
+// suppress 'input' events. Firing the oninput handler on touchmove ensures
+// the value updates in real time while the user drags.
+document.querySelectorAll('.cs-slider').forEach(slider => {
+    slider.addEventListener('touchmove', function(e) {
+        // Calculate value from touch position relative to slider rect
+        const rect  = this.getBoundingClientRect();
+        const touch = e.touches[0];
+        const pct   = Math.min(1, Math.max(0, (touch.clientX - rect.left) / rect.width));
+        const min   = parseFloat(this.min  || 0);
+        const max   = parseFloat(this.max  || 100);
+        const step  = parseFloat(this.step || 1);
+        let val = min + pct * (max - min);
+        val = Math.round(val / step) * step;
+        this.value = val;
+        // Dispatch to whichever oninput handler is attached
+        this.dispatchEvent(new Event('input', { bubbles: true }));
+    }, { passive: true });
 });
 
 setupFireToggle();
