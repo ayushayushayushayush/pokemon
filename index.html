@@ -721,18 +721,11 @@
             display: none;
         }
 
-        /* Fire button active glow when confetti is ON */
-        #fire-toggle.confetti-on {
+        /* Shuffle button glows gold while Animation Style overlay is open */
+        #shuffle-btn.anim-open {
             background: var(--accent-gold);
             border-color: var(--accent-gold);
-            box-shadow: 0 0 12px rgba(255, 214, 10, 0.5);
             color: #000;
-        }
-        /* Prevent text-selection highlight during long-press on the fire button */
-        #fire-toggle {
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
         }
 
         /* ── Confetti Settings Overlay ──────────────────────────────────────────
@@ -872,7 +865,11 @@
     <header>
         <div onclick="closeConfettiSettings()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
         <div style="font-weight:800;">Animation Style</div>
-        <div style="width:60px;"></div>
+        <!-- On/Off toggle in header -->
+        <label class="cs-toggle" style="margin-right:4px;" title="Enable/disable animation">
+            <input type="checkbox" id="cs-master-toggle" onchange="toggleConfetti()">
+            <span class="cs-toggle-track"></span>
+        </label>
     </header>
     <div class="confetti-settings-body">
 
@@ -1082,6 +1079,10 @@
     </header>
     <div class="list-container">
         <div class="settings-list">
+            <div class="settings-item" onclick="openConfettiSettings()">
+                <span>✨ Animation Style</span>
+                <span id="settings-anim-status" style="font-size:0.75rem;color:var(--text-secondary);font-weight:400;">Off</span>
+            </div>
             <div class="settings-item" onclick="openDeckPicker()">
                 <span>Themed Decks</span>
                 <span class="chevron">›</span>
@@ -1185,9 +1186,6 @@
     <div id="counter" class="counter" onclick="openSearch()">0 / 0</div>
     <div style="display:flex;align-items:center;gap:8px;">
         <div id="streak-badge" title="Your streak">🔥 <span id="streak-count">0</span></div>
-        <!-- IMPORTANT: #fire-toggle toggles confetti on tap, opens settings on long-press.
-             Long-press is wired in JS by setupFireToggle(). -->
-        <div id="fire-toggle" class="header-btn" title="Toggle animation / hold for settings" style="font-size:1.4rem;user-select:none;-webkit-user-select:none;">✨</div>
         <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     </div>
 </header>
@@ -1290,13 +1288,17 @@
         </div>
     </div>
 
+    <!-- Hidden element so legacy JS references to fire-toggle don't break -->
+    <div id="fire-toggle" style="display:none;"></div>
+
     <!-- ── Navigation Buttons ─────────────────────────────────────────────────
          Back/Shuffle/Next skip over words in knownWords array (mastered words).
+         Shuffle supports long-press (600ms) to open Animation Style settings.
          IMPORTANT: Do NOT remove the .primary class from the Next button —
          it controls the colored styling. -->
     <div class="controls">
         <button class="nav-btn" onclick="prevCardInDeck()">Back</button>
-        <button class="nav-btn" onclick="shuffleCardInDeck()">Shuffle</button>
+        <button class="nav-btn" id="shuffle-btn" style="user-select:none;-webkit-user-select:none;">Shuffle</button>
         <button class="nav-btn primary" onclick="nextCardInDeck()">Next</button>
     </div>
 </div>
@@ -2310,6 +2312,7 @@ function prevCard() {
         if(currentIndex === start) break;
     } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
     updateCard();
+    randomiseAnimMode();
     recordCardReviewed();
 }
 
@@ -2323,6 +2326,7 @@ function nextCard() {
         if(currentIndex === start) break;
     } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
     updateCard();
+    randomiseAnimMode();
     recordCardReviewed();
 }
 
@@ -2339,6 +2343,7 @@ function shuffleCard() {
     } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
     currentIndex = newIdx; 
     updateCard();
+    randomiseAnimMode();
     recordCardReviewed();
 }
 
@@ -2804,6 +2809,7 @@ function nextCardInDeck() {
     const pos = activeDeckIndices.indexOf(currentIndex);
     currentIndex = activeDeckIndices[(pos + 1) % activeDeckIndices.length];
     updateCard();
+    randomiseAnimMode();
     recordCardReviewed();
 }
 
@@ -2812,6 +2818,7 @@ function prevCardInDeck() {
     const pos = activeDeckIndices.indexOf(currentIndex);
     currentIndex = activeDeckIndices[(pos - 1 + activeDeckIndices.length) % activeDeckIndices.length];
     updateCard();
+    randomiseAnimMode();
     recordCardReviewed();
 }
 
@@ -2820,6 +2827,7 @@ function shuffleCardInDeck() {
     const pos = Math.floor(Math.random() * activeDeckIndices.length);
     currentIndex = activeDeckIndices[pos];
     updateCard();
+    randomiseAnimMode();
     recordCardReviewed();
 }
 
@@ -3244,10 +3252,7 @@ function drawConfetti() {
 // ── Toggle on/off ─────────────────────────────────────────────────────────────
 function toggleConfetti() {
     confettiActive = !confettiActive;
-    const btn = document.getElementById('fire-toggle');
     if (confettiActive) {
-        btn.classList.add('confetti-on');
-        btn.textContent = '🌟';
         resizeConfettiCanvas();
         confettiCanvas.style.display = 'block';
         confettiParticles = [];
@@ -3256,29 +3261,15 @@ function toggleConfetti() {
         if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
         drawConfetti();
     } else {
-        btn.classList.remove('confetti-on');
-        btn.textContent = '✨';
         animFrame.style.display = 'none';
     }
+    updateAnimSettingsBadge();
 }
 
-// ── Called by flipCard() to update opacity layer & optionally randomise mode ──
-// randomModeOnFlip: change animation only when flipping TO the back face
-// (i.e. revealing a new word's examples). Flipping back to front never changes
-// the mode, so navigating the same card doesn't cycle animations.
-let _lastRandomModeIndex = -1;
+// ── Called by flipCard() to update opacity layer only ────────────────────────
+// Random mode is now triggered by navigation (new word), not by flip direction.
 function onCardFlip(isFlipped) {
     cardIsFlipped = isFlipped;
-    // Only pick a new mode when flipping TO the back for the first time on THIS
-    // word. Flipping the same card back and forth keeps the same animation.
-    if (confettiActive && randomModeOnFlip && isFlipped && currentIndex !== _lastRandomModeIndex) {
-        _lastRandomModeIndex = currentIndex;
-        const modes = ALL_MODES.filter(m => m !== confettiMode);
-        confettiMode = modes[Math.floor(Math.random() * modes.length)];
-        confettiParticles = [];
-        confettiSpawnTick = 0;
-        updateModeUI();
-    }
 }
 
 // ── Settings overlay ──────────────────────────────────────────────────────────
@@ -3289,26 +3280,41 @@ function updateModeUI() {
     });
 }
 
+// ── randomiseAnimMode ─────────────────────────────────────────────────────────
+// Called whenever the user navigates to a new word while on the front face.
+// Picks a different mode so each word gets a fresh animation style.
+function randomiseAnimMode() {
+    if (!confettiActive || !randomModeOnFlip) return;
+    const modes = ALL_MODES.filter(m => m !== confettiMode);
+    confettiMode = modes[Math.floor(Math.random() * modes.length)];
+    confettiParticles = [];
+    confettiSpawnTick = 0;
+    updateModeUI();
+}
+
 function openConfettiSettings() {
-    document.getElementById('cs-speed-slider').value       = confettiSpeed;
-    document.getElementById('cs-speed-val').textContent    = confettiSpeed;
-    document.getElementById('cs-count-slider').value       = confettiMax;
-    document.getElementById('cs-count-val').textContent    = confettiMax;
-    document.getElementById('cs-opacity-front-slider').value = opacityFront;
+    document.getElementById('cs-master-toggle').checked     = confettiActive;
+    document.getElementById('cs-speed-slider').value        = confettiSpeed;
+    document.getElementById('cs-speed-val').textContent     = confettiSpeed;
+    document.getElementById('cs-count-slider').value        = confettiMax;
+    document.getElementById('cs-count-val').textContent     = confettiMax;
+    document.getElementById('cs-opacity-front-slider').value  = opacityFront;
     document.getElementById('cs-opacity-front-val').textContent = opacityFront + '%';
-    document.getElementById('cs-opacity-back-slider').value  = opacityBack;
+    document.getElementById('cs-opacity-back-slider').value   = opacityBack;
     document.getElementById('cs-opacity-back-val').textContent = opacityBack + '%';
-    document.getElementById('cs-random-toggle').checked    = randomModeOnFlip;
+    document.getElementById('cs-random-toggle').checked     = randomModeOnFlip;
     updateModeUI();
     // Sync BGM controls
     document.getElementById('bgm-vol-slider').value = bgmVolume;
     document.getElementById('bgm-vol-val').textContent = bgmVolume + '%';
     bgmUpdateUI();
+    updateAnimSettingsBadge();
     document.getElementById('confetti-settings-overlay').classList.add('active');
 }
 
 function closeConfettiSettings() {
     document.getElementById('confetti-settings-overlay').classList.remove('active');
+    updateAnimSettingsBadge();
 }
 
 function setConfettiMode(mode) {
@@ -3401,17 +3407,14 @@ function bgmSetVolume(val) {
     if (valEl) valEl.textContent = val + '%';
 }
 
-// ── Double-tap + long-press fire button ───────────────────────────────────────
-// Double-tap  → toggle confetti on/off
-// Long-press  → open settings (600ms hold)
-function setupFireToggle() {
-    const btn = document.getElementById('fire-toggle');
+// ── Shuffle button: tap = shuffle, long-press (600ms) = open Animation Style ──
+function setupShuffleBtn() {
+    const btn = document.getElementById('shuffle-btn');
+    if (!btn) return;
     let pressTimer   = null;
     let didLongPress = false;
-    let lastTapTime  = 0;
-    const DOUBLE_TAP_MS = 300;
 
-    function startPress(e) {
+    function startPress() {
         didLongPress = false;
         pressTimer = setTimeout(() => {
             didLongPress = true;
@@ -3419,30 +3422,32 @@ function setupFireToggle() {
         }, 600);
     }
 
-    function endPress(e) {
+    function endPress() {
         clearTimeout(pressTimer);
         if (didLongPress) return;
-
-        const now = Date.now();
-        if (now - lastTapTime < DOUBLE_TAP_MS) {
-            // Double-tap detected
-            lastTapTime = 0;
-            toggleConfetti();
-        } else {
-            lastTapTime = now;
-        }
+        shuffleCardInDeck();
     }
 
     function cancelPress() { clearTimeout(pressTimer); didLongPress = true; }
 
     btn.addEventListener('touchstart',  startPress,  { passive: true });
-    btn.addEventListener('touchend',    endPress);
+    btn.addEventListener('touchend',    endPress,    { passive: true });
     btn.addEventListener('touchcancel', cancelPress);
     btn.addEventListener('mousedown',   startPress);
     btn.addEventListener('mouseup',     endPress);
     btn.addEventListener('mouseleave',  cancelPress);
     btn.addEventListener('contextmenu', e => e.preventDefault());
     btn.addEventListener('selectstart', e => e.preventDefault());
+}
+
+// ── Update the settings page animation status badge ───────────────────────────
+function updateAnimSettingsBadge() {
+    const el = document.getElementById('settings-anim-status');
+    if (!el) return;
+    if (!confettiActive) { el.textContent = 'Off'; el.style.color = 'var(--text-secondary)'; return; }
+    const labels = { confetti: '🎊 Confetti', rain: '🌧️ Rain', snow: '❄️ Snow', lightning: '⚡ Lightning' };
+    el.textContent = labels[confettiMode] || 'On';
+    el.style.color = 'var(--primary)';
 }
 
 window.addEventListener('resize', () => {
@@ -3470,7 +3475,7 @@ document.querySelectorAll('.cs-slider').forEach(slider => {
     }, { passive: true });
 });
 
-setupFireToggle();
+setupShuffleBtn();
 
 </script>
 </body>
