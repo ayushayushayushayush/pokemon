@@ -279,7 +279,7 @@
            front/back faces to exist in 3D space. The cubic-bezier timing gives
            the flip its characteristic "snappy overshoot" feel.
            .card.is-flipped is toggled by flipCard() — do NOT rename this class. */
-        .card { width: 100%; height: 100%; position: relative; transition: transform 0.65s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; }
+        .card { width: 100%; height: 100%; position: relative; transition: transform 0.65s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; overflow: hidden; border-radius: var(--radius-xl); background: #000000; }
         .card.is-flipped { transform: rotateY(180deg); }
 
         /* IMPORTANT: backface-visibility:hidden hides each face when it is
@@ -287,10 +287,11 @@
            each other during the flip animation. */
         .card-face {
             position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-            border-radius: var(--radius-xl); background: #000000;
+            border-radius: var(--radius-xl); background: transparent;
             display: flex; flex-direction: column; overflow: hidden;
             border: 1px solid var(--border-bright);
             box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 20px 60px rgba(0,0,0,0.8);
+            z-index: 1;
         }
 
         /* Card front — clicking the word container plays audio; clicking elsewhere flips.
@@ -693,14 +694,17 @@
         .rating-btn.easy:active, .rating-btn.easy.selected { background: rgba(46,204,113,0.1); border-color: rgba(46,204,113,0.35); }
 
         /* ── Confetti Canvas ────────────────────────────────────────────────────
-           Sits above all content (z-index:9000) but pointer-events:none so it
-           never blocks taps, clicks, or any interactive element. */
+           Absolutely positioned inside #card so it is clipped to the card bounds
+           (including the rounded corners via overflow:hidden on .card).
+           z-index:0 keeps it behind both card faces which are at z-index:1.
+           pointer-events:none — never intercepts any tap or interaction. */
         #confetti-canvas {
-            position: fixed;
+            position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
             pointer-events: none;
-            z-index: 1;
+            z-index: 0;
+            border-radius: var(--radius-xl);
             display: none;
         }
 
@@ -721,11 +725,7 @@
      Do NOT remove this element — pushSync() references it. -->
 <div id="sync-status"></div>
 
-<!-- ── Confetti Canvas ──────────────────────────────────────────────────────────
-     Sits at z-index:9000 with pointer-events:none — purely visual, never
-     blocks any tap/click. Toggled on/off by the 🔥 fire button in the header.
-     The canvas is driven by the confetti engine in the script section. -->
-<canvas id="confetti-canvas"></canvas>
+
 
 <!-- IMPORTANT: #loading-screen is visible on initial load (z-index:3000).
      It is hidden via JS (style.display='none') once the CSV finishes parsing.
@@ -957,6 +957,14 @@
 <div class="app-container" id="app">
     <div class="scene">
         <div class="card" id="card">
+
+            <!-- ── Confetti Canvas ──────────────────────────────────────────────
+                 Sits inside #card at z-index:0 so both card faces (z-index:1+)
+                 always render above it. position:absolute + border-radius matches
+                 the card so confetti is clipped to the rounded card shape.
+                 pointer-events:none — never blocks any tap or interaction.
+                 Toggled by the 🔥 fire button via toggleConfetti(). -->
+            <canvas id="confetti-canvas"></canvas>
 
             <!-- ── Card Front ──────────────────────────────────────────────────
                  IMPORTANT: onclick is handleCardFrontClick(event) — this function
@@ -2606,8 +2614,10 @@ const CONFETTI_COLORS = [
 ];
 
 function resizeConfettiCanvas() {
-    confettiCanvas.width = window.innerWidth;
-    confettiCanvas.height = window.innerHeight;
+    const card = document.getElementById('card');
+    const rect = card.getBoundingClientRect();
+    confettiCanvas.width = rect.width;
+    confettiCanvas.height = rect.height;
 }
 
 function spawnConfettiParticle() {
