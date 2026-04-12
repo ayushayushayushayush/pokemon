@@ -2871,6 +2871,34 @@ function currentOpacity() {
     return (cardIsFlipped ? opacityBack : opacityFront) / 100;
 }
 
+// ── Lightning bolt geometry ───────────────────────────────────────────────────
+// Recursively subdivides a line with perpendicular offsets to make jagged bolts.
+// depth controls how many times to subdivide (more = more detail).
+function buildBoltSegments(x1, y1, x2, y2, depth, maxDepth) {
+    if (depth >= maxDepth) return [{ x1, y1, x2, y2 }];
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    // Perpendicular offset — stronger at low depth, weaker at high depth
+    const offset = (Math.random() - 0.5) * len * (0.35 - depth * 0.04);
+    const nx = -dy / len, ny = dx / len; // unit normal
+    const jx = mx + nx * offset;
+    const jy = my + ny * offset;
+    return [
+        ...buildBoltSegments(x1, y1, jx, jy, depth + 1, maxDepth),
+        ...buildBoltSegments(jx, jy, x2, y2, depth + 1, maxDepth),
+    ];
+}
+
+// Spawns branch segments from a midpoint of the main bolt
+function buildBranch(x, y, dx, dy, len) {
+    const angle  = Math.atan2(dy, dx) + (Math.random() - 0.5) * 1.2;
+    const bx = x + Math.cos(angle) * len;
+    const by = y + Math.sin(angle) * len;
+    return buildBoltSegments(x, y, bx, by, 0, 2);
+}
+
 // ── Particle factories ────────────────────────────────────────────────────────
 function getSpawnBounds() {
     if (!frameModeEnabled) {
@@ -2901,16 +2929,58 @@ function spawnParticle(modeOverride) {
             wobbleSpeed: 0.015 + Math.random() * 0.02,
             baseOpacity: 0.6 + Math.random() * 0.4, mode: 'snow' };
     } else if (mode === 'lightning') {
-        // Lightning: brief bright vertical streaks that fade quickly
-        return { x: rx, y: bounds.yStart,
-            len: 20 + Math.random() * 40,
-            width: 1 + Math.random() * 2,
-            speed: speedVal * 4 + Math.random() * 3,
-            baseOpacity: 0.7 + Math.random() * 0.3,
-            life: 1.0,          // fades from 1→0
-            decay: 0.04 + Math.random() * 0.06,
-            color: Math.random() < 0.6 ? '#C8AAFF' : '#FFD700',
-            mode: 'lightning' };
+        // Realistic lightning: static bolts that flash, branch, vary size & direction
+        const W = confettiCanvas.width;
+        const H = confettiCanvas.height;
+
+        // Bolt type: vertical (top→down), horizontal (side→side), diagonal
+        const boltType = Math.random();
+        let startX, startY, endX, endY;
+
+        if (boltType < 0.55) {
+            // Vertical — from top edge, angle slightly
+            startX = bounds.x0 + Math.random() * (bounds.x1 - bounds.x0);
+            startY = 0;
+            endX   = startX + (Math.random() - 0.5) * W * 0.4;
+            endY   = H * (0.3 + Math.random() * 0.7);
+        } else if (boltType < 0.8) {
+            // Horizontal — from left or right
+            const fromLeft = Math.random() < 0.5;
+            startX = fromLeft ? 0 : W;
+            startY = H * (0.1 + Math.random() * 0.8);
+            endX   = fromLeft ? W * (0.4 + Math.random() * 0.6) : W * (Math.random() * 0.6);
+            endY   = startY + (Math.random() - 0.5) * H * 0.3;
+        } else {
+            // Diagonal — corner to corner-ish
+            startX = Math.random() < 0.5 ? 0 : W;
+            startY = Math.random() * H * 0.4;
+            endX   = startX === 0 ? W * (0.5 + Math.random() * 0.5) : W * (Math.random() * 0.5);
+            endY   = startY + H * (0.3 + Math.random() * 0.5);
+        }
+
+        const isBig   = Math.random() < 0.3;
+        const isSmall = !isBig && Math.random() < 0.4;
+
+        return {
+            mode: 'lightning',
+            startX, startY, endX, endY,
+            segments: buildBoltSegments(startX, startY, endX, endY, 0, isBig ? 5 : isSmall ? 2 : 3),
+            branches: [],
+            width:    isBig ? 2.5 + Math.random() : isSmall ? 0.5 + Math.random() * 0.5 : 1 + Math.random(),
+            baseOpacity: 0.85 + Math.random() * 0.15,
+            // Lightning flashes: bright → dim → gone
+            phase: 'flash',   // 'flash' | 'dim' | 'dead'
+            flashLife:  0.08 + Math.random() * 0.12,  // seconds at full brightness
+            dimLife:    0.1  + Math.random() * 0.15,
+            flashTimer: 0,
+            color: Math.random() < 0.65 ? '#C8C8FF'
+                 : Math.random() < 0.5  ? '#AAAAFF' : '#FFFFFF',
+            isBig, isSmall,
+            // small bolts may repeat-flash once
+            reflash: !isBig && Math.random() < 0.35,
+            reflashDelay: 0.08 + Math.random() * 0.12,
+            reflashTimer: 0,
+        };
     } else {
         return { x: rx, y: bounds.yStart,
             w: 6 + Math.random() * 8, h: 3 + Math.random() * 5,
@@ -2926,26 +2996,53 @@ function spawnParticle(modeOverride) {
 function drawParticle(ctx, p, masterOpacity) {
     ctx.save();
     if (p.mode === 'lightning') {
-        ctx.globalAlpha = p.life * p.baseOpacity * masterOpacity;
-        const grad = ctx.createLinearGradient(p.x, p.y, p.x + 2, p.y + p.len);
-        grad.addColorStop(0, p.color);
-        grad.addColorStop(0.4, '#FFFFFF');
-        grad.addColorStop(1, 'transparent');
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = p.width;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        // Jagged bolt
-        let cx = p.x, cy = p.y;
-        ctx.moveTo(cx, cy);
-        const segs = 4 + Math.floor(Math.random() * 3);
-        for (let i = 1; i <= segs; i++) {
-            cx += (Math.random() - 0.5) * 12;
-            cy += p.len / segs;
-            ctx.lineTo(cx, cy);
+        // Compute current alpha based on phase
+        let alpha;
+        if (p.phase === 'flash') {
+            alpha = p.baseOpacity * masterOpacity;
+        } else if (p.phase === 'dim') {
+            alpha = p.baseOpacity * masterOpacity * (1 - p.flashTimer / p.dimLife);
+        } else {
+            ctx.restore(); return;
         }
-        ctx.stroke();
+        ctx.globalAlpha = Math.max(0, alpha);
+
+        // Draw main bolt segments
+        const drawSegs = (segs, lw, color, blur) => {
+            ctx.strokeStyle = color;
+            ctx.lineWidth   = lw;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur  = blur;
+            ctx.lineCap     = 'round';
+            ctx.lineJoin    = 'round';
+            ctx.beginPath();
+            if (segs.length > 0) {
+                ctx.moveTo(segs[0].x1, segs[0].y1);
+                segs.forEach(s => ctx.lineTo(s.x2, s.y2));
+            }
+            ctx.stroke();
+        };
+
+        // Outer glow pass (wider, dimmer)
+        ctx.globalAlpha = Math.max(0, alpha * 0.35);
+        drawSegs(p.segments, p.width * 4, p.color, 18);
+
+        // Core bright white pass
+        ctx.globalAlpha = Math.max(0, alpha);
+        drawSegs(p.segments, p.width, '#FFFFFF', 6);
+
+        // Inner colour pass
+        ctx.globalAlpha = Math.max(0, alpha * 0.7);
+        drawSegs(p.segments, p.width * 0.6, p.color, 3);
+
+        // Draw branches (thinner, no white core)
+        if (p.branches && p.branches.length > 0) {
+            ctx.globalAlpha = Math.max(0, alpha * 0.5);
+            p.branches.forEach(branch => {
+                drawSegs(branch.segs, p.width * 0.45, p.color, 4);
+            });
+        }
+
     } else if (p.mode === 'rain') {
         ctx.globalAlpha = p.baseOpacity * masterOpacity;
         ctx.strokeStyle = '#4D9EFF';
@@ -2970,10 +3067,46 @@ function drawParticle(ctx, p, masterOpacity) {
     ctx.restore();
 }
 
+const FRAME_DT = 1 / 60; // assume 60fps for time-based lightning phases
+
 function updateParticle(p) {
     if (p.mode === 'lightning') {
-        p.y += p.speed;
-        p.life -= p.decay;
+        if (p.phase === 'flash') {
+            p.flashTimer += FRAME_DT;
+            if (p.flashTimer >= p.flashLife) {
+                p.flashTimer = 0;
+                p.phase = 'dim';
+                // Spawn branches now (on transition to dim) if big or medium bolt
+                if (!p.isSmall && p.branches.length === 0 && p.segments.length > 2) {
+                    const numBranches = p.isBig ? 2 + Math.floor(Math.random() * 3) : 1 + Math.floor(Math.random() * 2);
+                    for (let b = 0; b < numBranches; b++) {
+                        const idx = Math.floor(p.segments.length * (0.2 + Math.random() * 0.6));
+                        const seg = p.segments[idx];
+                        const dx  = seg.x2 - seg.x1, dy = seg.y2 - seg.y1;
+                        const blen = 20 + Math.random() * (p.isBig ? 60 : 30);
+                        p.branches.push({ segs: buildBranch(seg.x1, seg.y1, dx, dy, blen) });
+                    }
+                }
+            }
+        } else if (p.phase === 'dim') {
+            p.flashTimer += FRAME_DT;
+            if (p.flashTimer >= p.dimLife) {
+                if (p.reflash && p.reflashTimer === 0) {
+                    // Brief dark pause then re-flash
+                    p.phase = 'reflash-wait';
+                    p.reflashTimer = FRAME_DT;
+                } else {
+                    p.phase = 'dead';
+                }
+            }
+        } else if (p.phase === 'reflash-wait') {
+            p.reflashTimer += FRAME_DT;
+            if (p.reflashTimer >= p.reflashDelay) {
+                p.phase = 'flash';
+                p.flashTimer = 0;
+                p.reflash = false; // only once
+            }
+        }
     } else if (p.mode === 'rain') {
         p.y += p.speed;
     } else if (p.mode === 'snow') {
@@ -2986,7 +3119,7 @@ function updateParticle(p) {
 }
 
 function isParticleAlive(p) {
-    if (p.mode === 'lightning') return p.life > 0 && p.y < confettiCanvas.height + 30;
+    if (p.mode === 'lightning') return p.phase !== 'dead';
     return p.y < confettiCanvas.height + 30;
 }
 
@@ -3023,14 +3156,28 @@ function drawAnimFrame() {
 }
 
 // ── Main animation loop ───────────────────────────────────────────────────────
+let lightningNextStrike = 0; // frame counter until next lightning bolt
+
 function drawConfetti() {
     const masterOpacity = currentOpacity();
     confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
     drawAnimFrame();
 
     if (confettiActive) {
-        const toSpawn = Math.min(3, confettiMax - confettiParticles.length);
-        for (let i = 0; i < toSpawn; i++) confettiParticles.push(spawnParticle());
+        if (confettiMode === 'lightning') {
+            // Lightning strikes are sparse and irregular
+            lightningNextStrike--;
+            if (lightningNextStrike <= 0 && confettiParticles.filter(p => p.phase === 'flash').length < Math.ceil(confettiMax / 25)) {
+                const numStrikes = 1 + (Math.random() < 0.25 ? 1 : 0); // occasionally 2 at once
+                for (let i = 0; i < numStrikes; i++) confettiParticles.push(spawnParticle());
+                // Random delay: fast strikes cluster, then long quiet pauses
+                const speedFactor = 1 + (10 - confettiSpeed) * 0.4;
+                lightningNextStrike = Math.floor((30 + Math.random() * 90) * speedFactor / (confettiMax / 30));
+            }
+        } else {
+            const toSpawn = Math.min(3, confettiMax - confettiParticles.length);
+            for (let i = 0; i < toSpawn; i++) confettiParticles.push(spawnParticle());
+        }
     }
 
     confettiParticles = confettiParticles.filter(p => {
@@ -3058,6 +3205,7 @@ function toggleConfetti() {
         resizeConfettiCanvas();
         confettiCanvas.style.display = 'block';
         confettiParticles = [];
+        lightningNextStrike = 0;
         if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
         drawConfetti();
     } else {
@@ -3148,18 +3296,39 @@ function onFrameModeChange(checked) {
     if (!confettiActive) animFrame.style.display = 'none';
 }
 
-// ── Long-press fire button ────────────────────────────────────────────────────
+// ── Double-tap + long-press fire button ───────────────────────────────────────
+// Double-tap  → toggle confetti on/off
+// Long-press  → open settings (600ms hold)
 function setupFireToggle() {
     const btn = document.getElementById('fire-toggle');
-    let pressTimer = null;
+    let pressTimer   = null;
     let didLongPress = false;
+    let lastTapTime  = 0;
+    const DOUBLE_TAP_MS = 300;
 
-    function startPress() {
+    function startPress(e) {
         didLongPress = false;
-        pressTimer = setTimeout(() => { didLongPress = true; openConfettiSettings(); }, 600);
+        pressTimer = setTimeout(() => {
+            didLongPress = true;
+            openConfettiSettings();
+        }, 600);
     }
-    function endPress()   { clearTimeout(pressTimer); if (!didLongPress) toggleConfetti(); }
-    function cancelPress(){ clearTimeout(pressTimer); didLongPress = true; }
+
+    function endPress(e) {
+        clearTimeout(pressTimer);
+        if (didLongPress) return;
+
+        const now = Date.now();
+        if (now - lastTapTime < DOUBLE_TAP_MS) {
+            // Double-tap detected
+            lastTapTime = 0;
+            toggleConfetti();
+        } else {
+            lastTapTime = now;
+        }
+    }
+
+    function cancelPress() { clearTimeout(pressTimer); didLongPress = true; }
 
     btn.addEventListener('touchstart',  startPress,  { passive: true });
     btn.addEventListener('touchend',    endPress);
