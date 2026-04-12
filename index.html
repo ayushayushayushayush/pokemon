@@ -705,7 +705,13 @@
 <!-- IMPORTANT: #loading-screen is visible on initial load (z-index:3000).
      It is hidden via JS (style.display='none') once the CSV finishes parsing.
      Do NOT remove this element. -->
-<!-- ── Word of the Day Modal ──────────────────────────────────────────────── -->
+<!-- ── Word of the Day Modal ──────────────────────────────────────────────────
+     Shown once per day by showWotd() on first app open. z-index:5000 puts it
+     above everything including other overlays. The .show class (toggled by
+     showWotd/dismissWotd) switches display from none to flex.
+     "Study this word →" calls goToWotd() which jumps to that card.
+     "Start Studying" calls dismissWotd() and marks today's date in localStorage
+     so the modal won't re-appear until tomorrow. -->
 <div id="wotd-modal">
     <div id="wotd-card">
         <div id="wotd-label">✦ Word of the Day</div>
@@ -718,7 +724,11 @@
     </div>
 </div>
 
-<!-- ── Session Summary Modal ─────────────────────────────────────────────── -->
+<!-- ── Session Summary Modal ──────────────────────────────────────────────────
+     Shown automatically by showSummary() once the user hits DAILY_GOAL (20) cards
+     reviewed in a session. Displays 4 stats: words reviewed, new favorites added,
+     current streak, and daily goal %. Can appear again if user reviews another
+     DAILY_GOAL cards (summaryShown resets in dismissSummary). -->
 <div id="summary-modal">
     <div id="summary-card">
         <div id="summary-label">✦ Session Complete</div>
@@ -747,7 +757,14 @@
 
 <div id="loading-screen"><p>Loading...</p></div>
 
-<!-- ── Search Overlay ─────────────────────────────────────────────────────────── -->
+<!-- ── Search Overlay ─────────────────────────────────────────────────────────
+     Opened by openSearch() when the user taps the counter pill (#counter).
+     Uses class "active" (not display:flex inline) so the CSS controls show/hide.
+     The search input calls onSearchInput() on every keystroke for live filtering.
+     Results are filtered to the active deck if one is set.
+     Matching letters in each result are highlighted using <mark> tags styled
+     in CSS to show as blue (var(--primary)) without a background.
+     If a word has been rated Hard/Easy, a colored dot appears next to its name. -->
 <div id="search-overlay">
     <div id="search-header">
         <input id="search-input" type="search" placeholder="Search words…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" oninput="onSearchInput()" />
@@ -757,7 +774,13 @@
     <div id="search-results"></div>
 </div>
 
-<!-- ── Deck Picker Overlay ─────────────────────────────────────────────────────── -->
+<!-- ── Deck Picker Overlay ────────────────────────────────────────────────────
+     Opened by openDeckPicker() from Settings. Uses class "active" for show/hide.
+     The #deck-active-banner bar appears below the header when a non-"all" deck is
+     active, confirming the filter is in effect.
+     #deck-list is populated dynamically by renderDeckList() — do NOT add static
+     items here; all deck items are built from the DECKS array in JS.
+     Deck choice persists in localStorage key 'wf_active_deck'. -->
 <div id="deck-overlay">
     <header>
         <div onclick="closeDeckPicker()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
@@ -870,9 +893,13 @@
 </div>
 
 <!-- ── Main App Header ─────────────────────────────────────────────────────────
-     IMPORTANT: starts with display:none and is shown by JS (window.onload) once
-     data is loaded. Do NOT remove the id="app-header" — JS references it.
-     #counter shows "currentIndex+1 / total" and is clickable to jumpPrompt(). -->
+     Hidden until data loads (shown by window.onload). Contains three zones:
+     LEFT:   ⚙️ Settings button → openSettings()
+     CENTER: Counter pill (#counter) → tapping opens Search overlay (openSearch())
+             When a deck is active, shows position within deck (e.g. "12 / 89")
+     RIGHT:  Streak badge (🔥 + day count, updated by loadStreak()) and
+             ★ Favorites button → openFavs()
+     IMPORTANT: Do NOT remove id="app-header" — JS shows/hides it by that ID. -->
 <header id="app-header" style="display:none;">
     <div class="header-btn" onclick="openSettings()">⚙️</div>
     <div id="counter" class="counter" onclick="openSearch()">0 / 0</div>
@@ -881,7 +908,11 @@
         <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     </div>
 </header>
-<!-- Daily goal progress bar -->
+<!-- ── Daily Goal Progress Bar ───────────────────────────────────────────────
+     Shown by initEngagement() after data loads (display:flex).
+     #progress-bar-fill width is animated from 0% to 100% as cards are reviewed.
+     Turns green (.done class) and shows "✓ Done!" when DAILY_GOAL is reached.
+     Progress resets each calendar day (stored under key 'wf_daily_YYYY-MM-DD'). -->
 <div id="progress-bar-container">
     <div id="progress-bar-row">
         <div id="streak-badge-small" style="font-size:0.62rem;color:var(--text-dim);"></div>
@@ -947,6 +978,13 @@
                      for the current word, with long-press interactions for
                      favoriting (right half) and deleting (left half). -->
                 <div id="example-list"></div>
+                <!-- ── Self-Rating Bar ─────────────────────────────────────────────
+                     Visible only when the card is flipped (flipCard() sets display:flex).
+                     Hidden again by updateCard() when navigating to a new card.
+                     Calls rateWord('hard'|'okay'|'easy') on tap.
+                     Ratings stored in localStorage key 'wf_ratings' as { WORD: rating }.
+                     The selected rating gets the .selected class for visual feedback.
+                     Hard/Easy ratings feed the "Hard Words" and "Easy Words" deck filters. -->
                 <div id="rating-bar">
                     <span id="rating-label">Is this word?</span>
                     <button class="rating-btn hard" onclick="rateWord('hard')">Hard</button>
@@ -970,10 +1008,57 @@
 
 <script>
 // ══════════════════════════════════════════════════════════════════════════════
-// IMPORTANT — Cloud Sync Config
+// WORDFLOW PRO — JavaScript Architecture Overview
+// ══════════════════════════════════════════════════════════════════════════════
+//
+// DATA FILES (must be in same directory as this HTML):
+//   words.csv    — 3,563 rows: WORD, IPA, PHONETIC, Type, MEANING, Meaning1-10,
+//                  and example columns 1–50. Primary vocabulary source.
+//   word2.csv    — sourced newspaper sentences for words 1–500.
+//                  Columns: Word, Sentence N, Source N, Date N, URL N (up to 68).
+//   audio-file/  — MP3s for words 1–1018      (e.g. audio-file/abandon.mp3)
+//   audio-file-2/— MP3s for words 1019–2026
+//   audio-file-3/— MP3s for words 2027–3034
+//   audio-file-4/— MP3s for words 3035+
+//
+// STATE (localStorage keys):
+//   wf_index_v6        — last viewed card index (integer)
+//   wf_deleted_log     — JSON array of "WORD|sentence" IDs user deleted
+//   wf_fav_log         — JSON array of "WORD|sentence" IDs user favorited
+//   wf_known_words     — JSON array of WORD strings user mastered (hidden)
+//   wf_ratings         — JSON object { WORD: 'hard'|'okay'|'easy' }
+//   wf_active_deck     — string deck id (e.g. 'all', 'hard', 'sources')
+//   wf_streak_date     — 'YYYY-MM-DD' of last app open
+//   wf_streak_count    — integer day streak
+//   wf_daily_YYYY-MM-DD— integer cards reviewed on that date
+//   wf_wotd_seen       — 'YYYY-MM-DD' of last word-of-the-day shown
+//
+// CLOUD SYNC: deletedExamples, favExamples, knownWords are also synced to a
+//   GitHub Gist via a Cloudflare Worker proxy (WORKER_URL). wordRatings is
+//   NOT synced — it is device-local only.
+//
+// KEY FUNCTIONS:
+//   window.onload      — loads CSVs, merges state, renders first card
+//   updateCard()       — renders wordData[currentIndex] onto both card faces
+//   renderExamples()   — builds the example sentence list on the card back
+//   flipCard()         — toggles .is-flipped CSS class + shows/hides rating-bar
+//   nextCardInDeck()   — advances within active deck (falls back to nextCard)
+//   annotateWithIPA()  — adds IPA hints below vocabulary words in sentences
+//   initEngagement()   — starts streak, progress bar, and Word of the Day
+//   applyDeck()        — filters navigation to a subset of wordData
+//   openSearch()       — opens full-screen live word search
+//
+// TOUCH GESTURES:
+//   Card front, long-press word: confirmMastery() — mark word as mastered
+//   Example, long-press LEFT (750ms): delete example
+//   Example, long-press RIGHT (1200ms): toggle favorite (italic)
+//   Back header tap: flipCard()
+//
+// ══════════════════════════════════════════════════════════════════════════════
+// CLOUD SYNC CONFIG
 // WORKER_URL points to a Cloudflare Worker that proxies requests to GitHub Gist.
 // The GitHub token is stored securely in the Worker — NOT in this file.
-// Do NOT remove or change these — pushSync() and window.onload fetch depend on them.
+// Do NOT remove or change WORKER_URL — pushSync() and window.onload depend on it.
 // ══════════════════════════════════════════════════════════════════════════════
 const WORKER_URL = "https://dark-sky-e62b.iamayushdhakal.workers.dev";
 
@@ -985,16 +1070,17 @@ const WORKER_URL = "https://dark-sky-e62b.iamayushdhakal.workers.dev";
 // knownWords: array of WORD strings the user has marked as mastered (hidden).
 // All three arrays are persisted to localStorage AND synced to GitHub Gist.
 // ══════════════════════════════════════════════════════════════════════════════
-let wordData = [];
-let word2Data = {};
+let wordData = [];    // full rows from words.csv, keyed by column name (WORD, IPA, MEANING, Meaning1-10, 1-50, Type, PHONETIC)
+let word2Data = {};   // rows from word2.csv, keyed by lowercase word → [{text, source, date}]
+                      // word2.csv covers words 1–500 with real sourced newspaper sentences
 
 // ── Engagement Feature State ───────────────────────────────────────────────────
-const DAILY_GOAL = 20; // cards to flip per day
+const DAILY_GOAL = 20; // daily card review target — change this number to adjust the goal
 let sessionReviewed = 0;   // cards flipped this session
 let sessionFavsStart = 0;  // favExamples.length at session start (to count new favs)
 let summaryShown = false;   // only show summary once per session
-let wotdIndex = -1;         // index of today's word of the day // keyed by lowercase word → array of {text, source, date}
-let ipaMap = {}; // word (lowercase) → IPA string, built after CSV loads
+let wotdIndex = -1;         // index of today's word of the day (set by getWotdIndex())
+let ipaMap = {}; // word (lowercase) → IPA string, e.g. ipaMap['ubiquitous'] = '/juːˈbɪk.wɪ.təs/'
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
 let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
@@ -1064,6 +1150,20 @@ function showSync(state, message) {
 // 4. Loading screen is hidden, app UI is shown.
 // 5. If the saved currentIndex points to a known/mastered word, skip to next.
 // IMPORTANT: Do NOT reorder these steps — the UI must not show before data is ready.
+// ── window.onload ─────────────────────────────────────────────────────────────
+// Entry point. Loads both CSVs in parallel using Promise.all, then:
+//   1. Populates wordData (from words.csv) and word2Data (from word2.csv)
+//   2. Builds ipaMap for inline IPA annotations in example sentences
+//   3. Merges cloud state (GitHub Gist via Cloudflare Worker) with localStorage
+//   4. Hides loading screen, shows app UI
+//   5. Renders first card (skipping mastered words if needed)
+//   6. Calls initEngagement() for streak/goal/WOTD, then applyDeck() for deck filter
+// DATA SOURCES:
+//   words.csv  — 3,563 vocabulary words: WORD, IPA, PHONETIC, Type, MEANING,
+//                Meaning1-10, and numbered example columns 1–50
+//   word2.csv  — sourced newspaper sentences for words 1–500:
+//                Word, Sentence N, Source N, Date N, URL N (up to 68 sentences)
+// IMPORTANT: Do NOT reorder the steps — the UI must not show before data is ready.
 window.onload = () => {
     setupMasteryGesture();
 
@@ -1182,6 +1282,16 @@ function handleCardFrontClick(e) {
 }
 
 // ── updateCard ────────────────────────────────────────────────────────────────
+// Central render function. Called after every navigation action and on load.
+// Renders wordData[currentIndex] onto both card faces:
+//   FRONT: word (f-word), IPA (f-ipa), phonetic (f-phonetic)
+//   BACK:  word (b-word), meaning (b-meaning), more-btn, type-badge, examples
+// Also: unflips card, hides rating-bar, updates counter, resets meaning index,
+//        calls renderExamples() to rebuild the sentence list, and
+//        calls updateRatingButtons() to highlight the stored rating (if any).
+// Counter format: "X / Y" normally, or "X / Y" within-deck when a deck is active.
+// IMPORTANT: Called after every navigation action (nextCard, prevCard, shuffleCard,
+// closeOverlays, confirmMastery). Do NOT call it in loops — it's expensive.
 // Renders the current word (wordData[currentIndex]) onto both card faces.
 // IMPORTANT: Called after every navigation action (nextCard, prevCard, shuffleCard,
 // jumpPrompt, closeOverlays, confirmMastery).
@@ -1409,6 +1519,15 @@ function handleQuizTap(selectedWord, btn) {
 // Matches whole words only (word boundary), case-insensitive.
 // Also tries stemmed forms: strips common suffixes to catch inflections like
 // "running" → "run", "studies" → "study", etc.
+// ── annotateWithIPA ──────────────────────────────────────────────────────────
+// Scans every word token in an example sentence and, if the word exists in
+// ipaMap (or a stemmed form of it does), wraps it in a .word-ipa-wrap span
+// with the IPA shown below in a .word-ipa-hint span.
+// skipWord: the current card's WORD — never annotated (it's already in the header).
+// Suffix stripping covers common inflections: running→run, studies→study,
+// precisely→precise, nations→nation, etc.
+// IMPORTANT: Template literals with backticks inside .word-ipa-hint spans are
+// safe here — they're in innerHTML, not the JS string parser.
 function annotateWithIPA(text, skipWord) {
     const skipLower = skipWord.toLowerCase();
 
@@ -1450,17 +1569,28 @@ function annotateWithIPA(text, skipWord) {
 }
 
 // ── renderExamples ────────────────────────────────────────────────────────────
-// Builds the example sentence list for the current word on the card back.
-// IMPORTANT: Called by updateCard() every time the card changes. Clears #example-list first.
-// Data source: columns "1" through "50" in the CSV row for the current word.
-// Filtering: skips deleted examples (deletedExamples array) and blank/short values.
-// Sorting: favorited examples rise to the top (sorted by isFav desc).
-// Touch interaction (per example item):
-//   - Long press LEFT half (750ms): confirm → delete example.
-//   - Long press RIGHT half (1200ms): toggle favorite (red color + favExamples array).
-//   - touchmove: sets moved=true, clears timer to prevent accidental trigger on scroll.
-// IMPORTANT: The 1200ms delay on right-side favoring (vs 750ms for delete) is
-// intentional — it gives users time to scroll without accidentally favoriting.
+// Builds the scrollable example sentence list for the current word on the card back.
+// Called by updateCard() every time the card changes. Clears #example-list first.
+//
+// DATA SOURCE:
+//   Words 1–500 (index 0–499): uses word2Data if available (sourced newspaper sentences)
+//   Words 501+: uses numbered columns "1"–"50" from words.csv
+//
+// FILTERING: skips sentences in deletedExamples ("WORD|text" format).
+//
+// SORT ORDER: 1) Favorites (italic) 2) Sourced (have source/date) 3) Unsourced
+//
+// IPA ANNOTATION: each sentence is passed through annotateWithIPA() which wraps
+//   vocab words in a .word-ipa-wrap showing the IPA below the word.
+//
+// SOURCE/DATE FOOTER: word2Data sentences get a footer with source (left) and
+//   date (right), separated by a faint top border.
+//
+// TOUCH GESTURES (per example div):
+//   Long press LEFT half  (750ms):  confirm → deleteEx() removes the sentence
+//   Long press RIGHT half (1200ms): toggle italic + add/remove from favExamples
+//   touchmove: sets moved=true, clears timer (prevents accidental fire on scroll)
+//   The 1200ms right-side delay is intentional — longer to avoid scroll accidents.
 function renderExamples(item) {
     const list = document.getElementById('example-list');
     list.innerHTML = "";
@@ -1627,6 +1757,14 @@ function removeAllKnown() {
 // IMPORTANT: The composite ID format is "WORD|sentence text" — both parts are
 // needed to identify a specific example. This format is used consistently across
 // favExamples, deletedExamples, and the quiz.
+// ── openFavs ──────────────────────────────────────────────────────────────────
+// Shows the Favorites overlay and renders all favorited sentences grouped by word.
+// Each group header shows the word + IPA. Tapping IPA plays audio.
+// Long-pressing (750ms) the word title navigates to that card (flipped).
+// Long-pressing (750ms) LEFT half of a sentence item prompts to unfavorite it.
+// For words 1–500 with word2Data, each sentence shows a source/date footer.
+// Sentences from the same word are grouped together in insertion order.
+// IMPORTANT: favExamples format is "WORD|sentence text" — both parts required.
 function openFavs() {
     const list = document.getElementById('fav-list');
     list.innerHTML = "";
@@ -1746,7 +1884,11 @@ function resetDeleted() {
 }
 
 // ── flipCard ──────────────────────────────────────────────────────────────────
-// Toggles the .is-flipped class on #card to animate the 3D flip.
+// Toggles the .is-flipped class on #card to animate the CSS 3D flip.
+// Also shows/hides #rating-bar: visible only when the back face is showing.
+// Called by: .back-header onclick (flip back), handleCardFrontClick (flip forward).
+// IMPORTANT: The CSS transition on .card handles the animation — do NOT use JS
+// animation here or the smooth cubic-bezier flip will break.
 // IMPORTANT: The CSS transition on .card handles the animation — do NOT use JS
 // animation here or the smooth cubic-bezier flip will break.
 function flipCard() {
@@ -1832,6 +1974,12 @@ async function pushSync() {
 }
 
 // ── saveAndSync ───────────────────────────────────────────────────────────────
+// Single source of truth for persisting app state.
+// Always writes deletedExamples, favExamples, and knownWords to localStorage.
+// If shouldPush=true (default), also debounces a cloud sync via pushSync().
+// Pass shouldPush=false when merging cloud state on load to avoid push loops.
+// IMPORTANT: wordRatings is stored separately (wf_ratings) and NOT synced to
+// cloud — it's device-local only. If you want cross-device ratings, add it here.
 // Persists all three state arrays to localStorage, then optionally triggers
 // a cloud sync via pushSync().
 // IMPORTANT: Pass shouldPush=false when you only want to persist locally
@@ -1898,7 +2046,27 @@ function shuffleCard() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// ENGAGEMENT FEATURES — Streak, Daily Goal, Word of the Day, Session Summary
+// ENGAGEMENT FEATURES
+// ══════════════════════════════════════════════════════════════════════════════
+// All four engagement features use only localStorage — no cloud sync needed.
+//
+// STREAK (wf_streak_date, wf_streak_count):
+//   Increments each day the app is opened. Resets if a day is missed.
+//   Shown in header as 🔥 N.
+//
+// DAILY GOAL (wf_daily_YYYY-MM-DD):
+//   Counts cards reviewed per day toward DAILY_GOAL (default 20).
+//   Each Next/Back/Shuffle tap increments via recordCardReviewed().
+//   Shown as a thin progress bar below the header.
+//
+// WORD OF THE DAY (wf_wotd_seen):
+//   Picked deterministically by hashing today's date — same word all day.
+//   Shows as a modal on first open each day. Dismissed by tapping a button
+//   which writes today's date to localStorage so it won't re-appear.
+//
+// SESSION SUMMARY:
+//   Appears automatically when daily goal is hit. Shows session stats.
+//   Can re-appear if user reviews another DAILY_GOAL cards after dismissing.
 // ══════════════════════════════════════════════════════════════════════════════
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -2063,6 +2231,17 @@ function dismissSummary() {
 }
 
 // ── Init (called from window.onload after data is ready) ──────────────────────
+// ── initEngagement ────────────────────────────────────────────────────────────
+// Called once from window.onload after all data is ready and the first card
+// is visible. Initialises all four engagement features in order:
+//   1. loadStreak()       — computes and saves today's streak
+//   2. renderStreak()     — updates the 🔥 badge in the header
+//   3. loadDailyProgress() — reads today's card count from localStorage
+//   4. updateProgressBar() — renders the progress bar at current progress
+//   5. Shows the progress bar container (hidden until data is ready)
+//   6. Records session start favs count (for "new favorites" stat in summary)
+//   7. showWotd()         — shows Word of the Day modal if not seen today
+// NOTE: applyDeck() is called AFTER initEngagement() in window.onload.
 function initEngagement() {
     const streak = loadStreak();
     renderStreak(streak);
@@ -2085,6 +2264,19 @@ function initEngagement() {
 // SEARCH
 // ══════════════════════════════════════════════════════════════════════════════
 
+// ── openSearch / closeSearch / onSearchInput / renderSearchResults ────────────
+// Search feature: tap the counter pill (#counter) to open a full-screen search.
+//
+// openSearch():         shows overlay, clears input, renders initial 60 results
+// closeSearch():        hides overlay, blurs keyboard
+// onSearchInput():      called on every keystroke, re-renders filtered results
+// renderSearchResults(query):
+//   - If a deck is active, only searches within activeDeckIndices
+//   - Matches substring of word (case-insensitive), up to 80 results
+//   - Highlights matching letters using <mark> styled as blue in CSS
+//   - Shows IPA and word number (#N) on the right of each result
+//   - Shows 🔴/🟢 dot if word has a Hard/Easy rating
+//   - Tapping a result sets currentIndex and calls updateCard() then closeSearch()
 function openSearch() {
     const overlay = document.getElementById('search-overlay');
     overlay.classList.add('active');
@@ -2167,6 +2359,16 @@ function renderSearchResults(query) {
 // THEMED DECKS
 // ══════════════════════════════════════════════════════════════════════════════
 
+// ── DECKS ─────────────────────────────────────────────────────────────────────
+// Deck definitions array. Each deck has:
+//   id:     localStorage key value (saved as wf_active_deck)
+//   name:   shown in the deck picker UI
+//   desc:   subtitle shown under the name
+//   filter: (wordRow, index, wordData) → boolean
+//           called once per word to build activeDeckIndices[]
+//           'all' deck is special: activeDeckIndices stays [] (no filter applied)
+// TO ADD A NEW DECK: push a new object with the same shape into this array.
+// The filter runs at deck-selection time and when ratings change (hard/easy/unrated).
 // Deck definitions — each has an id, name, description, and a filter function
 // that receives (wordRow, index, wordData) and returns true if included.
 const DECKS = [
@@ -2211,6 +2413,17 @@ const DECKS = [
     },
 ];
 
+// ── applyDeck ─────────────────────────────────────────────────────────────────
+// Activates a deck filter. Builds activeDeckIndices[] by running the deck's
+// filter function over every non-mastered word in wordData.
+// For 'all' deck: activeDeckIndices = [] (empty = no filter, full wordData used).
+// Updates the #deck-active-banner visibility and text.
+// If the current card is not in the new deck, jumps to the first deck card.
+// IMPORTANT: Only call after wordData is populated (after CSV loads).
+//            applyDeck is called in window.onload AFTER updateCard() runs.
+//            It guards its internal updateCard() call with wordData.length > 0.
+// Called by: initEngagement (on load), renderDeckList (on selection), rateWord
+//            (to refresh hard/easy/unrated decks when a rating changes).
 function applyDeck(deckId) {
     activeDeckId = deckId;
     localStorage.setItem('wf_active_deck', deckId);
