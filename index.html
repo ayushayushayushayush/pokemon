@@ -343,7 +343,7 @@
         .example-source { font-size: 0.68rem; color: #555; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
         .example-date { font-size: 0.65rem; color: #444; white-space: nowrap; }
         .example-item { background: #000000; padding: 14px 16px; font-size: 0.9rem; line-height: 1.6; color: #C0C0C8; margin-bottom: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); user-select: none; -webkit-user-select: none; transition: border-color 0.2s; }
-        .example-item.is-fav { color: #FF453A !important; border-color: rgba(255,69,69,0.25); }
+        .example-item.is-fav { font-style: italic; }
 
         /* ── Nav Controls (Bottom Buttons) ──────────────────────────────────────
            IMPORTANT: padding-bottom uses calc(var(--safe-bottom) + 28px) to push
@@ -1506,7 +1506,7 @@ function renderExamples(item) {
         div.innerHTML = `<strong>${idx+1}.</strong> ${annotateWithIPA(ex.text, cleanWord)}${footerHtml}`;
 
         // Apply red color immediately if this sentence is already favorited
-        if (ex.isFav) div.style.color = '#FF453A';
+        if (ex.isFav) div.style.fontStyle = 'italic';
 
         let pressTimer = null;
         let moved = false;
@@ -1524,10 +1524,10 @@ function renderExamples(item) {
                     // Toggle favorite status
                     if (favExamples.includes(ex.id)) {
                         favExamples = favExamples.filter(x => x !== ex.id);
-                        div.style.color = '';
+                        div.style.fontStyle = '';
                     } else {
                         favExamples.push(ex.id);
-                        div.style.color = '#FF453A';
+                        div.style.fontStyle = 'italic';
                     }
                     saveAndSync();
                 } else {
