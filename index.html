@@ -785,6 +785,50 @@
             width: 22px; height: 22px; border-radius: 50%;
             background: var(--primary); cursor: pointer; border: none;
         }
+
+        /* ── Toggle Switch ──────────────────────────────────────────────────── */
+        .cs-toggle-row {
+            background: var(--surface-2); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 16px 20px;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+        .cs-toggle-info { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+        .cs-toggle-label { font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
+        .cs-toggle-desc { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.4; }
+        .cs-toggle {
+            position: relative; width: 48px; height: 28px; flex-shrink: 0;
+        }
+        .cs-toggle input { opacity: 0; width: 0; height: 0; }
+        .cs-toggle-track {
+            position: absolute; inset: 0; border-radius: 14px;
+            background: var(--surface-4); border: 1px solid var(--border-bright);
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        .cs-toggle-track::after {
+            content: ''; position: absolute;
+            left: 3px; top: 50%; transform: translateY(-50%);
+            width: 20px; height: 20px; border-radius: 50%;
+            background: var(--text-dim); transition: left 0.2s, background 0.2s;
+        }
+        .cs-toggle input:checked + .cs-toggle-track { background: var(--primary); border-color: var(--primary); }
+        .cs-toggle input:checked + .cs-toggle-track::after { left: 23px; background: #fff; }
+
+        /* ── Animation Frame Canvas ─────────────────────────────────────────────
+           Sibling of confetti-canvas inside .scene. Draws the glowing rounded
+           rect border when frame-mode is on. pointer-events:none always. */
+        #anim-frame {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 11;
+            display: none;
+        }
+
+        /* ── Mode grid extended to 4 cols on wider screens ─────────────────── */
+        .cs-mode-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        @media (max-width: 360px) { .cs-mode-grid { grid-template-columns: repeat(2, 1fr); } }
     </style>
 
 </head>
@@ -802,9 +846,9 @@
      It is hidden via JS (style.display='none') once the CSV finishes parsing.
      Do NOT remove this element. -->
 <!-- ── Confetti Settings Overlay ───────────────────────────────────────────────
-     Opened by long-pressing the 🔥 fire button (600ms hold).
-     Lets user pick confetti mode (confetti/rain/snow), adjust speed and count.
-     Settings are saved to localStorage and applied live. -->
+     Opened by long-pressing the ✨ button (600ms hold).
+     Controls: mode, speed, density, opacity (front/back separately),
+     random-on-flip toggle, and frame-mode toggle. -->
 <div id="confetti-settings-overlay">
     <header>
         <div onclick="closeConfettiSettings()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
@@ -812,6 +856,7 @@
         <div style="width:60px;"></div>
     </header>
     <div class="confetti-settings-body">
+
         <div class="cs-section-title">Mode</div>
         <div class="cs-mode-grid">
             <div class="cs-mode-btn selected" id="cs-mode-confetti" onclick="setConfettiMode('confetti')">
@@ -825,6 +870,34 @@
             <div class="cs-mode-btn" id="cs-mode-snow" onclick="setConfettiMode('snow')">
                 <span class="cs-mode-icon">❄️</span>
                 <span class="cs-mode-label">Snow</span>
+            </div>
+            <div class="cs-mode-btn" id="cs-mode-lightning" onclick="setConfettiMode('lightning')">
+                <span class="cs-mode-icon">⚡</span>
+                <span class="cs-mode-label">Lightning</span>
+            </div>
+        </div>
+
+        <div class="cs-section-title">Behaviour</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="cs-toggle-row">
+                <div class="cs-toggle-info">
+                    <span class="cs-toggle-label">Random Mode on Flip</span>
+                    <span class="cs-toggle-desc">Picks a random animation style each time the card flips</span>
+                </div>
+                <label class="cs-toggle">
+                    <input type="checkbox" id="cs-random-toggle" onchange="onRandomModeChange(this.checked)">
+                    <span class="cs-toggle-track"></span>
+                </label>
+            </div>
+            <div class="cs-toggle-row">
+                <div class="cs-toggle-info">
+                    <span class="cs-toggle-label">Frame Mode</span>
+                    <span class="cs-toggle-desc">Shows animation inside a rounded frame around the word / examples area only</span>
+                </div>
+                <label class="cs-toggle">
+                    <input type="checkbox" id="cs-frame-toggle" onchange="onFrameModeChange(this.checked)">
+                    <span class="cs-toggle-track"></span>
+                </label>
             </div>
         </div>
 
@@ -849,6 +922,29 @@
                    min="10" max="200" step="10" value="60"
                    oninput="onConfettiCountChange(this.value)">
         </div>
+
+        <div class="cs-section-title">Opacity — Word Side</div>
+        <div class="cs-slider-row">
+            <div class="cs-slider-header">
+                <span class="cs-slider-label">Front Card Opacity</span>
+                <span class="cs-slider-val" id="cs-opacity-front-val">80%</span>
+            </div>
+            <input type="range" class="cs-slider" id="cs-opacity-front-slider"
+                   min="5" max="100" step="5" value="80"
+                   oninput="onOpacityChange('front', this.value)">
+        </div>
+
+        <div class="cs-section-title">Opacity — Examples Side</div>
+        <div class="cs-slider-row">
+            <div class="cs-slider-header">
+                <span class="cs-slider-label">Back Card Opacity</span>
+                <span class="cs-slider-val" id="cs-opacity-back-val">80%</span>
+            </div>
+            <input type="range" class="cs-slider" id="cs-opacity-back-slider"
+                   min="5" max="100" step="5" value="80"
+                   oninput="onOpacityChange('back', this.value)">
+        </div>
+
     </div>
 </div>
 
@@ -1085,6 +1181,10 @@
              the canvas is a floating layer on top of the card visuals only.
              Toggled by the 🔥 fire button via toggleConfetti(). -->
         <canvas id="confetti-canvas"></canvas>
+        <!-- ── Animation Frame ────────────────────────────────────────────────
+             When frame-mode is enabled, this canvas draws particles only inside
+             a rounded rectangle around the word / example area, not full card. -->
+        <canvas id="anim-frame"></canvas>
         <div class="card" id="card">
 
             <!-- ── Card Front ──────────────────────────────────────────────────
@@ -2054,6 +2154,8 @@ function flipCard() {
     card.classList.toggle('is-flipped');
     const isFlipped = card.classList.contains('is-flipped');
     document.getElementById('rating-bar').style.display = isFlipped ? 'flex' : 'none';
+    // Notify animation engine of flip state (opacity layer + random mode)
+    if (typeof onCardFlip === 'function') onCardFlip(isFlipped);
 }
 
 // ── playAudioFromEvent ────────────────────────────────────────────────────────
@@ -2715,120 +2817,217 @@ function updateRatingButtons() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// CONFETTI ENGINE
-// Supports three modes: 'confetti' (coloured rectangles), 'rain' (blue streaks),
-// 'snow' (white circles). Speed and max-count are user-adjustable via the
-// settings overlay (long-press 🔥). All settings persist in localStorage.
-// The canvas lives inside .scene (overflow:hidden) so particles are clipped to
-// the card shape. pointer-events:none — never blocks any tap.
+// ANIMATION ENGINE
+// Modes: 'confetti' | 'rain' | 'snow' | 'lightning'
+// Settings (all persisted in localStorage):
+//   wf_cfx_mode        — current mode
+//   wf_cfx_speed       — 1–10 speed
+//   wf_cfx_count       — 10–200 max particles
+//   wf_cfx_opacity_front — 5–100 opacity % on word side
+//   wf_cfx_opacity_back  — 5–100 opacity % on examples side
+//   wf_cfx_random      — '1'|'0' random mode on each flip
+//   wf_cfx_frame       — '1'|'0' show inside frame only
+// Canvas lives inside .scene (overflow:hidden) — clipped to card shape.
 // ══════════════════════════════════════════════════════════════════════════════
 
-let confettiActive = false;
-let confettiAnimId = null;
+let confettiActive  = false;
+let confettiAnimId  = null;
 const confettiCanvas = document.getElementById('confetti-canvas');
-const confettiCtx = confettiCanvas.getContext('2d');
+const confettiCtx    = confettiCanvas.getContext('2d');
+const animFrame      = document.getElementById('anim-frame');
+const animFrameCtx   = animFrame.getContext('2d');
 let confettiParticles = [];
 
 // ── Persisted settings ────────────────────────────────────────────────────────
-let confettiMode  = localStorage.getItem('wf_cfx_mode')  || 'confetti'; // 'confetti'|'rain'|'snow'
-let confettiSpeed = parseFloat(localStorage.getItem('wf_cfx_speed') || '5');  // 1–10
-let confettiMax   = parseInt(localStorage.getItem('wf_cfx_count')   || '60'); // 10–200
+const ALL_MODES = ['confetti', 'rain', 'snow', 'lightning'];
+let confettiMode        = localStorage.getItem('wf_cfx_mode')          || 'confetti';
+let confettiSpeed       = parseFloat(localStorage.getItem('wf_cfx_speed')         || '5');
+let confettiMax         = parseInt(localStorage.getItem('wf_cfx_count')           || '60');
+let opacityFront        = parseInt(localStorage.getItem('wf_cfx_opacity_front')   || '80');
+let opacityBack         = parseInt(localStorage.getItem('wf_cfx_opacity_back')    || '80');
+let randomModeOnFlip    = localStorage.getItem('wf_cfx_random') === '1';
+let frameModeEnabled    = localStorage.getItem('wf_cfx_frame')  === '1';
+
+// Track which face is showing
+let cardIsFlipped = false;
 
 const CONFETTI_COLORS = [
     '#FF4545','#FF8C00','#FFD60A','#2ECC71','#4D9EFF',
     '#C084FC','#F472B6','#34D399','#FB923C','#60A5FA'
 ];
 
+// ── Canvas sizing ─────────────────────────────────────────────────────────────
 function resizeConfettiCanvas() {
     const scene = document.querySelector('.scene');
     const rect  = scene.getBoundingClientRect();
     confettiCanvas.width  = rect.width;
     confettiCanvas.height = rect.height;
+    animFrame.width       = rect.width;
+    animFrame.height      = rect.height;
 }
 
-// ── Particle factories per mode ───────────────────────────────────────────────
-function spawnParticle() {
-    const speedVal = 0.3 + (confettiSpeed / 10) * 1.8; // maps 1–10 → 0.3–2.1
-    if (confettiMode === 'rain') {
-        return {
-            x: Math.random() * confettiCanvas.width,
-            y: -20,
+// ── Current opacity based on which face is showing ────────────────────────────
+function currentOpacity() {
+    return (cardIsFlipped ? opacityBack : opacityFront) / 100;
+}
+
+// ── Particle factories ────────────────────────────────────────────────────────
+function getSpawnBounds() {
+    if (!frameModeEnabled) {
+        return { x0: 0, x1: confettiCanvas.width, yStart: -20 };
+    }
+    // Frame: approximate word/example region (centre 80% width, from top padding)
+    const pad = confettiCanvas.width * 0.08;
+    return { x0: pad, x1: confettiCanvas.width - pad, yStart: -10 };
+}
+
+function spawnParticle(modeOverride) {
+    const mode    = modeOverride || confettiMode;
+    const speedVal = 0.3 + (confettiSpeed / 10) * 1.8;
+    const bounds   = getSpawnBounds();
+    const rx       = bounds.x0 + Math.random() * (bounds.x1 - bounds.x0);
+
+    if (mode === 'rain') {
+        return { x: rx, y: bounds.yStart,
             len: 10 + Math.random() * 14,
             speed: speedVal * 3 + Math.random() * 2,
-            opacity: 0.35 + Math.random() * 0.45,
-            mode: 'rain',
-        };
-    } else if (confettiMode === 'snow') {
-        return {
-            x: Math.random() * confettiCanvas.width,
-            y: -10,
+            baseOpacity: 0.35 + Math.random() * 0.45, mode: 'rain' };
+    } else if (mode === 'snow') {
+        return { x: rx, y: bounds.yStart,
             r: 2 + Math.random() * 4,
             speed: speedVal * 0.6 + Math.random() * 0.4,
             drift: (Math.random() - 0.5) * 0.6,
             wobble: Math.random() * Math.PI * 2,
             wobbleSpeed: 0.015 + Math.random() * 0.02,
-            opacity: 0.6 + Math.random() * 0.4,
-            mode: 'snow',
-        };
+            baseOpacity: 0.6 + Math.random() * 0.4, mode: 'snow' };
+    } else if (mode === 'lightning') {
+        // Lightning: brief bright vertical streaks that fade quickly
+        return { x: rx, y: bounds.yStart,
+            len: 20 + Math.random() * 40,
+            width: 1 + Math.random() * 2,
+            speed: speedVal * 4 + Math.random() * 3,
+            baseOpacity: 0.7 + Math.random() * 0.3,
+            life: 1.0,          // fades from 1→0
+            decay: 0.04 + Math.random() * 0.06,
+            color: Math.random() < 0.6 ? '#C8AAFF' : '#FFD700',
+            mode: 'lightning' };
     } else {
-        return {
-            x: Math.random() * confettiCanvas.width,
-            y: -12,
-            w: 6 + Math.random() * 8,
-            h: 3 + Math.random() * 5,
+        return { x: rx, y: bounds.yStart,
+            w: 6 + Math.random() * 8, h: 3 + Math.random() * 5,
             color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
             speed: speedVal + Math.random() * 0.4,
             angle: Math.random() * Math.PI * 2,
             angleSpeed: (Math.random() - 0.5) * 0.12,
             drift: (Math.random() - 0.5) * 1.2,
-            opacity: 0.85 + Math.random() * 0.15,
-            mode: 'confetti',
-        };
+            baseOpacity: 0.85 + Math.random() * 0.15, mode: 'confetti' };
     }
 }
 
-function drawParticle(p) {
-    confettiCtx.save();
-    confettiCtx.globalAlpha = p.opacity;
-    if (p.mode === 'rain') {
-        confettiCtx.strokeStyle = '#4D9EFF';
-        confettiCtx.lineWidth = 1.5;
-        confettiCtx.beginPath();
-        confettiCtx.moveTo(p.x, p.y);
-        confettiCtx.lineTo(p.x + 1, p.y + p.len);
-        confettiCtx.stroke();
+function drawParticle(ctx, p, masterOpacity) {
+    ctx.save();
+    if (p.mode === 'lightning') {
+        ctx.globalAlpha = p.life * p.baseOpacity * masterOpacity;
+        const grad = ctx.createLinearGradient(p.x, p.y, p.x + 2, p.y + p.len);
+        grad.addColorStop(0, p.color);
+        grad.addColorStop(0.4, '#FFFFFF');
+        grad.addColorStop(1, 'transparent');
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = p.width;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        // Jagged bolt
+        let cx = p.x, cy = p.y;
+        ctx.moveTo(cx, cy);
+        const segs = 4 + Math.floor(Math.random() * 3);
+        for (let i = 1; i <= segs; i++) {
+            cx += (Math.random() - 0.5) * 12;
+            cy += p.len / segs;
+            ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+    } else if (p.mode === 'rain') {
+        ctx.globalAlpha = p.baseOpacity * masterOpacity;
+        ctx.strokeStyle = '#4D9EFF';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + 1, p.y + p.len);
+        ctx.stroke();
     } else if (p.mode === 'snow') {
-        confettiCtx.fillStyle = '#FFFFFF';
-        confettiCtx.beginPath();
-        confettiCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        confettiCtx.fill();
+        ctx.globalAlpha = p.baseOpacity * masterOpacity;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
     } else {
-        confettiCtx.translate(p.x, p.y);
-        confettiCtx.rotate(p.angle);
-        confettiCtx.fillStyle = p.color;
-        confettiCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.globalAlpha = p.baseOpacity * masterOpacity;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
     }
-    confettiCtx.restore();
+    ctx.restore();
 }
 
 function updateParticle(p) {
-    if (p.mode === 'rain') {
+    if (p.mode === 'lightning') {
+        p.y += p.speed;
+        p.life -= p.decay;
+    } else if (p.mode === 'rain') {
         p.y += p.speed;
     } else if (p.mode === 'snow') {
         p.wobble += p.wobbleSpeed;
         p.x += Math.sin(p.wobble) * 0.8 + p.drift;
         p.y += p.speed;
     } else {
-        p.y += p.speed;
-        p.x += p.drift;
-        p.angle += p.angleSpeed;
+        p.y += p.speed; p.x += p.drift; p.angle += p.angleSpeed;
     }
 }
 
-function drawConfetti() {
-    confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+function isParticleAlive(p) {
+    if (p.mode === 'lightning') return p.life > 0 && p.y < confettiCanvas.height + 30;
+    return p.y < confettiCanvas.height + 30;
+}
 
-    // Always spawn up to confettiMax while active — replaces particles that fell off
+// ── Draw frame overlay ────────────────────────────────────────────────────────
+function drawAnimFrame() {
+    if (!frameModeEnabled || !confettiActive) {
+        animFrame.style.display = 'none';
+        return;
+    }
+    animFrame.style.display = 'block';
+    animFrameCtx.clearRect(0, 0, animFrame.width, animFrame.height);
+
+    const pad = 14;
+    const r   = 20;
+    const x   = pad, y = pad;
+    const w   = animFrame.width  - pad * 2;
+    const h   = animFrame.height - pad * 2;
+    const op  = currentOpacity();
+
+    // Glowing rounded rect border
+    animFrameCtx.save();
+    animFrameCtx.globalAlpha = 0.55 * op;
+    animFrameCtx.strokeStyle = confettiMode === 'lightning' ? '#C8AAFF'
+                             : confettiMode === 'snow'      ? '#AADDFF'
+                             : confettiMode === 'rain'      ? '#4D9EFF'
+                             : '#FFD60A';
+    animFrameCtx.lineWidth   = 2;
+    animFrameCtx.shadowColor = animFrameCtx.strokeStyle;
+    animFrameCtx.shadowBlur  = 12;
+    animFrameCtx.beginPath();
+    animFrameCtx.roundRect(x, y, w, h, r);
+    animFrameCtx.stroke();
+    animFrameCtx.restore();
+}
+
+// ── Main animation loop ───────────────────────────────────────────────────────
+function drawConfetti() {
+    const masterOpacity = currentOpacity();
+    confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    drawAnimFrame();
+
     if (confettiActive) {
         const toSpawn = Math.min(3, confettiMax - confettiParticles.length);
         for (let i = 0; i < toSpawn; i++) confettiParticles.push(spawnParticle());
@@ -2836,18 +3035,20 @@ function drawConfetti() {
 
     confettiParticles = confettiParticles.filter(p => {
         updateParticle(p);
-        drawParticle(p);
-        return p.y < confettiCanvas.height + 30;
+        drawParticle(confettiCtx, p, masterOpacity);
+        return isParticleAlive(p);
     });
 
     if (confettiActive || confettiParticles.length > 0) {
         confettiAnimId = requestAnimationFrame(drawConfetti);
     } else {
         confettiCanvas.style.display = 'none';
+        animFrame.style.display = 'none';
         confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
     }
 }
 
+// ── Toggle on/off ─────────────────────────────────────────────────────────────
 function toggleConfetti() {
     confettiActive = !confettiActive;
     const btn = document.getElementById('fire-toggle');
@@ -2862,19 +3063,41 @@ function toggleConfetti() {
     } else {
         btn.classList.remove('confetti-on');
         btn.textContent = '✨';
+        animFrame.style.display = 'none';
     }
 }
 
-// ── Confetti Settings Overlay ─────────────────────────────────────────────────
-function openConfettiSettings() {
-    // Sync UI to current settings
-    document.getElementById('cs-speed-slider').value = confettiSpeed;
-    document.getElementById('cs-speed-val').textContent = confettiSpeed;
-    document.getElementById('cs-count-slider').value = confettiMax;
-    document.getElementById('cs-count-val').textContent = confettiMax;
-    ['confetti','rain','snow'].forEach(m => {
-        document.getElementById('cs-mode-' + m).classList.toggle('selected', m === confettiMode);
+// ── Called by flipCard() to update opacity layer & optionally randomise mode ──
+function onCardFlip(isFlipped) {
+    cardIsFlipped = isFlipped;
+    if (confettiActive && randomModeOnFlip) {
+        const modes = ALL_MODES.filter(m => m !== confettiMode);
+        confettiMode = modes[Math.floor(Math.random() * modes.length)];
+        confettiParticles = []; // clear old particles so new mode starts clean
+        updateModeUI();
+    }
+}
+
+// ── Settings overlay ──────────────────────────────────────────────────────────
+function updateModeUI() {
+    ALL_MODES.forEach(m => {
+        const el = document.getElementById('cs-mode-' + m);
+        if (el) el.classList.toggle('selected', m === confettiMode);
     });
+}
+
+function openConfettiSettings() {
+    document.getElementById('cs-speed-slider').value       = confettiSpeed;
+    document.getElementById('cs-speed-val').textContent    = confettiSpeed;
+    document.getElementById('cs-count-slider').value       = confettiMax;
+    document.getElementById('cs-count-val').textContent    = confettiMax;
+    document.getElementById('cs-opacity-front-slider').value = opacityFront;
+    document.getElementById('cs-opacity-front-val').textContent = opacityFront + '%';
+    document.getElementById('cs-opacity-back-slider').value  = opacityBack;
+    document.getElementById('cs-opacity-back-val').textContent = opacityBack + '%';
+    document.getElementById('cs-random-toggle').checked    = randomModeOnFlip;
+    document.getElementById('cs-frame-toggle').checked     = frameModeEnabled;
+    updateModeUI();
     document.getElementById('confetti-settings-overlay').classList.add('active');
 }
 
@@ -2885,10 +3108,7 @@ function closeConfettiSettings() {
 function setConfettiMode(mode) {
     confettiMode = mode;
     localStorage.setItem('wf_cfx_mode', mode);
-    ['confetti','rain','snow'].forEach(m => {
-        document.getElementById('cs-mode-' + m).classList.toggle('selected', m === mode);
-    });
-    // Restart particles in new mode if active
+    updateModeUI();
     if (confettiActive) confettiParticles = [];
 }
 
@@ -2904,7 +3124,31 @@ function onConfettiCountChange(val) {
     document.getElementById('cs-count-val').textContent = val;
 }
 
-// ── Long-press wire-up for the fire button ────────────────────────────────────
+function onOpacityChange(side, val) {
+    const pct = parseInt(val);
+    if (side === 'front') {
+        opacityFront = pct;
+        localStorage.setItem('wf_cfx_opacity_front', val);
+        document.getElementById('cs-opacity-front-val').textContent = pct + '%';
+    } else {
+        opacityBack = pct;
+        localStorage.setItem('wf_cfx_opacity_back', val);
+        document.getElementById('cs-opacity-back-val').textContent = pct + '%';
+    }
+}
+
+function onRandomModeChange(checked) {
+    randomModeOnFlip = checked;
+    localStorage.setItem('wf_cfx_random', checked ? '1' : '0');
+}
+
+function onFrameModeChange(checked) {
+    frameModeEnabled = checked;
+    localStorage.setItem('wf_cfx_frame', checked ? '1' : '0');
+    if (!confettiActive) animFrame.style.display = 'none';
+}
+
+// ── Long-press fire button ────────────────────────────────────────────────────
 function setupFireToggle() {
     const btn = document.getElementById('fire-toggle');
     let pressTimer = null;
@@ -2912,16 +3156,10 @@ function setupFireToggle() {
 
     function startPress() {
         didLongPress = false;
-        pressTimer = setTimeout(() => {
-            didLongPress = true;
-            openConfettiSettings();
-        }, 600);
+        pressTimer = setTimeout(() => { didLongPress = true; openConfettiSettings(); }, 600);
     }
-    function endPress() {
-        clearTimeout(pressTimer);
-        if (!didLongPress) toggleConfetti();
-    }
-    function cancelPress() { clearTimeout(pressTimer); didLongPress = true; }
+    function endPress()   { clearTimeout(pressTimer); if (!didLongPress) toggleConfetti(); }
+    function cancelPress(){ clearTimeout(pressTimer); didLongPress = true; }
 
     btn.addEventListener('touchstart',  startPress,  { passive: true });
     btn.addEventListener('touchend',    endPress);
@@ -2936,7 +3174,6 @@ window.addEventListener('resize', () => {
     if (confettiActive || confettiParticles.length > 0) resizeConfettiCanvas();
 });
 
-// Call after DOM ready (window.onload has already fired at this point in the script)
 setupFireToggle();
 
 </script>
