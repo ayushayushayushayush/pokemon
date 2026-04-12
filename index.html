@@ -829,6 +829,21 @@
         /* ── Mode grid extended to 4 cols on wider screens ─────────────────── */
         .cs-mode-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         @media (max-width: 360px) { .cs-mode-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        /* ── BGM Track Buttons ──────────────────────────────────────────────── */
+        .bgm-track-btn {
+            flex: 1; background: var(--surface-2); border: 2px solid var(--border);
+            border-radius: var(--radius-md); padding: 14px 8px 12px;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            cursor: pointer; transition: background 0.15s, border-color 0.15s;
+        }
+        .bgm-track-btn:active { background: var(--surface-3); }
+        .bgm-track-btn.selected { border-color: var(--primary); background: var(--primary-dim); }
+        .bgm-track-label {
+            font-size: 0.68rem; font-weight: 700; color: var(--text-main);
+            text-transform: uppercase; letter-spacing: 0.06em;
+        }
+        @keyframes bgmPulse { 0%,100%{opacity:0.35;transform:scale(1)} 50%{opacity:1;transform:scale(1.15)} }
     </style>
 
 </head>
@@ -889,16 +904,7 @@
                     <span class="cs-toggle-track"></span>
                 </label>
             </div>
-            <div class="cs-toggle-row">
-                <div class="cs-toggle-info">
-                    <span class="cs-toggle-label">Frame Mode</span>
-                    <span class="cs-toggle-desc">Shows animation inside a rounded frame around the word / examples area only</span>
-                </div>
-                <label class="cs-toggle">
-                    <input type="checkbox" id="cs-frame-toggle" onchange="onFrameModeChange(this.checked)">
-                    <span class="cs-toggle-track"></span>
-                </label>
-            </div>
+
         </div>
 
         <div class="cs-section-title">Speed</div>
@@ -943,6 +949,56 @@
             <input type="range" class="cs-slider" id="cs-opacity-back-slider"
                    min="5" max="100" step="5" value="80"
                    oninput="onOpacityChange('back', this.value)">
+        </div>
+
+        <div class="cs-section-title">Background Music</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            <!-- Now Playing bar -->
+            <div id="bgm-now-playing" style="
+                background:var(--surface-2);border:1px solid var(--border);
+                border-radius:var(--radius-md);padding:14px 18px;
+                display:flex;align-items:center;gap:12px;
+            ">
+                <span id="bgm-note" style="font-size:1.4rem;animation:bgmPulse 1.4s ease-in-out infinite;opacity:0.4;">🎵</span>
+                <div style="flex:1;min-width:0;">
+                    <div id="bgm-track-name" style="font-size:0.85rem;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">No track playing</div>
+                    <div id="bgm-status-text" style="font-size:0.65rem;color:var(--text-secondary);margin-top:2px;letter-spacing:0.04em;">OFF</div>
+                </div>
+                <!-- Play/Pause master toggle -->
+                <button onclick="bgmTogglePlay()" id="bgm-play-btn" style="
+                    width:38px;height:38px;border-radius:50%;border:none;
+                    background:var(--primary);color:#fff;font-size:1rem;
+                    display:flex;align-items:center;justify-content:center;cursor:pointer;
+                    flex-shrink:0;box-shadow:0 0 10px rgba(77,158,255,0.35);
+                ">▶</button>
+            </div>
+
+            <!-- Track selector -->
+            <div style="display:flex;gap:8px;">
+                <div class="bgm-track-btn selected" id="bgm-btn-0" onclick="bgmSelectTrack(0)">
+                    <span style="font-size:1.3rem;">🥷</span>
+                    <span class="bgm-track-label">Hattori</span>
+                </div>
+                <div class="bgm-track-btn" id="bgm-btn-1" onclick="bgmSelectTrack(1)">
+                    <span style="font-size:1.3rem;">🐘</span>
+                    <span class="bgm-track-label">Shinchan</span>
+                </div>
+                <div class="bgm-track-btn" id="bgm-btn-2" onclick="bgmSelectTrack(2)">
+                    <span style="font-size:1.3rem;">🤖</span>
+                    <span class="bgm-track-label">Doraemon</span>
+                </div>
+            </div>
+
+            <!-- Volume -->
+            <div class="cs-slider-row">
+                <div class="cs-slider-header">
+                    <span class="cs-slider-label">Volume</span>
+                    <span class="cs-slider-val" id="bgm-vol-val">60%</span>
+                </div>
+                <input type="range" class="cs-slider" id="bgm-vol-slider"
+                       min="0" max="100" step="5" value="60"
+                       oninput="bgmSetVolume(this.value)">
+            </div>
         </div>
 
     </div>
@@ -3244,7 +3300,6 @@ function openConfettiSettings() {
     document.getElementById('cs-opacity-back-slider').value  = opacityBack;
     document.getElementById('cs-opacity-back-val').textContent = opacityBack + '%';
     document.getElementById('cs-random-toggle').checked    = randomModeOnFlip;
-    document.getElementById('cs-frame-toggle').checked     = frameModeEnabled;
     updateModeUI();
     document.getElementById('confetti-settings-overlay').classList.add('active');
 }
@@ -3290,10 +3345,75 @@ function onRandomModeChange(checked) {
     localStorage.setItem('wf_cfx_random', checked ? '1' : '0');
 }
 
-function onFrameModeChange(checked) {
-    frameModeEnabled = checked;
-    localStorage.setItem('wf_cfx_frame', checked ? '1' : '0');
-    if (!confettiActive) animFrame.style.display = 'none';
+// ── Background Music (BGM) ────────────────────────────────────────────────────
+const BGM_TRACKS = [
+    { file: 'audiobgm/hattori.mp3',  label: 'Hattori' },
+    { file: 'audiobgm/shinchan.mp3', label: 'Shinchan' },
+    { file: 'audiobgm/doraemon.mp3', label: 'Doraemon' },
+];
+
+let bgmAudio      = new Audio();
+bgmAudio.loop     = true;
+let bgmPlaying    = false;
+let bgmTrackIdx   = parseInt(localStorage.getItem('wf_bgm_track') || '0');
+let bgmVolume     = parseInt(localStorage.getItem('wf_bgm_vol')   || '60');
+
+bgmAudio.volume   = bgmVolume / 100;
+bgmAudio.src      = BGM_TRACKS[bgmTrackIdx].file;
+
+function bgmUpdateUI() {
+    const note     = document.getElementById('bgm-note');
+    const nameEl   = document.getElementById('bgm-track-name');
+    const statusEl = document.getElementById('bgm-status-text');
+    const playBtn  = document.getElementById('bgm-play-btn');
+
+    nameEl.textContent   = BGM_TRACKS[bgmTrackIdx].label;
+    statusEl.textContent = bgmPlaying ? 'PLAYING · LOOP' : 'OFF';
+    playBtn.textContent  = bgmPlaying ? '⏸' : '▶';
+    note.style.animationPlayState = bgmPlaying ? 'running' : 'paused';
+    note.style.opacity = bgmPlaying ? null : '0.3';
+
+    BGM_TRACKS.forEach((_, i) => {
+        const btn = document.getElementById('bgm-btn-' + i);
+        if (btn) btn.classList.toggle('selected', i === bgmTrackIdx);
+    });
+}
+
+function bgmTogglePlay() {
+    if (bgmPlaying) {
+        bgmAudio.pause();
+        bgmPlaying = false;
+    } else {
+        bgmAudio.src = BGM_TRACKS[bgmTrackIdx].file;
+        bgmAudio.play().catch(() => {});
+        bgmPlaying = true;
+    }
+    localStorage.setItem('wf_bgm_playing', bgmPlaying ? '1' : '0');
+    bgmUpdateUI();
+}
+
+function bgmSelectTrack(idx) {
+    bgmTrackIdx = idx;
+    localStorage.setItem('wf_bgm_track', idx);
+    bgmAudio.src = BGM_TRACKS[idx].file;
+    if (bgmPlaying) bgmAudio.play().catch(() => {});
+    bgmUpdateUI();
+}
+
+function bgmSetVolume(val) {
+    bgmVolume = parseInt(val);
+    bgmAudio.volume = bgmVolume / 100;
+    localStorage.setItem('wf_bgm_vol', val);
+    document.getElementById('bgm-vol-val').textContent = val + '%';
+}
+
+// Restore volume slider display when settings open
+const _origOpenConfettiSettings = openConfettiSettings;
+function openConfettiSettings() {
+    _origOpenConfettiSettings();
+    document.getElementById('bgm-vol-slider').value = bgmVolume;
+    document.getElementById('bgm-vol-val').textContent = bgmVolume + '%';
+    bgmUpdateUI();
 }
 
 // ── Double-tap + long-press fire button ───────────────────────────────────────
