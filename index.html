@@ -2627,7 +2627,7 @@ function spawnConfettiParticle() {
         w: 6 + Math.random() * 8,
         h: 3 + Math.random() * 5,
         color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-        speed: 1.8 + Math.random() * 2.8,
+        speed: 0.5 + Math.random() * 0.8,
         angle: Math.random() * Math.PI * 2,
         angleSpeed: (Math.random() - 0.5) * 0.12,
         drift: (Math.random() - 0.5) * 1.2,
@@ -2639,8 +2639,8 @@ function drawConfetti() {
     confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
 
     // Spawn new particles continuously while active
-    if (confettiActive && confettiParticles.length < 160) {
-        const batch = confettiActive ? Math.floor(Math.random() * 3) + 1 : 0;
+    if (confettiActive && confettiParticles.length < 60) {
+        const batch = confettiActive ? Math.floor(Math.random() * 2) + 1 : 0;
         for (let i = 0; i < batch; i++) {
             confettiParticles.push(spawnConfettiParticle());
         }
