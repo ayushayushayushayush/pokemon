@@ -714,9 +714,9 @@
 
         /* Fire button active glow when confetti is ON */
         #fire-toggle.confetti-on {
-            background: rgba(255, 100, 0, 0.18);
-            border-color: rgba(255, 140, 0, 0.5);
-            box-shadow: 0 0 10px rgba(255, 100, 0, 0.35);
+            background: rgba(255, 214, 10, 0.15);
+            border-color: rgba(255, 214, 10, 0.5);
+            box-shadow: 0 0 10px rgba(255, 214, 10, 0.3);
         }
 
         /* ── Confetti Settings Overlay ──────────────────────────────────────────
@@ -1053,7 +1053,7 @@
         <div id="streak-badge" title="Your streak">🔥 <span id="streak-count">0</span></div>
         <!-- IMPORTANT: #fire-toggle toggles confetti on tap, opens settings on long-press.
              Long-press is wired in JS by setupFireToggle(). -->
-        <div id="fire-toggle" class="header-btn" title="Toggle confetti / hold for settings" style="font-size:1.4rem;">🔥</div>
+        <div id="fire-toggle" class="header-btn" title="Toggle animation / hold for settings" style="font-size:1.4rem;">✨</div>
         <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     </div>
 </header>
@@ -2827,9 +2827,10 @@ function updateParticle(p) {
 function drawConfetti() {
     confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
 
-    if (confettiActive && confettiParticles.length < confettiMax) {
-        const batch = Math.floor(Math.random() * 2) + 1;
-        for (let i = 0; i < batch; i++) confettiParticles.push(spawnParticle());
+    // Always spawn up to confettiMax while active — replaces particles that fell off
+    if (confettiActive) {
+        const toSpawn = Math.min(3, confettiMax - confettiParticles.length);
+        for (let i = 0; i < toSpawn; i++) confettiParticles.push(spawnParticle());
     }
 
     confettiParticles = confettiParticles.filter(p => {
