@@ -1070,73 +1070,65 @@ function showSync(state, message) {
 // 5. If the saved currentIndex points to a known/mastered word, skip to next.
 // IMPORTANT: Do NOT reorder these steps — the UI must not show before data is ready.
 window.onload = () => {
-    // Attach mastery long-press listeners before the card renders
     setupMasteryGesture();
 
-    // Load both CSVs in parallel before showing the app
-    const parseCSV = (url) => new Promise(resolve => Papa.parse(url, { download: true, header: true, complete: r => resolve(r.data) }));
+    const parseCSV = (url) => new Promise(resolve =>
+        Papa.parse(url, { download: true, header: true, complete: r => resolve(r.data) })
+    );
 
-    Promise.all([parseCSV("words.csv"), parseCSV("word2.csv")]).then(async ([wordsResults, word2Results]) => {
-        // --- words.csv ---
-        const results = { data: wordsResults };
-        {
-        const complete = async function(results) {
-            wordData = results.data.filter(row => row.WORD);
+    Promise.all([parseCSV("words.csv"), parseCSV("word2.csv")]).then(([wordsResults, word2Results]) => {
 
-            // Build a lowercase word → IPA lookup map for inline annotations in examples
-            wordData.forEach(row => {
-                if (row.WORD && row.IPA) {
-                    ipaMap[row.WORD.trim().toLowerCase()] = row.IPA.trim();
-                }
-            });
+        // Build wordData from words.csv
+        wordData = wordsResults.filter(row => row.WORD);
 
-            // --- word2.csv: build map keyed by lowercase word ---
-            word2Results.filter(row => row.Word && row.Word.trim()).forEach(row => {
-                const key = row.Word.trim().toLowerCase();
-                const examples = [];
-                for (let i = 1; i <= 68; i++) {
-                    const text = row[`Sentence ${i}`];
-                    const source = row[`Source ${i}`] || '';
-                    const date = row[`Date ${i}`] || '';
-                    if (text && text.trim().length > 1) {
-                        examples.push({ text: text.trim(), source: source.trim(), date: date.trim() });
-                    }
-                }
-                if (examples.length > 0) word2Data[key] = examples;
-            });
-
-
-            // Merge cloud state with local state (union/dedup via Set)
-            fetch(WORKER_URL)
-                .then(r => r.json())
-                .then(d => {
-                    deletedExamples = Array.from(new Set([...(d.deleted || []), ...deletedExamples]));
-                    favExamples = Array.from(new Set([...(d.favs || []), ...favExamples]));
-                    knownWords = Array.from(new Set([...(d.known || []), ...knownWords]));
-                    saveAndSync(false); // Persist merged state locally without pushing back to cloud
-                }).catch(() => {}); // Silently fail if offline — local state is already loaded
-
-            // Show the app now that data is ready
-            document.getElementById('loading-screen').style.display = 'none';
-            document.getElementById('app').style.display = 'flex';
-            document.getElementById('app-header').style.display = 'flex';
-
-            // Skip mastered words on initial load
-            if(knownWords.includes(wordData[currentIndex].WORD.trim())) {
-                nextCard();
-            } else {
-                updateCard();
+        // Build ipaMap
+        wordData.forEach(row => {
+            if (row.WORD && row.IPA) {
+                ipaMap[row.WORD.trim().toLowerCase()] = row.IPA.trim();
             }
+        });
 
-            // Start engagement features (streak, goal, WOTD) after data is ready
-            initEngagement();
+        // Build word2Data from word2.csv
+        word2Results.filter(row => row.Word && row.Word.trim()).forEach(row => {
+            const key = row.Word.trim().toLowerCase();
+            const examples = [];
+            for (let i = 1; i <= 68; i++) {
+                const text = row["Sentence " + i];
+                const source = row["Source " + i] || '';
+                const date = row["Date " + i] || '';
+                if (text && text.trim().length > 1) {
+                    examples.push({ text: text.trim(), source: source.trim(), date: date.trim() });
+                }
+            }
+            if (examples.length > 0) word2Data[key] = examples;
+        });
 
-            // Apply saved deck AFTER card is already shown — safe because data is ready
-            applyDeck(activeDeckId);
+        // Merge cloud state with local state
+        fetch(WORKER_URL)
+            .then(r => r.json())
+            .then(d => {
+                deletedExamples = Array.from(new Set([...(d.deleted || []), ...deletedExamples]));
+                favExamples    = Array.from(new Set([...(d.favs    || []), ...favExamples]));
+                knownWords     = Array.from(new Set([...(d.known   || []), ...knownWords]));
+                saveAndSync(false);
+            }).catch(() => {});
+
+        // Show app
+        document.getElementById('loading-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        document.getElementById('app-header').style.display = 'flex';
+
+        // Start at correct card
+        if (knownWords.includes(wordData[currentIndex].WORD.trim())) {
+            nextCard();
+        } else {
+            updateCard();
         }
-        complete(results);
-        } // end block
-    }); // end Promise.all
+
+        // Engagement features + deck (all data ready at this point)
+        initEngagement();
+        applyDeck(activeDeckId);
+    });
 };
 
 // ── setupMasteryGesture ───────────────────────────────────────────────────────
@@ -2198,7 +2190,7 @@ const DECKS = [
     {
         id: 'unfavorited',
         name: 'Never Favorited',
-        desc: 'Words where you haven't saved any example',
+        desc: "Words where you haven't saved any example",
         filter: (row) => {
             const w = row.WORD.trim();
             return !favExamples.some(id => id.startsWith(w + '|'));
@@ -2207,19 +2199,19 @@ const DECKS = [
     {
         id: 'hard',
         name: 'Hard Words',
-        desc: 'Words you've rated as Hard',
+        desc: "Words you've rated as Hard",
         filter: (row) => wordRatings[row.WORD.trim()] === 'hard',
     },
     {
         id: 'easy',
         name: 'Easy Words',
-        desc: 'Words you've rated as Easy',
+        desc: "Words you've rated as Easy",
         filter: (row) => wordRatings[row.WORD.trim()] === 'easy',
     },
     {
         id: 'unrated',
         name: 'Unrated Words',
-        desc: 'Words you haven't rated yet',
+        desc: "Words you haven't rated yet",
         filter: (row) => !wordRatings[row.WORD.trim()],
     },
 ];
