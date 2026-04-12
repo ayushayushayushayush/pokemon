@@ -1077,8 +1077,13 @@ function renderExamples(item) {
         }
     }
 
-    // Favorites appear first
-    rows.sort((a,b) => b.isFav - a.isFav).forEach((ex, idx) => {
+    // Sort: favorites first, then sourced examples, then unsourced
+    rows.sort((a, b) => {
+        if (b.isFav !== a.isFav) return b.isFav - a.isFav;
+        const aHasSource = (a.source || a.date) ? 1 : 0;
+        const bHasSource = (b.source || b.date) ? 1 : 0;
+        return bHasSource - aHasSource;
+    }).forEach((ex, idx) => {
         const div = document.createElement('div');
         div.className = 'example-item';
         div.dataset.exId = ex.id;
