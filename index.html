@@ -714,9 +714,10 @@
 
         /* Fire button active glow when confetti is ON */
         #fire-toggle.confetti-on {
-            background: rgba(255, 214, 10, 0.15);
-            border-color: rgba(255, 214, 10, 0.5);
-            box-shadow: 0 0 10px rgba(255, 214, 10, 0.3);
+            background: var(--accent-gold);
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 12px rgba(255, 214, 10, 0.5);
+            color: #000;
         }
 
         /* ── Confetti Settings Overlay ──────────────────────────────────────────
@@ -2852,6 +2853,7 @@ function toggleConfetti() {
     const btn = document.getElementById('fire-toggle');
     if (confettiActive) {
         btn.classList.add('confetti-on');
+        btn.textContent = '🌟';
         resizeConfettiCanvas();
         confettiCanvas.style.display = 'block';
         confettiParticles = [];
@@ -2859,6 +2861,7 @@ function toggleConfetti() {
         drawConfetti();
     } else {
         btn.classList.remove('confetti-on');
+        btn.textContent = '✨';
     }
 }
 
