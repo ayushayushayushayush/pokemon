@@ -271,23 +271,26 @@
            Do NOT change the initial display — the loading screen relies on this. */
         .app-container { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; }
 
-        /* IMPORTANT: perspective:1500px on .scene is what creates the 3D depth
-           for the card flip animation. Removing it collapses the flip to 2D. */
-        .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 18px; }
-
         /* IMPORTANT: transform-style:preserve-3d on .card is required for the
            front/back faces to exist in 3D space. The cubic-bezier timing gives
            the flip its characteristic "snappy overshoot" feel.
-           .card.is-flipped is toggled by flipCard() — do NOT rename this class. */
-        .card { width: 100%; height: 100%; position: relative; transition: transform 0.65s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; overflow: hidden; border-radius: var(--radius-xl); background: #000000; }
+           .card.is-flipped is toggled by flipCard() — do NOT rename this class.
+           NOTE: overflow:hidden is intentionally NOT set here — it breaks
+           transform-style:preserve-3d in all browsers. Clipping is handled by
+           .scene which wraps the card. */
+        .card { width: 100%; height: 100%; position: relative; transition: transform 0.65s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; }
         .card.is-flipped { transform: rotateY(180deg); }
+
+        /* .scene clips confetti to card bounds via overflow:hidden + border-radius.
+           This is safe here because .scene is not the element with preserve-3d. */
+        .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 18px; overflow: hidden; border-radius: var(--radius-xl); position: relative; }
 
         /* IMPORTANT: backface-visibility:hidden hides each face when it is
            rotated away from the viewer. Without this, both faces show through
            each other during the flip animation. */
         .card-face {
             position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-            border-radius: var(--radius-xl); background: transparent;
+            border-radius: var(--radius-xl); background: #000000;
             display: flex; flex-direction: column; overflow: hidden;
             border: 1px solid var(--border-bright);
             box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 20px 60px rgba(0,0,0,0.8);
@@ -694,17 +697,18 @@
         .rating-btn.easy:active, .rating-btn.easy.selected { background: rgba(46,204,113,0.1); border-color: rgba(46,204,113,0.35); }
 
         /* ── Confetti Canvas ────────────────────────────────────────────────────
-           Absolutely positioned inside #card so it is clipped to the card bounds
-           (including the rounded corners via overflow:hidden on .card).
-           z-index:0 keeps it behind both card faces which are at z-index:1.
-           pointer-events:none — never intercepts any tap or interaction. */
+           Lives inside .scene which has overflow:hidden + border-radius, so
+           particles are clipped to the card shape automatically.
+           z-index:10 floats it above the card faces.
+           pointer-events:none — never intercepts any tap or interaction.
+           Text on card faces is readable because the card background is opaque
+           and confetti is a translucent overlay on top of the card surface. */
         #confetti-canvas {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
             pointer-events: none;
-            z-index: 0;
-            border-radius: var(--radius-xl);
+            z-index: 10;
             display: none;
         }
 
@@ -713,6 +717,72 @@
             background: rgba(255, 100, 0, 0.18);
             border-color: rgba(255, 140, 0, 0.5);
             box-shadow: 0 0 10px rgba(255, 100, 0, 0.35);
+        }
+
+        /* ── Confetti Settings Overlay ──────────────────────────────────────────
+           Shown by long-pressing the 🔥 fire button. Same pattern as other
+           overlays: position:fixed, z-index:2500, display:none → flex on open. */
+        #confetti-settings-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 2500; display: none; flex-direction: column;
+        }
+        #confetti-settings-overlay.active { display: flex; }
+        .confetti-settings-body {
+            flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding: 8px 20px 40px;
+        }
+        .cs-section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em;
+            text-transform: uppercase; color: var(--text-secondary);
+            margin: 28px 0 10px 2px;
+        }
+        .cs-mode-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+        }
+        .cs-mode-btn {
+            background: var(--surface-2); border: 2px solid var(--border);
+            border-radius: var(--radius-md); padding: 18px 8px 14px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            cursor: pointer; transition: background 0.15s, border-color 0.15s;
+        }
+        .cs-mode-btn:active { background: var(--surface-3); }
+        .cs-mode-btn.selected {
+            border-color: var(--primary);
+            background: var(--primary-dim);
+        }
+        .cs-mode-icon { font-size: 2rem; line-height: 1; }
+        .cs-mode-label {
+            font-size: 0.75rem; font-weight: 700; color: var(--text-main);
+            text-transform: uppercase; letter-spacing: 0.06em;
+        }
+        .cs-slider-row {
+            background: var(--surface-2); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 18px 20px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .cs-slider-header {
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .cs-slider-label { font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
+        .cs-slider-val {
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem; font-weight: 800; color: var(--primary);
+        }
+        .cs-slider {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 4px; border-radius: 2px;
+            background: var(--surface-4); outline: none; cursor: pointer;
+        }
+        .cs-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 22px; height: 22px; border-radius: 50%;
+            background: var(--primary); cursor: pointer;
+            box-shadow: 0 0 6px rgba(77,158,255,0.5);
+        }
+        .cs-slider::-moz-range-thumb {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: var(--primary); cursor: pointer; border: none;
         }
     </style>
 
@@ -730,6 +800,57 @@
 <!-- IMPORTANT: #loading-screen is visible on initial load (z-index:3000).
      It is hidden via JS (style.display='none') once the CSV finishes parsing.
      Do NOT remove this element. -->
+<!-- ── Confetti Settings Overlay ───────────────────────────────────────────────
+     Opened by long-pressing the 🔥 fire button (600ms hold).
+     Lets user pick confetti mode (confetti/rain/snow), adjust speed and count.
+     Settings are saved to localStorage and applied live. -->
+<div id="confetti-settings-overlay">
+    <header>
+        <div onclick="closeConfettiSettings()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
+        <div style="font-weight:800;">Animation Style</div>
+        <div style="width:60px;"></div>
+    </header>
+    <div class="confetti-settings-body">
+        <div class="cs-section-title">Mode</div>
+        <div class="cs-mode-grid">
+            <div class="cs-mode-btn selected" id="cs-mode-confetti" onclick="setConfettiMode('confetti')">
+                <span class="cs-mode-icon">🎊</span>
+                <span class="cs-mode-label">Confetti</span>
+            </div>
+            <div class="cs-mode-btn" id="cs-mode-rain" onclick="setConfettiMode('rain')">
+                <span class="cs-mode-icon">🌧️</span>
+                <span class="cs-mode-label">Rain</span>
+            </div>
+            <div class="cs-mode-btn" id="cs-mode-snow" onclick="setConfettiMode('snow')">
+                <span class="cs-mode-icon">❄️</span>
+                <span class="cs-mode-label">Snow</span>
+            </div>
+        </div>
+
+        <div class="cs-section-title">Speed</div>
+        <div class="cs-slider-row">
+            <div class="cs-slider-header">
+                <span class="cs-slider-label">Fall Speed</span>
+                <span class="cs-slider-val" id="cs-speed-val">5</span>
+            </div>
+            <input type="range" class="cs-slider" id="cs-speed-slider"
+                   min="1" max="10" value="5"
+                   oninput="onConfettiSpeedChange(this.value)">
+        </div>
+
+        <div class="cs-section-title">Density</div>
+        <div class="cs-slider-row">
+            <div class="cs-slider-header">
+                <span class="cs-slider-label">Particle Count</span>
+                <span class="cs-slider-val" id="cs-count-val">60</span>
+            </div>
+            <input type="range" class="cs-slider" id="cs-count-slider"
+                   min="10" max="200" step="10" value="60"
+                   oninput="onConfettiCountChange(this.value)">
+        </div>
+    </div>
+</div>
+
 <!-- ── Word of the Day Modal ──────────────────────────────────────────────────
      Shown once per day by showWotd() on first app open. z-index:5000 puts it
      above everything including other overlays. The .show class (toggled by
@@ -930,10 +1051,9 @@
     <div id="counter" class="counter" onclick="openSearch()">0 / 0</div>
     <div style="display:flex;align-items:center;gap:8px;">
         <div id="streak-badge" title="Your streak">🔥 <span id="streak-count">0</span></div>
-        <!-- IMPORTANT: #fire-toggle toggles confetti animation on/off.
-             pointer-events are fully enabled so it is tappable, but the
-             confetti canvas itself is pointer-events:none so it never blocks UI. -->
-        <div id="fire-toggle" class="header-btn" title="Toggle confetti" onclick="toggleConfetti()" style="font-size:1.4rem;">🔥</div>
+        <!-- IMPORTANT: #fire-toggle toggles confetti on tap, opens settings on long-press.
+             Long-press is wired in JS by setupFireToggle(). -->
+        <div id="fire-toggle" class="header-btn" title="Toggle confetti / hold for settings" style="font-size:1.4rem;">🔥</div>
         <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     </div>
 </header>
@@ -956,15 +1076,15 @@
      #card receives/loses the .is-flipped class via flipCard(). -->
 <div class="app-container" id="app">
     <div class="scene">
+        <!-- ── Confetti Canvas ──────────────────────────────────────────────────
+             Lives inside .scene (which has overflow:hidden + border-radius) so
+             particles are clipped to the card shape. It sits ABOVE the card
+             faces via z-index:2 but has pointer-events:none so it never blocks
+             any tap. text/content on the card faces is NOT behind this canvas —
+             the canvas is a floating layer on top of the card visuals only.
+             Toggled by the 🔥 fire button via toggleConfetti(). -->
+        <canvas id="confetti-canvas"></canvas>
         <div class="card" id="card">
-
-            <!-- ── Confetti Canvas ──────────────────────────────────────────────
-                 Sits inside #card at z-index:0 so both card faces (z-index:1+)
-                 always render above it. position:absolute + border-radius matches
-                 the card so confetti is clipped to the rounded card shape.
-                 pointer-events:none — never blocks any tap or interaction.
-                 Toggled by the 🔥 fire button via toggleConfetti(). -->
-            <canvas id="confetti-canvas"></canvas>
 
             <!-- ── Card Front ──────────────────────────────────────────────────
                  IMPORTANT: onclick is handleCardFrontClick(event) — this function
@@ -2595,11 +2715,11 @@ function updateRatingButtons() {
 
 // ══════════════════════════════════════════════════════════════════════════════
 // CONFETTI ENGINE
-// toggleConfetti() — called by the 🔥 fire button in the header.
-// The canvas is z-index:9000 with pointer-events:none so it never blocks UI.
-// Particles fall from the top with randomized color, size, speed, and wobble.
-// The animation loop runs via requestAnimationFrame and stops automatically
-// when confettiActive is set to false and all particles have left the screen.
+// Supports three modes: 'confetti' (coloured rectangles), 'rain' (blue streaks),
+// 'snow' (white circles). Speed and max-count are user-adjustable via the
+// settings overlay (long-press 🔥). All settings persist in localStorage.
+// The canvas lives inside .scene (overflow:hidden) so particles are clipped to
+// the card shape. pointer-events:none — never blocks any tap.
 // ══════════════════════════════════════════════════════════════════════════════
 
 let confettiActive = false;
@@ -2608,66 +2728,119 @@ const confettiCanvas = document.getElementById('confetti-canvas');
 const confettiCtx = confettiCanvas.getContext('2d');
 let confettiParticles = [];
 
+// ── Persisted settings ────────────────────────────────────────────────────────
+let confettiMode  = localStorage.getItem('wf_cfx_mode')  || 'confetti'; // 'confetti'|'rain'|'snow'
+let confettiSpeed = parseFloat(localStorage.getItem('wf_cfx_speed') || '5');  // 1–10
+let confettiMax   = parseInt(localStorage.getItem('wf_cfx_count')   || '60'); // 10–200
+
 const CONFETTI_COLORS = [
-    '#FF4545', '#FF8C00', '#FFD60A', '#2ECC71', '#4D9EFF',
-    '#C084FC', '#F472B6', '#34D399', '#FB923C', '#60A5FA'
+    '#FF4545','#FF8C00','#FFD60A','#2ECC71','#4D9EFF',
+    '#C084FC','#F472B6','#34D399','#FB923C','#60A5FA'
 ];
 
 function resizeConfettiCanvas() {
-    const card = document.getElementById('card');
-    const rect = card.getBoundingClientRect();
-    confettiCanvas.width = rect.width;
+    const scene = document.querySelector('.scene');
+    const rect  = scene.getBoundingClientRect();
+    confettiCanvas.width  = rect.width;
     confettiCanvas.height = rect.height;
 }
 
-function spawnConfettiParticle() {
-    return {
-        x: Math.random() * confettiCanvas.width,
-        y: -12,
-        w: 6 + Math.random() * 8,
-        h: 3 + Math.random() * 5,
-        color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-        speed: 0.5 + Math.random() * 0.8,
-        angle: Math.random() * Math.PI * 2,
-        angleSpeed: (Math.random() - 0.5) * 0.12,
-        drift: (Math.random() - 0.5) * 1.2,
-        opacity: 0.85 + Math.random() * 0.15,
-    };
+// ── Particle factories per mode ───────────────────────────────────────────────
+function spawnParticle() {
+    const speedVal = 0.3 + (confettiSpeed / 10) * 1.8; // maps 1–10 → 0.3–2.1
+    if (confettiMode === 'rain') {
+        return {
+            x: Math.random() * confettiCanvas.width,
+            y: -20,
+            len: 10 + Math.random() * 14,
+            speed: speedVal * 3 + Math.random() * 2,
+            opacity: 0.35 + Math.random() * 0.45,
+            mode: 'rain',
+        };
+    } else if (confettiMode === 'snow') {
+        return {
+            x: Math.random() * confettiCanvas.width,
+            y: -10,
+            r: 2 + Math.random() * 4,
+            speed: speedVal * 0.6 + Math.random() * 0.4,
+            drift: (Math.random() - 0.5) * 0.6,
+            wobble: Math.random() * Math.PI * 2,
+            wobbleSpeed: 0.015 + Math.random() * 0.02,
+            opacity: 0.6 + Math.random() * 0.4,
+            mode: 'snow',
+        };
+    } else {
+        return {
+            x: Math.random() * confettiCanvas.width,
+            y: -12,
+            w: 6 + Math.random() * 8,
+            h: 3 + Math.random() * 5,
+            color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+            speed: speedVal + Math.random() * 0.4,
+            angle: Math.random() * Math.PI * 2,
+            angleSpeed: (Math.random() - 0.5) * 0.12,
+            drift: (Math.random() - 0.5) * 1.2,
+            opacity: 0.85 + Math.random() * 0.15,
+            mode: 'confetti',
+        };
+    }
+}
+
+function drawParticle(p) {
+    confettiCtx.save();
+    confettiCtx.globalAlpha = p.opacity;
+    if (p.mode === 'rain') {
+        confettiCtx.strokeStyle = '#4D9EFF';
+        confettiCtx.lineWidth = 1.5;
+        confettiCtx.beginPath();
+        confettiCtx.moveTo(p.x, p.y);
+        confettiCtx.lineTo(p.x + 1, p.y + p.len);
+        confettiCtx.stroke();
+    } else if (p.mode === 'snow') {
+        confettiCtx.fillStyle = '#FFFFFF';
+        confettiCtx.beginPath();
+        confettiCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        confettiCtx.fill();
+    } else {
+        confettiCtx.translate(p.x, p.y);
+        confettiCtx.rotate(p.angle);
+        confettiCtx.fillStyle = p.color;
+        confettiCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    }
+    confettiCtx.restore();
+}
+
+function updateParticle(p) {
+    if (p.mode === 'rain') {
+        p.y += p.speed;
+    } else if (p.mode === 'snow') {
+        p.wobble += p.wobbleSpeed;
+        p.x += Math.sin(p.wobble) * 0.8 + p.drift;
+        p.y += p.speed;
+    } else {
+        p.y += p.speed;
+        p.x += p.drift;
+        p.angle += p.angleSpeed;
+    }
 }
 
 function drawConfetti() {
     confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
 
-    // Spawn new particles continuously while active
-    if (confettiActive && confettiParticles.length < 60) {
-        const batch = confettiActive ? Math.floor(Math.random() * 2) + 1 : 0;
-        for (let i = 0; i < batch; i++) {
-            confettiParticles.push(spawnConfettiParticle());
-        }
+    if (confettiActive && confettiParticles.length < confettiMax) {
+        const batch = Math.floor(Math.random() * 2) + 1;
+        for (let i = 0; i < batch; i++) confettiParticles.push(spawnParticle());
     }
 
-    // Update and draw each particle
     confettiParticles = confettiParticles.filter(p => {
-        p.y += p.speed;
-        p.x += p.drift;
-        p.angle += p.angleSpeed;
-
-        confettiCtx.save();
-        confettiCtx.globalAlpha = p.opacity;
-        confettiCtx.translate(p.x, p.y);
-        confettiCtx.rotate(p.angle);
-        confettiCtx.fillStyle = p.color;
-        confettiCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-        confettiCtx.restore();
-
-        return p.y < confettiCanvas.height + 20;
+        updateParticle(p);
+        drawParticle(p);
+        return p.y < confettiCanvas.height + 30;
     });
 
-    // Keep looping if active, or if particles still on screen
     if (confettiActive || confettiParticles.length > 0) {
         confettiAnimId = requestAnimationFrame(drawConfetti);
     } else {
-        // All done — hide canvas
         confettiCanvas.style.display = 'none';
         confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
     }
@@ -2676,7 +2849,6 @@ function drawConfetti() {
 function toggleConfetti() {
     confettiActive = !confettiActive;
     const btn = document.getElementById('fire-toggle');
-
     if (confettiActive) {
         btn.classList.add('confetti-on');
         resizeConfettiCanvas();
@@ -2686,14 +2858,82 @@ function toggleConfetti() {
         drawConfetti();
     } else {
         btn.classList.remove('confetti-on');
-        // Canvas stays visible until remaining particles fall off screen
-        // drawConfetti loop will hide it automatically when empty
     }
+}
+
+// ── Confetti Settings Overlay ─────────────────────────────────────────────────
+function openConfettiSettings() {
+    // Sync UI to current settings
+    document.getElementById('cs-speed-slider').value = confettiSpeed;
+    document.getElementById('cs-speed-val').textContent = confettiSpeed;
+    document.getElementById('cs-count-slider').value = confettiMax;
+    document.getElementById('cs-count-val').textContent = confettiMax;
+    ['confetti','rain','snow'].forEach(m => {
+        document.getElementById('cs-mode-' + m).classList.toggle('selected', m === confettiMode);
+    });
+    document.getElementById('confetti-settings-overlay').classList.add('active');
+}
+
+function closeConfettiSettings() {
+    document.getElementById('confetti-settings-overlay').classList.remove('active');
+}
+
+function setConfettiMode(mode) {
+    confettiMode = mode;
+    localStorage.setItem('wf_cfx_mode', mode);
+    ['confetti','rain','snow'].forEach(m => {
+        document.getElementById('cs-mode-' + m).classList.toggle('selected', m === mode);
+    });
+    // Restart particles in new mode if active
+    if (confettiActive) confettiParticles = [];
+}
+
+function onConfettiSpeedChange(val) {
+    confettiSpeed = parseFloat(val);
+    localStorage.setItem('wf_cfx_speed', val);
+    document.getElementById('cs-speed-val').textContent = val;
+}
+
+function onConfettiCountChange(val) {
+    confettiMax = parseInt(val);
+    localStorage.setItem('wf_cfx_count', val);
+    document.getElementById('cs-count-val').textContent = val;
+}
+
+// ── Long-press wire-up for the fire button ────────────────────────────────────
+function setupFireToggle() {
+    const btn = document.getElementById('fire-toggle');
+    let pressTimer = null;
+    let didLongPress = false;
+
+    function startPress() {
+        didLongPress = false;
+        pressTimer = setTimeout(() => {
+            didLongPress = true;
+            openConfettiSettings();
+        }, 600);
+    }
+    function endPress() {
+        clearTimeout(pressTimer);
+        if (!didLongPress) toggleConfetti();
+    }
+    function cancelPress() { clearTimeout(pressTimer); didLongPress = true; }
+
+    btn.addEventListener('touchstart',  startPress,  { passive: true });
+    btn.addEventListener('touchend',    endPress);
+    btn.addEventListener('touchcancel', cancelPress);
+    btn.addEventListener('mousedown',   startPress);
+    btn.addEventListener('mouseup',     endPress);
+    btn.addEventListener('mouseleave',  cancelPress);
+    btn.addEventListener('contextmenu', e => e.preventDefault());
 }
 
 window.addEventListener('resize', () => {
     if (confettiActive || confettiParticles.length > 0) resizeConfettiCanvas();
 });
+
+// Call after DOM ready (window.onload has already fired at this point in the script)
+setupFireToggle();
 
 </script>
 </body>
