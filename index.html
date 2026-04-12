@@ -668,26 +668,23 @@
         ══════════════════════════════════════════════════════════════════════ */
         #rating-bar {
             display: none; flex-shrink: 0;
-            padding: 10px 16px 14px;
+            flex-direction: row; align-items: center;
+            padding: 8px 16px 12px;
             gap: 8px;
             border-top: 1px solid var(--border);
             background: #000;
         }
         /* rating-bar visibility controlled by flipCard() in JS */
         #rating-label {
-            font-size: 0.58rem; color: var(--text-dim); text-transform: uppercase;
-            letter-spacing: 0.1em; text-align: center; margin-bottom: 2px;
-            width: 100%;
+            font-size: 0.72rem; color: var(--text-secondary);
+            white-space: nowrap; flex-shrink: 0;
         }
-        #rating-buttons { display: flex; gap: 8px; width: 100%; }
         .rating-btn {
-            flex: 1; padding: 11px 0; border: 1px solid var(--border);
-            border-radius: var(--radius-md); font-family: 'Lora', serif;
-            font-size: 0.82rem; font-weight: 700; cursor: pointer;
+            padding: 5px 12px; border: 1px solid var(--border);
+            border-radius: 20px; font-family: 'Lora', serif;
+            font-size: 0.72rem; font-weight: 700; cursor: pointer;
             background: var(--surface-2); transition: background 0.15s, border-color 0.15s;
-            display: flex; flex-direction: column; align-items: center; gap: 2px;
         }
-        .rating-btn span { font-size: 0.58rem; font-weight: 400; opacity: 0.6; }
         .rating-btn.hard { color: #FF6B6B; }
         .rating-btn.hard:active, .rating-btn.hard.selected { background: rgba(255,107,107,0.12); border-color: rgba(255,107,107,0.4); }
         .rating-btn.okay { color: var(--accent-gold); }
@@ -951,12 +948,10 @@
                      favoriting (right half) and deleting (left half). -->
                 <div id="example-list"></div>
                 <div id="rating-bar">
-                    <div id="rating-label">How well did you know this?</div>
-                    <div id="rating-buttons">
-                        <button class="rating-btn hard" onclick="rateWord('hard')">Hard</button>
-                        <button class="rating-btn okay" onclick="rateWord('okay')">Okay</button>
-                        <button class="rating-btn easy" onclick="rateWord('easy')">Easy</button>
-                    </div>
+                    <span id="rating-label">Is this word?</span>
+                    <button class="rating-btn hard" onclick="rateWord('hard')">Hard</button>
+                    <button class="rating-btn okay" onclick="rateWord('okay')">Okay</button>
+                    <button class="rating-btn easy" onclick="rateWord('easy')">Easy</button>
                 </div>
             </div>
         </div>
