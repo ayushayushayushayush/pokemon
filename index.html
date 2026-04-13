@@ -670,11 +670,19 @@
         ══════════════════════════════════════════════════════════════════════ */
         #rating-bar {
             display: none; flex-shrink: 0;
-            flex-direction: row; align-items: center; justify-content: center;
+            flex-direction: row; align-items: center; justify-content: flex-start;
             padding: 8px 16px 12px;
             gap: 8px;
             border-top: 1px solid var(--border);
             background: #000;
+            position: relative;
+        }
+        /* The right half of the rating-bar flips the card back */
+        #rating-flip-zone {
+            position: absolute; top: 0; right: 0;
+            width: 45%; height: 100%;
+            cursor: pointer;
+            z-index: 1;
         }
         /* rating-bar visibility controlled by flipCard() in JS */
         #rating-label {
@@ -986,7 +994,9 @@
                      The selected rating gets the .selected class for visual feedback.
                      Hard/Easy ratings feed the "Hard Words" and "Easy Words" deck filters. -->
                 <div id="rating-bar">
-                    <span id="rating-label">Is this word?</span>
+                    <!-- Invisible tap zone on the right half flips the card back -->
+                    <div id="rating-flip-zone" onclick="flipCard()"></div>
+                    <span id="rating-label">How do you find this word?</span>
                     <button class="rating-btn hard" onclick="rateWord('hard')">Hard</button>
                     <button class="rating-btn okay" onclick="rateWord('okay')">Okay</button>
                     <button class="rating-btn easy" onclick="rateWord('easy')">Easy</button>
@@ -1075,7 +1085,7 @@ let word2Data = {};   // rows from word2.csv, keyed by lowercase word → [{text
                       // word2.csv covers words 1–500 with real sourced newspaper sentences
 
 // ── Engagement Feature State ───────────────────────────────────────────────────
-const DAILY_GOAL = 20; // daily card review target — change this number to adjust the goal
+const DAILY_GOAL = 7; // daily goal: words rated (hard/okay/easy) per day
 let sessionReviewed = 0;   // cards flipped this session
 let sessionFavsStart = 0;  // favExamples.length at session start (to count new favs)
 let summaryShown = false;   // only show summary once per session
@@ -1592,13 +1602,10 @@ function annotateWithIPA(text, skipWord) {
 //   touchmove: sets moved=true, clears timer (prevents accidental fire on scroll)
 //   The 1200ms right-side delay is intentional — longer to avoid scroll accidents.
 // ── Favorite color cycling ─────────────────────────────────────────────────────
-// Colors cycle red → yellow → green by order in the favExamples array.
-// No relationship to hard/okay/easy word rating — purely positional.
-const FAV_COLORS = ['#FF6B6B', '#FFD60A', '#2ECC71'];
+// All favorited examples use yellow (gold) color.
+const FAV_COLOR = '#FFD60A';
 function getFavColor(exId) {
-    const idx = favExamples.indexOf(exId);
-    if (idx === -1) return '';
-    return FAV_COLORS[idx % FAV_COLORS.length];
+    return favExamples.includes(exId) ? FAV_COLOR : '';
 }
 
 function renderExamples(item) {
@@ -2025,7 +2032,6 @@ function prevCard() {
         if(currentIndex === start) break;
     } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
     updateCard();
-    recordCardReviewed();
 }
 
 // ── nextCard ──────────────────────────────────────────────────────────────────
@@ -2038,7 +2044,6 @@ function nextCard() {
         if(currentIndex === start) break;
     } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
     updateCard();
-    recordCardReviewed();
 }
 
 // ── shuffleCard ───────────────────────────────────────────────────────────────
@@ -2054,7 +2059,6 @@ function shuffleCard() {
     } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
     currentIndex = newIdx; 
     updateCard();
-    recordCardReviewed();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2519,7 +2523,6 @@ function nextCardInDeck() {
     const pos = activeDeckIndices.indexOf(currentIndex);
     currentIndex = activeDeckIndices[(pos + 1) % activeDeckIndices.length];
     updateCard();
-    recordCardReviewed();
 }
 
 function prevCardInDeck() {
@@ -2527,7 +2530,6 @@ function prevCardInDeck() {
     const pos = activeDeckIndices.indexOf(currentIndex);
     currentIndex = activeDeckIndices[(pos - 1 + activeDeckIndices.length) % activeDeckIndices.length];
     updateCard();
-    recordCardReviewed();
 }
 
 function shuffleCardInDeck() {
@@ -2535,7 +2537,6 @@ function shuffleCardInDeck() {
     const pos = Math.floor(Math.random() * activeDeckIndices.length);
     currentIndex = activeDeckIndices[pos];
     updateCard();
-    recordCardReviewed();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2544,11 +2545,14 @@ function shuffleCardInDeck() {
 
 function rateWord(rating) {
     const word = wordData[currentIndex].WORD.trim();
+    const hadRating = word in wordRatings;
     // Toggle off if same rating tapped again
     if (wordRatings[word] === rating) {
         delete wordRatings[word];
     } else {
         wordRatings[word] = rating;
+        // Only count toward daily goal when a rating is newly applied (not toggled off)
+        if (!hadRating) recordCardReviewed();
     }
     localStorage.setItem('wf_ratings', JSON.stringify(wordRatings));
     updateRatingButtons();
