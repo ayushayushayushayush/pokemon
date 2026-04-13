@@ -64,15 +64,6 @@
            long-press. Removing these will cause unwanted native UI to appear. */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 
-        /* iPhone: prevent double-tap zoom on all tappable elements.
-           touch-action:manipulation disables double-tap-to-zoom while keeping
-           scroll and pinch-zoom intact — ideal for button-heavy PWAs. */
-        button, [onclick], .header-btn, .nav-btn, .option-btn, .rating-btn,
-        .cs-mode-btn, .settings-item, .deck-item,
-        .search-result-item, .example-item, .cs-toggle-track, .cs-slider {
-            touch-action: manipulation;
-        }
-
         /* IMPORTANT: overflow:hidden on body/html is intentional — the app uses
            a fixed-height layout with internal scrolling. overscroll-behavior-y:none
            prevents the iOS "rubber band" bounce on the root document. */
@@ -142,7 +133,7 @@
             background: var(--surface-3); color: var(--text-main);
             border: 1px solid var(--border); transition: background 0.15s, border-color 0.15s;
             padding: 0; 
-            font-size: 1.1rem; 
+            font-size: 1.7rem; 
             line-height: 1;
         }
         .header-btn:active { background: var(--surface-4); border-color: var(--border-bright); }
@@ -345,10 +336,9 @@
            enables momentum scrolling of the example sentences on iOS. */
         #example-list { flex-grow: 1; overflow-y: auto; padding: 14px 20px 28px; -webkit-overflow-scrolling: touch; }
 
-        /* IMPORTANT: .example-item.is-fav uses !important to override the default
-           color. This class is NOT actively used in JS — instead, inline style
-           is set directly (div.style.color = '#FF453A'). The class is kept for
-           reference and potential future use. */
+        /* IMPORTANT: .example-item.is-fav — favorited examples get a cycling color
+           (red → yellow → green by position in favExamples) set via inline style.
+           The class is kept for reference; color is applied in JS via getFavColor(). */
         .word-ipa-wrap { display: inline-flex; flex-direction: column; align-items: center; vertical-align: bottom; line-height: 1.4; margin: 0 1px; }
         .word-ipa-wrap .word-text { line-height: inherit; }
         .word-ipa-hint { display: block; font-size: 0.62rem; color: #555; font-family: monospace; line-height: 1.2; text-align: center; white-space: nowrap; }
@@ -356,7 +346,7 @@
         .example-source { font-size: 0.68rem; color: #555; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
         .example-date { font-size: 0.65rem; color: #444; white-space: nowrap; }
         .example-item { background: #000000; padding: 14px 16px; font-size: 0.9rem; line-height: 1.6; color: #C0C0C8; margin-bottom: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); user-select: none; -webkit-user-select: none; transition: border-color 0.2s; }
-        .example-item.is-fav { font-style: normal; color: #888; }
+        .example-item.is-fav { font-style: italic; }
 
         /* ── Nav Controls (Bottom Buttons) ──────────────────────────────────────
            IMPORTANT: padding-bottom uses calc(var(--safe-bottom) + 28px) to push
@@ -389,6 +379,39 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 4px; }
 
+        /* ── Streak & Daily Goal Bar ─────────────────────────────────────────── */
+        #progress-bar-container {
+            padding: 0 20px 10px;
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+        }
+        #progress-bar-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        #progress-bar-track {
+            flex: 1; height: 3px;
+            background: var(--surface-3);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        #progress-bar-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #progress-bar-fill.done { background: var(--success-green); }
+        #progress-label {
+            font-size: 0.62rem;
+            color: var(--text-dim);
+            white-space: nowrap;
+            letter-spacing: 0.04em;
+        }
         #streak-badge {
             display: flex; align-items: center; gap: 4px;
             font-size: 0.7rem; font-weight: 700;
@@ -648,16 +671,11 @@
         ══════════════════════════════════════════════════════════════════════ */
         #rating-bar {
             display: none; flex-shrink: 0;
-            flex-direction: row; align-items: center; justify-content: flex-start;
+            flex-direction: row; align-items: center; justify-content: center;
             padding: 8px 16px 12px;
             gap: 8px;
             border-top: 1px solid var(--border);
             background: #000;
-            cursor: pointer;
-        }
-        #rating-bar-inner {
-            display: flex; align-items: center; gap: 8px;
-            pointer-events: none;
         }
         /* rating-bar visibility controlled by flipCard() in JS */
         #rating-label {
@@ -693,10 +711,12 @@
             display: none;
         }
 
-        /* streak-badge glows when animation is active */
-        #streak-badge.anim-on {
-            color: var(--accent-gold);
-            text-shadow: 0 0 8px rgba(255,214,10,0.6);
+        /* Fire button active glow when confetti is ON */
+        #fire-toggle.confetti-on {
+            background: var(--accent-gold);
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 12px rgba(255, 214, 10, 0.5);
+            color: #000;
         }
 
         /* ── Confetti Settings Overlay ──────────────────────────────────────────
@@ -751,18 +771,17 @@
         }
         .cs-slider {
             -webkit-appearance: none; appearance: none;
-            width: 100%; height: 6px; border-radius: 3px;
+            width: 100%; height: 4px; border-radius: 2px;
             background: var(--surface-4); outline: none; cursor: pointer;
-            touch-action: none; /* prevents iOS scroll stealing the drag */
         }
         .cs-slider::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none;
-            width: 28px; height: 28px; border-radius: 50%;
+            width: 22px; height: 22px; border-radius: 50%;
             background: var(--primary); cursor: pointer;
-            box-shadow: 0 0 8px rgba(77,158,255,0.6);
+            box-shadow: 0 0 6px rgba(77,158,255,0.5);
         }
         .cs-slider::-moz-range-thumb {
-            width: 28px; height: 28px; border-radius: 50%;
+            width: 22px; height: 22px; border-radius: 50%;
             background: var(--primary); cursor: pointer; border: none;
         }
 
@@ -809,9 +828,6 @@
         /* ── Mode grid extended to 4 cols on wider screens ─────────────────── */
         .cs-mode-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         @media (max-width: 360px) { .cs-mode-grid { grid-template-columns: repeat(2, 1fr); } }
-
-        /* ── BGM Track Buttons ──────────────────────────────────────────────── */
-        @keyframes bgmPulse { 0%,100%{opacity:0.35;transform:scale(1)} 50%{opacity:1;transform:scale(1.15)} }
     </style>
 
 </head>
@@ -836,11 +852,7 @@
     <header>
         <div onclick="closeConfettiSettings()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
         <div style="font-weight:800;">Animation Style</div>
-        <!-- On/Off toggle in header -->
-        <label class="cs-toggle" style="margin-right:4px;" title="Enable/disable animation">
-            <input type="checkbox" id="cs-master-toggle" onchange="toggleConfetti()">
-            <span class="cs-toggle-track"></span>
-        </label>
+        <div style="width:60px;"></div>
     </header>
     <div class="confetti-settings-body">
 
@@ -876,7 +888,16 @@
                     <span class="cs-toggle-track"></span>
                 </label>
             </div>
-
+            <div class="cs-toggle-row">
+                <div class="cs-toggle-info">
+                    <span class="cs-toggle-label">Frame Mode</span>
+                    <span class="cs-toggle-desc">Shows animation inside a rounded frame around the word / examples area only</span>
+                </div>
+                <label class="cs-toggle">
+                    <input type="checkbox" id="cs-frame-toggle" onchange="onFrameModeChange(this.checked)">
+                    <span class="cs-toggle-track"></span>
+                </label>
+            </div>
         </div>
 
         <div class="cs-section-title">Speed</div>
@@ -921,37 +942,6 @@
             <input type="range" class="cs-slider" id="cs-opacity-back-slider"
                    min="5" max="100" step="5" value="80"
                    oninput="onOpacityChange('back', this.value)">
-        </div>
-
-        <div class="cs-section-title">Background Music</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-            <!-- Enable / disable toggle -->
-            <div class="cs-toggle-row">
-                <div class="cs-toggle-info">
-                    <span class="cs-toggle-label">
-                        <span id="bgm-note" style="font-size:1.1rem;animation:bgmPulse 1.4s ease-in-out infinite;opacity:0.4;display:inline-block;margin-right:6px;">🎵</span>Background Music
-                    </span>
-                    <span class="cs-toggle-desc" id="bgm-status-text">Plays all 3 tracks in loop</span>
-                </div>
-                <label class="cs-toggle">
-                    <input type="checkbox" id="bgm-enabled-toggle" onchange="bgmTogglePlay(this.checked)">
-                    <span class="cs-toggle-track"></span>
-                </label>
-            </div>
-            <!-- Volume — slider shown on desktop only; iOS does not allow JS volume control -->
-            <div class="cs-slider-row" id="bgm-vol-row">
-                <div class="cs-slider-header">
-                    <span class="cs-slider-label">Volume</span>
-                    <span class="cs-slider-val" id="bgm-vol-val">60%</span>
-                </div>
-                <input type="range" class="cs-slider" id="bgm-vol-slider"
-                       min="0" max="100" step="5" value="60"
-                       oninput="bgmSetVolume(this.value)" onchange="bgmSetVolume(this.value)">
-            </div>
-            <!-- iOS notice shown instead of slider on iPhone/iPad -->
-            <div id="bgm-ios-note" style="display:none; font-size:0.75rem; color:var(--text-secondary); padding: 4px 2px 8px; line-height:1.5;">
-                Use your device's physical volume buttons to adjust music volume.
-            </div>
         </div>
 
     </div>
@@ -1054,10 +1044,6 @@
     </header>
     <div class="list-container">
         <div class="settings-list">
-            <div class="settings-item" onclick="openConfettiSettings()">
-                <span>✨ Animation Style</span>
-                <span id="settings-anim-status" style="font-size:0.75rem;color:var(--text-secondary);font-weight:400;">Off</span>
-            </div>
             <div class="settings-item" onclick="openDeckPicker()">
                 <span>Themed Decks</span>
                 <span class="chevron">›</span>
@@ -1157,26 +1143,14 @@
              ★ Favorites button → openFavs()
      IMPORTANT: Do NOT remove id="app-header" — JS shows/hides it by that ID. -->
 <header id="app-header" style="display:none;">
-    <!-- Settings icon: sliders/controls -->
-    <div class="header-btn" onclick="openSettings()" title="Settings">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="4" y1="6" x2="20" y2="6"/>
-            <line x1="4" y1="12" x2="20" y2="12"/>
-            <line x1="4" y1="18" x2="20" y2="18"/>
-            <circle cx="8" cy="6" r="2" fill="var(--bg)" stroke="currentColor" stroke-width="2"/>
-            <circle cx="16" cy="12" r="2" fill="var(--bg)" stroke="currentColor" stroke-width="2"/>
-            <circle cx="10" cy="18" r="2" fill="var(--bg)" stroke="currentColor" stroke-width="2"/>
-        </svg>
-    </div>
+    <div class="header-btn" onclick="openSettings()">⚙️</div>
     <div id="counter" class="counter" onclick="openSearch()">0 / 0</div>
     <div style="display:flex;align-items:center;gap:8px;">
-        <div id="streak-badge" title="Tap to toggle animation" onclick="toggleConfetti()" style="cursor:pointer;">🔥 <span id="streak-count">0</span></div>
-        <!-- Favorites icon: bookmark -->
-        <div class="header-btn fav-btn" onclick="openFavs()" title="Favorites">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
-            </svg>
-        </div>
+        <div id="streak-badge" title="Your streak">🔥 <span id="streak-count">0</span></div>
+        <!-- IMPORTANT: #fire-toggle toggles confetti on tap, opens settings on long-press.
+             Long-press is wired in JS by setupFireToggle(). -->
+        <div id="fire-toggle" class="header-btn" title="Toggle animation / hold for settings" style="font-size:1.4rem;">✨</div>
+        <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     </div>
 </header>
 <!-- ── Daily Goal Progress Bar ───────────────────────────────────────────────
@@ -1184,7 +1158,13 @@
      #progress-bar-fill width is animated from 0% to 100% as cards are reviewed.
      Turns green (.done class) and shows "✓ Done!" when DAILY_GOAL is reached.
      Progress resets each calendar day (stored under key 'wf_daily_YYYY-MM-DD'). -->
-
+<div id="progress-bar-container">
+    <div id="progress-bar-row">
+        <div id="streak-badge-small" style="font-size:0.62rem;color:var(--text-dim);"></div>
+        <div id="progress-bar-track"><div id="progress-bar-fill"></div></div>
+        <div id="progress-label">0 / 20</div>
+    </div>
+</div>
 
 <!-- ── Main App Container ─────────────────────────────────────────────────────
      IMPORTANT: starts with display:none and is set to display:flex by JS.
@@ -1262,27 +1242,23 @@
                      Ratings stored in localStorage key 'wf_ratings' as { WORD: rating }.
                      The selected rating gets the .selected class for visual feedback.
                      Hard/Easy ratings feed the "Hard Words" and "Easy Words" deck filters. -->
-                <div id="rating-bar" onclick="handleRatingBarClick(event)">
-                    <span id="rating-label">How do you find this word?</span>
-                    <button class="rating-btn hard" onclick="rateWord('hard');event.stopPropagation()">Hard</button>
-                    <button class="rating-btn okay" onclick="rateWord('okay');event.stopPropagation()">Okay</button>
-                    <button class="rating-btn easy" onclick="rateWord('easy');event.stopPropagation()">Easy</button>
+                <div id="rating-bar">
+                    <span id="rating-label">Is this word?</span>
+                    <button class="rating-btn hard" onclick="rateWord('hard')">Hard</button>
+                    <button class="rating-btn okay" onclick="rateWord('okay')">Okay</button>
+                    <button class="rating-btn easy" onclick="rateWord('easy')">Easy</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Hidden element so legacy JS references to fire-toggle don't break -->
-    <div id="fire-toggle" style="display:none;"></div>
-
     <!-- ── Navigation Buttons ─────────────────────────────────────────────────
          Back/Shuffle/Next skip over words in knownWords array (mastered words).
-         Shuffle supports long-press (600ms) to open Animation Style settings.
          IMPORTANT: Do NOT remove the .primary class from the Next button —
          it controls the colored styling. -->
     <div class="controls">
         <button class="nav-btn" onclick="prevCardInDeck()">Back</button>
-        <button class="nav-btn" id="shuffle-btn" onclick="shuffleCardInDeck()">Shuffle</button>
+        <button class="nav-btn" onclick="shuffleCardInDeck()">Shuffle</button>
         <button class="nav-btn primary" onclick="nextCardInDeck()">Next</button>
     </div>
 </div>
@@ -1872,6 +1848,16 @@ function annotateWithIPA(text, skipWord) {
 //   Long press RIGHT half (1200ms): toggle italic + add/remove from favExamples
 //   touchmove: sets moved=true, clears timer (prevents accidental fire on scroll)
 //   The 1200ms right-side delay is intentional — longer to avoid scroll accidents.
+// ── Favorite color cycling ─────────────────────────────────────────────────────
+// Colors cycle red → yellow → green by order in the favExamples array.
+// No relationship to hard/okay/easy word rating — purely positional.
+const FAV_COLORS = ['#FF6B6B', '#FFD60A', '#2ECC71'];
+function getFavColor(exId) {
+    const idx = favExamples.indexOf(exId);
+    if (idx === -1) return '';
+    return FAV_COLORS[idx % FAV_COLORS.length];
+}
+
 function renderExamples(item) {
     const list = document.getElementById('example-list');
     list.innerHTML = "";
@@ -1916,8 +1902,11 @@ function renderExamples(item) {
             : '';
         div.innerHTML = `<strong>${idx+1}.</strong> ${annotateWithIPA(ex.text, cleanWord)}${footerHtml}`;
 
-        // Apply light grey color immediately if this sentence is already favorited
-        if (ex.isFav) { div.style.fontStyle = 'normal'; div.style.color = '#888'; }
+        // Apply color + italic immediately if this sentence is already favorited
+        if (ex.isFav) {
+            div.style.fontStyle = 'italic';
+            div.style.color = getFavColor(ex.id);
+        }
 
         let pressTimer = null;
         let moved = false;
@@ -1939,8 +1928,8 @@ function renderExamples(item) {
                         div.style.color = '';
                     } else {
                         favExamples.push(ex.id);
-                        div.style.fontStyle = 'normal';
-                        div.style.color = '#888';
+                        div.style.fontStyle = 'italic';
+                        div.style.color = getFavColor(ex.id);
                     }
                     saveAndSync();
                 } else {
@@ -2110,6 +2099,8 @@ function openFavs() {
         organized[word].items.forEach(itemObj => {
             const item = document.createElement('div');
             item.className = 'example-item';
+            item.style.fontStyle = 'italic';
+            item.style.color = getFavColor(itemObj.id);
 
             // Look up source/date from word2Data if available for this word
             const wordIdx = organized[word].index;
@@ -2298,7 +2289,6 @@ function prevCard() {
         if(currentIndex === start) break;
     } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
     updateCard();
-    randomiseAnimMode();
     recordCardReviewed();
 }
 
@@ -2312,7 +2302,6 @@ function nextCard() {
         if(currentIndex === start) break;
     } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
     updateCard();
-    randomiseAnimMode();
     recordCardReviewed();
 }
 
@@ -2329,7 +2318,6 @@ function shuffleCard() {
     } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
     currentIndex = newIdx; 
     updateCard();
-    randomiseAnimMode();
     recordCardReviewed();
 }
 
@@ -2406,7 +2394,18 @@ function saveDailyProgress(n) {
 }
 
 function updateProgressBar(reviewed) {
-    // Progress bar feature removed
+    const pct = Math.min(100, Math.round((reviewed / DAILY_GOAL) * 100));
+    const fill = document.getElementById('progress-bar-fill');
+    const label = document.getElementById('progress-label');
+    fill.style.width = pct + '%';
+    label.textContent = reviewed >= DAILY_GOAL ? '✓ Done!' : `${reviewed} / ${DAILY_GOAL}`;
+    if (reviewed >= DAILY_GOAL) {
+        fill.classList.add('done');
+        label.style.color = 'var(--success-green)';
+    } else {
+        fill.classList.remove('done');
+        label.style.color = '';
+    }
 }
 
 // Called every time the user flips to a new card
@@ -2525,6 +2524,9 @@ function initEngagement() {
 
     const reviewed = loadDailyProgress();
     updateProgressBar(reviewed);
+
+    // Show progress bar
+    document.getElementById('progress-bar-container').style.display = 'flex';
 
     // Record session start favs count for summary delta
     sessionFavsStart = favExamples.length;
@@ -2781,7 +2783,6 @@ function nextCardInDeck() {
     const pos = activeDeckIndices.indexOf(currentIndex);
     currentIndex = activeDeckIndices[(pos + 1) % activeDeckIndices.length];
     updateCard();
-    randomiseAnimMode();
     recordCardReviewed();
 }
 
@@ -2790,7 +2791,6 @@ function prevCardInDeck() {
     const pos = activeDeckIndices.indexOf(currentIndex);
     currentIndex = activeDeckIndices[(pos - 1 + activeDeckIndices.length) % activeDeckIndices.length];
     updateCard();
-    randomiseAnimMode();
     recordCardReviewed();
 }
 
@@ -2799,7 +2799,6 @@ function shuffleCardInDeck() {
     const pos = Math.floor(Math.random() * activeDeckIndices.length);
     currentIndex = activeDeckIndices[pos];
     updateCard();
-    randomiseAnimMode();
     recordCardReviewed();
 }
 
@@ -2831,12 +2830,6 @@ function updateRatingButtons() {
         btn.classList.remove('selected');
         if (btn.classList.contains(rating)) btn.classList.add('selected');
     });
-}
-
-// Clicking empty space on the right side of the rating bar flips to next card
-function handleRatingBarClick(e) {
-    // Only trigger if click is NOT on a button (buttons have stopPropagation)
-    nextCardInDeck();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -3180,7 +3173,6 @@ function drawAnimFrame() {
 
 // ── Main animation loop ───────────────────────────────────────────────────────
 let lightningNextStrike = 0; // frame counter until next lightning bolt
-let confettiSpawnTick   = 0; // frame counter for trickle spawn pacing
 
 function drawConfetti() {
     const masterOpacity = currentOpacity();
@@ -3199,16 +3191,8 @@ function drawConfetti() {
                 lightningNextStrike = Math.floor((30 + Math.random() * 90) * speedFactor / (confettiMax / 30));
             }
         } else {
-            // Trickle: spawn 1 particle every N frames so the screen fills
-            // gradually and stays evenly distributed rather than flooding at once.
-            // N scales with confettiMax so denser settings still feel denser,
-            // but the burst is replaced by a smooth, continuous drizzle.
-            const spawnInterval = Math.max(2, Math.round(60 / Math.max(1, confettiMax / 15)));
-            confettiSpawnTick++;
-            if (confettiSpawnTick >= spawnInterval && confettiParticles.length < confettiMax) {
-                confettiParticles.push(spawnParticle());
-                confettiSpawnTick = 0;
-            }
+            const toSpawn = Math.min(3, confettiMax - confettiParticles.length);
+            for (let i = 0; i < toSpawn; i++) confettiParticles.push(spawnParticle());
         }
     }
 
@@ -3230,25 +3214,32 @@ function drawConfetti() {
 // ── Toggle on/off ─────────────────────────────────────────────────────────────
 function toggleConfetti() {
     confettiActive = !confettiActive;
-    document.getElementById('streak-badge').classList.toggle('anim-on', confettiActive);
+    const btn = document.getElementById('fire-toggle');
     if (confettiActive) {
+        btn.classList.add('confetti-on');
+        btn.textContent = '🌟';
         resizeConfettiCanvas();
         confettiCanvas.style.display = 'block';
         confettiParticles = [];
         lightningNextStrike = 0;
-        confettiSpawnTick = 0;
         if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
         drawConfetti();
     } else {
+        btn.classList.remove('confetti-on');
+        btn.textContent = '✨';
         animFrame.style.display = 'none';
     }
-    updateAnimSettingsBadge();
 }
 
-// ── Called by flipCard() to update opacity layer only ────────────────────────
-// Random mode is now triggered by navigation (new word), not by flip direction.
+// ── Called by flipCard() to update opacity layer & optionally randomise mode ──
 function onCardFlip(isFlipped) {
     cardIsFlipped = isFlipped;
+    if (confettiActive && randomModeOnFlip) {
+        const modes = ALL_MODES.filter(m => m !== confettiMode);
+        confettiMode = modes[Math.floor(Math.random() * modes.length)];
+        confettiParticles = []; // clear old particles so new mode starts clean
+        updateModeUI();
+    }
 }
 
 // ── Settings overlay ──────────────────────────────────────────────────────────
@@ -3259,41 +3250,23 @@ function updateModeUI() {
     });
 }
 
-// ── randomiseAnimMode ─────────────────────────────────────────────────────────
-// Called whenever the user navigates to a new word while on the front face.
-// Picks a different mode so each word gets a fresh animation style.
-function randomiseAnimMode() {
-    if (!confettiActive || !randomModeOnFlip) return;
-    const modes = ALL_MODES.filter(m => m !== confettiMode);
-    confettiMode = modes[Math.floor(Math.random() * modes.length)];
-    confettiParticles = [];
-    confettiSpawnTick = 0;
-    updateModeUI();
-}
-
 function openConfettiSettings() {
-    document.getElementById('cs-master-toggle').checked     = confettiActive;
-    document.getElementById('cs-speed-slider').value        = confettiSpeed;
-    document.getElementById('cs-speed-val').textContent     = confettiSpeed;
-    document.getElementById('cs-count-slider').value        = confettiMax;
-    document.getElementById('cs-count-val').textContent     = confettiMax;
-    document.getElementById('cs-opacity-front-slider').value  = opacityFront;
+    document.getElementById('cs-speed-slider').value       = confettiSpeed;
+    document.getElementById('cs-speed-val').textContent    = confettiSpeed;
+    document.getElementById('cs-count-slider').value       = confettiMax;
+    document.getElementById('cs-count-val').textContent    = confettiMax;
+    document.getElementById('cs-opacity-front-slider').value = opacityFront;
     document.getElementById('cs-opacity-front-val').textContent = opacityFront + '%';
-    document.getElementById('cs-opacity-back-slider').value   = opacityBack;
+    document.getElementById('cs-opacity-back-slider').value  = opacityBack;
     document.getElementById('cs-opacity-back-val').textContent = opacityBack + '%';
-    document.getElementById('cs-random-toggle').checked     = randomModeOnFlip;
+    document.getElementById('cs-random-toggle').checked    = randomModeOnFlip;
+    document.getElementById('cs-frame-toggle').checked     = frameModeEnabled;
     updateModeUI();
-    // Sync BGM controls
-    document.getElementById('bgm-vol-slider').value = bgmVolume;
-    document.getElementById('bgm-vol-val').textContent = bgmVolume + '%';
-    bgmUpdateUI();
-    updateAnimSettingsBadge();
     document.getElementById('confetti-settings-overlay').classList.add('active');
 }
 
 function closeConfettiSettings() {
     document.getElementById('confetti-settings-overlay').classList.remove('active');
-    updateAnimSettingsBadge();
 }
 
 function setConfettiMode(mode) {
@@ -3333,116 +3306,60 @@ function onRandomModeChange(checked) {
     localStorage.setItem('wf_cfx_random', checked ? '1' : '0');
 }
 
-// ── Background Music (BGM) — sequential playlist, all 3 tracks loop ──────────
-const BGM_TRACKS = [
-    'audiobgm/hattori.mp3',
-    'audiobgm/shinchan.mp3',
-    'audiobgm/doraemon.mp3',
-];
+function onFrameModeChange(checked) {
+    frameModeEnabled = checked;
+    localStorage.setItem('wf_cfx_frame', checked ? '1' : '0');
+    if (!confettiActive) animFrame.style.display = 'none';
+}
 
-let bgmAudio    = new Audio();
-let bgmPlaying  = false;
-let bgmTrackIdx = 0;
-let bgmVolume   = parseInt(localStorage.getItem('wf_bgm_vol') || '60');
+// ── Double-tap + long-press fire button ───────────────────────────────────────
+// Double-tap  → toggle confetti on/off
+// Long-press  → open settings (600ms hold)
+function setupFireToggle() {
+    const btn = document.getElementById('fire-toggle');
+    let pressTimer   = null;
+    let didLongPress = false;
+    let lastTapTime  = 0;
+    const DOUBLE_TAP_MS = 300;
 
-bgmAudio.volume = bgmVolume / 100;
-
-// When a track ends, advance to the next one (wraps around)
-bgmAudio.addEventListener('ended', () => {
-    bgmTrackIdx = (bgmTrackIdx + 1) % BGM_TRACKS.length;
-    bgmAudio.src = BGM_TRACKS[bgmTrackIdx];
-    bgmAudio.play().catch(() => {});
-});
-
-function bgmUpdateUI() {
-    const note      = document.getElementById('bgm-note');
-    const statusEl  = document.getElementById('bgm-status-text');
-    const toggle    = document.getElementById('bgm-enabled-toggle');
-    if (toggle) toggle.checked = bgmPlaying;
-    if (statusEl) statusEl.textContent = bgmPlaying ? 'Playing all tracks in loop ♪' : 'Plays all 3 tracks in loop';
-    if (note) {
-        note.style.animationPlayState = bgmPlaying ? 'running' : 'paused';
-        note.style.opacity = bgmPlaying ? '1' : '0.4';
+    function startPress(e) {
+        didLongPress = false;
+        pressTimer = setTimeout(() => {
+            didLongPress = true;
+            openConfettiSettings();
+        }, 600);
     }
-    bgmCheckIosVolume();
-}
 
-function bgmTogglePlay(enabled) {
-    bgmPlaying = enabled;
-    if (bgmPlaying) {
-        bgmAudio.src = BGM_TRACKS[bgmTrackIdx];
-        bgmAudio.play().catch(() => {});
-    } else {
-        bgmAudio.pause();
+    function endPress(e) {
+        clearTimeout(pressTimer);
+        if (didLongPress) return;
+
+        const now = Date.now();
+        if (now - lastTapTime < DOUBLE_TAP_MS) {
+            // Double-tap detected
+            lastTapTime = 0;
+            toggleConfetti();
+        } else {
+            lastTapTime = now;
+        }
     }
-    localStorage.setItem('wf_bgm_playing', bgmPlaying ? '1' : '0');
-    bgmUpdateUI();
-}
 
-function bgmSetVolume(val) {
-    bgmVolume = parseInt(val);
-    bgmAudio.volume = bgmVolume / 100;
-    localStorage.setItem('wf_bgm_vol', val);
-    const valEl = document.getElementById('bgm-vol-val');
-    if (valEl) valEl.textContent = val + '%';
-}
+    function cancelPress() { clearTimeout(pressTimer); didLongPress = true; }
 
-// ── bgmCheckIosVolume ─────────────────────────────────────────────────────────
-// iOS Safari silently ignores audio.volume — it is always 1.0 on iPhone/iPad.
-// This function detects that and swaps the slider for an explanatory note.
-// Called once after the audio element exists and the settings UI is in the DOM.
-function bgmCheckIosVolume() {
-    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    const volRow  = document.getElementById('bgm-vol-row');
-    const iosNote = document.getElementById('bgm-ios-note');
-    if (!volRow || !iosNote) return;
-    if (isIos) {
-        volRow.style.display  = 'none';
-        iosNote.style.display = 'block';
-    } else {
-        volRow.style.display  = '';
-        iosNote.style.display = 'none';
-    }
-}
-
-// setupShuffleBtn — no longer needed (shuffle is a plain onclick button)
-
-// ── Update the settings page animation status badge ───────────────────────────
-function updateAnimSettingsBadge() {
-    const el = document.getElementById('settings-anim-status');
-    if (!el) return;
-    if (!confettiActive) { el.textContent = 'Off'; el.style.color = 'var(--text-secondary)'; return; }
-    const labels = { confetti: '🎊 Confetti', rain: '🌧️ Rain', snow: '❄️ Snow', lightning: '⚡ Lightning' };
-    el.textContent = labels[confettiMode] || 'On';
-    el.style.color = 'var(--primary)';
+    btn.addEventListener('touchstart',  startPress,  { passive: true });
+    btn.addEventListener('touchend',    endPress);
+    btn.addEventListener('touchcancel', cancelPress);
+    btn.addEventListener('mousedown',   startPress);
+    btn.addEventListener('mouseup',     endPress);
+    btn.addEventListener('mouseleave',  cancelPress);
+    btn.addEventListener('contextmenu', e => e.preventDefault());
 }
 
 window.addEventListener('resize', () => {
     if (confettiActive || confettiParticles.length > 0) resizeConfettiCanvas();
 });
 
-// ── iOS range-slider fix ──────────────────────────────────────────────────────
-// On iOS Safari, dragging a range input inside an overflow:auto container can
-// suppress 'input' events. Firing the oninput handler on touchmove ensures
-// the value updates in real time while the user drags.
-document.querySelectorAll('.cs-slider').forEach(slider => {
-    slider.addEventListener('touchmove', function(e) {
-        // Calculate value from touch position relative to slider rect
-        const rect  = this.getBoundingClientRect();
-        const touch = e.touches[0];
-        const pct   = Math.min(1, Math.max(0, (touch.clientX - rect.left) / rect.width));
-        const min   = parseFloat(this.min  || 0);
-        const max   = parseFloat(this.max  || 100);
-        const step  = parseFloat(this.step || 1);
-        let val = min + pct * (max - min);
-        val = Math.round(val / step) * step;
-        this.value = val;
-        // Dispatch to whichever oninput handler is attached
-        this.dispatchEvent(new Event('input', { bubbles: true }));
-    }, { passive: true });
-});
-
-// setupShuffleBtn call removed — function no longer exists
+setupFireToggle();
 
 </script>
 </body>
