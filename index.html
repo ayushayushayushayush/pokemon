@@ -696,17 +696,94 @@
             white-space: nowrap; flex-shrink: 0;
         }
         .rating-btn {
-            padding: 5px 12px; border: 1px solid var(--border);
+            padding: 6px 16px; border: 1.5px solid var(--border);
             border-radius: 20px; font-family: 'Lora', serif;
-            font-size: 0.72rem; font-weight: 700; cursor: pointer;
-            background: var(--surface-2); transition: background 0.15s, border-color 0.15s;
+            font-size: 0.75rem; font-weight: 700; cursor: pointer;
+            background: var(--surface-2);
+            transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
         }
-        .rating-btn.hard { color: #FF6B6B; }
-        .rating-btn.hard:active, .rating-btn.hard.selected { background: rgba(255,107,107,0.12); border-color: rgba(255,107,107,0.4); }
-        .rating-btn.easy { color: var(--success-green); }
-        .rating-btn.easy:active, .rating-btn.easy.selected { background: rgba(46,204,113,0.1); border-color: rgba(46,204,113,0.35); }
+        .rating-btn:active { transform: scale(0.94); }
 
-    </style>
+        /* Hard — unselected: red text on dark bg */
+        .rating-btn.hard { color: #FF6B6B; }
+        /* Hard — selected: bright solid red fill, white text, glow */
+        .rating-btn.hard.selected {
+            background: #FF4545;
+            border-color: #FF4545;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(255,69,69,0.55);
+        }
+        .rating-btn.hard:active { background: rgba(255,107,107,0.18); border-color: #FF6B6B; }
+
+        /* Easy — unselected: green text on dark bg */
+        .rating-btn.easy { color: var(--success-green); }
+        /* Easy — selected: bright solid green fill, white text, glow */
+        .rating-btn.easy.selected {
+            background: #2ECC71;
+            border-color: #2ECC71;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(46,204,113,0.55);
+        }
+        .rating-btn.easy:active { background: rgba(46,204,113,0.18); border-color: var(--success-green); }
+
+        /* ── Quiz Settings Panel ─────────────────────────────────────────────── */
+        #quiz-settings-panel {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+            background: var(--surface-2);
+            border: 1px solid var(--border-bright);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin: 0 16px;
+        }
+        #quiz-settings-panel.open { display: flex; }
+        .quiz-setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+        .quiz-setting-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            flex: 1;
+        }
+        .quiz-setting-sublabel {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .quiz-setting-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--primary);
+            min-width: 28px;
+            text-align: right;
+        }
+        .quiz-setting-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .quiz-stepper {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border-bright);
+            background: var(--surface-3);
+            color: var(--text-main);
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s;
+            user-select: none;
+        }
+        .quiz-stepper:active { background: var(--surface-4); }
+
+    
 
 </head>
 
@@ -839,8 +916,22 @@
     <header>
         <div onclick="closeOverlays()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
         <div style="font-weight:800;">Quiz Mode</div>
-        <div style="width: 60px;"></div>
+        <div class="header-btn" onclick="toggleQuizSettings()" id="quiz-settings-btn" title="Quiz settings">⚙️</div>
     </header>
+    <!-- Quiz Settings Panel: shown/hidden by toggleQuizSettings() -->
+    <div id="quiz-settings-panel">
+        <div class="quiz-setting-row">
+            <div>
+                <div class="quiz-setting-label">Examples per word</div>
+                <div class="quiz-setting-sublabel">Max sentences shown per quiz question</div>
+            </div>
+            <div class="quiz-setting-controls">
+                <div class="quiz-stepper" onclick="changeExamplesLimit(-1)">−</div>
+                <span class="quiz-setting-value" id="examples-limit-display">5</span>
+                <div class="quiz-stepper" onclick="changeExamplesLimit(1)">+</div>
+            </div>
+        </div>
+    </div>
     <div class="quiz-container">
         <div class="quiz-header-info">
             <div class="quiz-stat">
@@ -1094,6 +1185,11 @@ let isQuizLocked = false;
 let quizMeanings = [];
 let quizMeaningIdx = 0;
 
+// ── Quiz Settings State ───────────────────────────────────────────────────────
+// quizExamplesLimit: max example sentences shown per word on the card back
+// during a quiz session. Default 5, range 1–20. Persisted to localStorage.
+let quizExamplesLimit = parseInt(localStorage.getItem('wf_quiz_examples_limit') || '5');
+
 // ══════════════════════════════════════════════════════════════════════════════
 // IMPORTANT — Card State
 // currentIndex: index into wordData for the currently displayed card.
@@ -1171,6 +1267,11 @@ window.onload = () => {
             .then(d => {
                 deletedExamples = Array.from(new Set([...(d.deleted || []), ...deletedExamples]));
                 favExamples    = Array.from(new Set([...(d.favs    || []), ...favExamples]));
+                // Merge ratings: local wins (cloud fills in any gaps not yet rated locally)
+                if (d.ratings && typeof d.ratings === 'object') {
+                    wordRatings = Object.assign({}, d.ratings, wordRatings);
+                    localStorage.setItem('wf_ratings', JSON.stringify(wordRatings));
+                }
                 saveAndSync(false);
             }).catch(() => {});
 
@@ -1303,6 +1404,8 @@ function startQuiz(e) {
     document.getElementById('fav-overlay').style.display = 'none';
     document.getElementById('quiz-overlay').style.display = 'flex';
     document.getElementById('quiz-total-display').textContent = favExamples.length;
+    // Sync settings panel display value
+    document.getElementById('examples-limit-display').textContent = quizExamplesLimit;
 
     nextQuizQuestion();
 }
@@ -1541,12 +1644,13 @@ function renderExamples(item) {
     }
 
     // Sort: favorites first, then sourced examples, then unsourced
+    // Apply the user-configured examples-per-word display limit
     rows.sort((a, b) => {
         if (b.isFav !== a.isFav) return b.isFav - a.isFav;
         const aHasSource = (a.source || a.date) ? 1 : 0;
         const bHasSource = (b.source || b.date) ? 1 : 0;
         return bHasSource - aHasSource;
-    }).forEach((ex, idx) => {
+    }).slice(0, quizExamplesLimit).forEach((ex, idx) => {
         const div = document.createElement('div');
         div.className = 'example-item';
         div.dataset.exId = ex.id;
@@ -1835,7 +1939,7 @@ async function pushSync() {
             await fetch(WORKER_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples })
+                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, ratings: wordRatings })
             });
             showSync('synced', 'Synced');
         } catch {} // Silently fail if offline — localStorage already has the data
@@ -1847,8 +1951,8 @@ async function pushSync() {
 // Always writes deletedExamples and favExamples to localStorage.
 // If shouldPush=true (default), also debounces a cloud sync via pushSync().
 // Pass shouldPush=false when merging cloud state on load to avoid push loops.
-// IMPORTANT: wordRatings is stored separately (wf_ratings) and NOT synced to
-// cloud — it's device-local only. If you want cross-device ratings, add it here.
+// IMPORTANT: wordRatings is synced to cloud via pushSync() (included in POST body).
+//   On load, cloud ratings are merged into local (local wins on conflict).
 // Persists all three state arrays to localStorage, then optionally triggers
 // a cloud sync via pushSync().
 // IMPORTANT: Pass shouldPush=false when you only want to persist locally
@@ -1857,6 +1961,7 @@ async function pushSync() {
 function saveAndSync(shouldPush = true) {
     localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
     localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
+    localStorage.setItem('wf_ratings', JSON.stringify(wordRatings));
     if(shouldPush) pushSync();
 }
 
@@ -2360,6 +2465,22 @@ function shuffleCardInDeck() {
     const pos = Math.floor(Math.random() * activeDeckIndices.length);
     currentIndex = activeDeckIndices[pos];
     updateCard();
+}
+
+// ── Quiz Settings ─────────────────────────────────────────────────────────────
+// toggleQuizSettings: shows/hides the settings panel below the quiz header.
+function toggleQuizSettings() {
+    const panel = document.getElementById('quiz-settings-panel');
+    panel.classList.toggle('open');
+    // Sync displayed value whenever panel opens
+    document.getElementById('examples-limit-display').textContent = quizExamplesLimit;
+}
+
+// changeExamplesLimit: increments or decrements quizExamplesLimit (clamped 1–20).
+function changeExamplesLimit(delta) {
+    quizExamplesLimit = Math.min(20, Math.max(1, quizExamplesLimit + delta));
+    localStorage.setItem('wf_quiz_examples_limit', quizExamplesLimit);
+    document.getElementById('examples-limit-display').textContent = quizExamplesLimit;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
