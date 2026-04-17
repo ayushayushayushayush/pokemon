@@ -341,9 +341,9 @@
         .word-ipa-wrap { display: inline-flex; flex-direction: column; align-items: center; vertical-align: bottom; line-height: 1.4; margin: 0 1px; }
         .word-ipa-wrap .word-text { line-height: inherit; }
         .word-ipa-hint { display: block; font-size: 0.62rem; color: #555; font-family: monospace; line-height: 1.2; text-align: center; white-space: nowrap; }
-        .example-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,0.05); }
-        .example-source { font-size: 0.68rem; color: #555; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
-        .example-date { font-size: 0.65rem; color: #444; white-space: nowrap; }
+        .example-footer { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,0.05); gap: 8px; }
+        .example-source { font-size: 0.68rem; color: #555; font-style: italic; flex: 1; }
+        .example-date { font-size: 0.65rem; color: #444; white-space: nowrap; flex-shrink: 0; }
         .example-item { background: #000000; padding: 14px 16px; font-size: 0.9rem; line-height: 1.6; color: #C0C0C8; margin-bottom: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); user-select: none; -webkit-user-select: none; transition: border-color 0.2s; }
         .example-item.is-fav { }
 
