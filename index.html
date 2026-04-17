@@ -159,10 +159,10 @@
         /* ── Full-Screen Overlays ────────────────────────────────────────────────
            IMPORTANT: All four overlays use position:fixed + z-index:2000 to layer
            above the main card UI. They start with display:none and are shown/hidden
-           via inline style in JS (openFavs, openSettings, openKnown, startQuiz,
+           via inline style in JS (openFavs, openSettings, startQuiz,
            closeOverlays). Do NOT change display:none to visibility:hidden — the JS
            checks style.display directly. */
-        #fav-overlay, #known-overlay, #settings-overlay, #quiz-overlay {
+        #fav-overlay, #settings-overlay, #quiz-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 2000; display: none; flex-direction: column;
@@ -302,7 +302,7 @@
 
         /* IMPORTANT: user-select:none on .word-container prevents text selection
            on long-press, which would interfere with the mastery long-press gesture
-           managed by setupMasteryGesture(). */
+           Do NOT remove that element's id. */
         .word-container { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; width: 100%; }
         .word-display { font-family: 'Playfair Display', serif; font-size: 3.6rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: 0.01em; }
         .ipa-sub { font-size: 1rem; color: var(--text-secondary); margin-top: 18px; font-family: monospace; display: flex; flex-direction: column; gap: 6px; line-height: 1.5; }
@@ -366,11 +366,6 @@
         .nav-btn:active { transform: scale(0.97); }
         .nav-btn.primary { background: var(--primary); color: #fff; border-color: transparent; box-shadow: 0 4px 20px rgba(77,158,255,0.3); }
         .nav-btn.primary:active { background: #3a8fe8; }
-
-        /* ── Known/Mastered Words List ──────────────────────────────────────── */
-        .known-item { padding: 16px 4px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-between; align-items: center; }
-        .known-word { font-weight: 600; font-size: 1rem; }
-        .known-ipa { color: var(--text-dim); font-size: 0.85rem; font-family: monospace; }
 
         /* ── Custom Scrollbar ─────────────────────────────────────────────────
            Kept intentionally thin (2px) to be unobtrusive. */
@@ -677,10 +672,10 @@
             background: #000;
             position: relative;
         }
-        /* The right half of the rating-bar flips the card back */
+        /* The right portion of the rating-bar (after the buttons) flips the card back */
         #rating-flip-zone {
             position: absolute; top: 0; right: 0;
-            width: 45%; height: 100%;
+            width: 50%; height: 100%;
             cursor: pointer;
             z-index: 1;
         }
@@ -697,8 +692,6 @@
         }
         .rating-btn.hard { color: #FF6B6B; }
         .rating-btn.hard:active, .rating-btn.hard.selected { background: rgba(255,107,107,0.12); border-color: rgba(255,107,107,0.4); }
-        .rating-btn.okay { color: var(--accent-gold); }
-        .rating-btn.okay:active, .rating-btn.okay.selected { background: rgba(255,214,10,0.1); border-color: rgba(255,214,10,0.35); }
         .rating-btn.easy { color: var(--success-green); }
         .rating-btn.easy:active, .rating-btn.easy.selected { background: rgba(46,204,113,0.1); border-color: rgba(46,204,113,0.35); }
 
@@ -801,7 +794,7 @@
 
 <!-- ── Settings Overlay ────────────────────────────────────────────────────────
      Shown by openSettings(), hidden by closeOverlays().
-     Contains navigation to "Mastered Words" (openKnown) and "Restore Deleted" (resetDeleted). -->
+     Contains navigation to Themed Decks and Restore Deleted. -->
 <div id="settings-overlay">
     <header>
         <div onclick="closeOverlays()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
@@ -812,10 +805,6 @@
         <div class="settings-list">
             <div class="settings-item" onclick="openDeckPicker()">
                 <span>Themed Decks</span>
-                <span class="chevron">›</span>
-            </div>
-            <div class="settings-item" onclick="openKnown()">
-                <span>Mastered Words</span>
                 <span class="chevron">›</span>
             </div>
             <div class="settings-item" onclick="resetDeleted()">
@@ -887,18 +876,6 @@
     <div id="fav-list" class="list-container"></div>
 </div>
 
-<!-- ── Known/Mastered Words Overlay ───────────────────────────────────────────
-     Opened by openKnown() (from Settings). Back button returns to Settings.
-     "Remove All" button calls removeAllKnown().
-     #known-list is populated dynamically by openKnown(). -->
-<div id="known-overlay">
-    <header>
-        <div onclick="openSettings()" class="header-btn overlay-nav" style="color:var(--primary);">← Settings</div>
-        <div style="font-weight:800;">Mastered</div>
-        <div onclick="removeAllKnown()" class="header-btn overlay-nav" style="color:var(--delete-red);">Remove All</div>
-    </header>
-    <div id="known-list" class="list-container"></div>
-</div>
 
 <!-- ── Main App Header ─────────────────────────────────────────────────────────
      Hidden until data loads (shown by window.onload). Contains three zones:
@@ -943,7 +920,7 @@
                  or outside it (flips card). Do NOT simplify this to a plain flipCard()
                  call or audio playback will be lost.
                  The long-press mastery gesture is attached to #front-word-container
-                 by setupMasteryGesture() on load. Do NOT remove that element's id. -->
+                 Do NOT remove that element's id. -->
             <div class="card-face card-front" onclick="handleCardFrontClick(event)">
                 <div class="word-container" id="front-word-container">
                     <h1 id="f-word" class="word-display">...</h1>
@@ -994,11 +971,10 @@
                      The selected rating gets the .selected class for visual feedback.
                      Hard/Easy ratings feed the "Hard Words" and "Easy Words" deck filters. -->
                 <div id="rating-bar">
-                    <!-- Invisible tap zone on the right half flips the card back -->
+                    <!-- Tap zone covering the space to the right of the buttons flips the card back -->
                     <div id="rating-flip-zone" onclick="flipCard()"></div>
-                    <span id="rating-label">How do you find this word?</span>
+                    <span id="rating-label">Rate:</span>
                     <button class="rating-btn hard" onclick="rateWord('hard')">Hard</button>
-                    <button class="rating-btn okay" onclick="rateWord('okay')">Okay</button>
                     <button class="rating-btn easy" onclick="rateWord('easy')">Easy</button>
                 </div>
             </div>
@@ -1006,7 +982,7 @@
     </div>
 
     <!-- ── Navigation Buttons ─────────────────────────────────────────────────
-         Back/Shuffle/Next skip over words in knownWords array (mastered words).
+         Back/Shuffle/Next navigate through wordData.
          IMPORTANT: Do NOT remove the .primary class from the Next button —
          it controls the colored styling. -->
     <div class="controls">
@@ -1034,15 +1010,14 @@
 //   wf_index_v6        — last viewed card index (integer)
 //   wf_deleted_log     — JSON array of "WORD|sentence" IDs user deleted
 //   wf_fav_log         — JSON array of "WORD|sentence" IDs user favorited
-//   wf_known_words     — JSON array of WORD strings user mastered (hidden)
 //   wf_ratings         — JSON object { WORD: 'hard'|'okay'|'easy' }
-//   wf_active_deck     — string deck id (e.g. 'all', 'hard', 'sources')
+//   wf_active_deck     — string deck id (e.g. 'all', 'hard', 'easy')
 //   wf_streak_date     — 'YYYY-MM-DD' of last app open
 //   wf_streak_count    — integer day streak
 //   wf_daily_YYYY-MM-DD— integer cards reviewed on that date
 //   wf_wotd_seen       — 'YYYY-MM-DD' of last word-of-the-day shown
 //
-// CLOUD SYNC: deletedExamples, favExamples, knownWords are also synced to a
+// CLOUD SYNC: deletedExamples and favExamples are also synced to a
 //   GitHub Gist via a Cloudflare Worker proxy (WORKER_URL). wordRatings is
 //   NOT synced — it is device-local only.
 //
@@ -1058,7 +1033,6 @@
 //   openSearch()       — opens full-screen live word search
 //
 // TOUCH GESTURES:
-//   Card front, long-press word: confirmMastery() — mark word as mastered
 //   Example, long-press LEFT (750ms): delete example
 //   Example, long-press RIGHT (1200ms): toggle favorite (italic)
 //   Back header tap: flipCard()
@@ -1076,8 +1050,7 @@ const WORKER_URL = "https://dark-sky-e62b.iamayushdhakal.workers.dev";
 // wordData: full CSV rows parsed by PapaParse. Populated once in window.onload.
 // deletedExamples: array of "WORD|sentence" IDs the user has deleted.
 // favExamples: array of "WORD|sentence" IDs the user has favorited.
-// knownWords: array of WORD strings the user has marked as mastered (hidden).
-// All three arrays are persisted to localStorage AND synced to GitHub Gist.
+// Both arrays are persisted to localStorage AND synced to GitHub Gist.
 // ══════════════════════════════════════════════════════════════════════════════
 let wordData = [];    // full rows merged from words_1.csv + words_2.csv, keyed by column name
                       // Columns: WORD, IPA, PHONETIC, Type, Meaning0–Meaning10,
@@ -1092,7 +1065,6 @@ let wotdIndex = -1;         // index of today's word of the day (set by getWotdI
 let ipaMap = {}; // word (lowercase) → IPA string, e.g. ipaMap['ubiquitous'] = '/juːˈbɪk.wɪ.təs/'
 let deletedExamples = JSON.parse(localStorage.getItem('wf_deleted_log') || "[]");
 let favExamples = JSON.parse(localStorage.getItem('wf_fav_log') || "[]");
-let knownWords = JSON.parse(localStorage.getItem('wf_known_words') || "[]");
 
 // ══════════════════════════════════════════════════════════════════════════════
 // IMPORTANT — Quiz State
@@ -1125,13 +1097,6 @@ let availableMeanings = [];
 let currentMeaningIdx = 0;
 let syncTimeout = null;
 
-// IMPORTANT — Mastery Gesture State
-// masteryTimer / masteryMoved are used by setupMasteryGesture() to implement a
-// 750ms long-press on the card front that triggers confirmMastery().
-// masteryMoved prevents the mastery action from firing if the user scrolls/swipes.
-let masteryTimer = null;
-let masteryMoved = false;
-
 // ── Deck & Rating State (declared here so all functions can access them) ──────
 let activeDeckId = localStorage.getItem('wf_active_deck') || 'all';
 let activeDeckIndices = [];
@@ -1150,7 +1115,6 @@ function showSync(state, message) {
 
 // ── window.onload ─────────────────────────────────────────────────────────────
 // Entry point. Order matters:
-// 1. setupMasteryGesture() must run before the card is shown so gesture listeners
 //    are attached to #front-word-container immediately.
 // 2. PapaParse downloads and parses words_1.csv and words_2.csv (header:true = column names as keys).
 // 3. After parse, a GitHub Gist fetch merges cloud state into local state (union of
@@ -1173,7 +1137,6 @@ function showSync(state, message) {
 //   words_2.csv — words #1887+, same column format as words_1.csv
 // IMPORTANT: Do NOT reorder the steps — the UI must not show before data is ready.
 window.onload = () => {
-    setupMasteryGesture();
 
     const parseCSV = (url) => new Promise(resolve =>
         Papa.parse(url, { download: true, header: true, complete: r => resolve(r.data) })
@@ -1197,7 +1160,6 @@ window.onload = () => {
             .then(d => {
                 deletedExamples = Array.from(new Set([...(d.deleted || []), ...deletedExamples]));
                 favExamples    = Array.from(new Set([...(d.favs    || []), ...favExamples]));
-                knownWords     = Array.from(new Set([...(d.known   || []), ...knownWords]));
                 saveAndSync(false);
             }).catch(() => {});
 
@@ -1207,59 +1169,13 @@ window.onload = () => {
         document.getElementById('app-header').style.display = 'flex';
 
         // Start at correct card
-        if (knownWords.includes(wordData[currentIndex].WORD.trim())) {
-            nextCard();
-        } else {
-            updateCard();
-        }
+        updateCard();
 
         // Engagement features + deck (all data ready at this point)
         initEngagement();
         applyDeck(activeDeckId);
     });
 };
-
-// ── setupMasteryGesture ───────────────────────────────────────────────────────
-// Attaches a 750ms long-press gesture to #front-word-container.
-// IMPORTANT: Uses {passive:true} on touchstart/touchmove for iOS scroll performance.
-// masteryMoved is set to true on touchmove so that scrolling does NOT trigger mastery.
-// The timer is always cleared on touchend/touchmove to prevent unwanted firing.
-function setupMasteryGesture() {
-    const container = document.getElementById('front-word-container');
-    
-    container.addEventListener('touchstart', (e) => {
-        masteryMoved = false;
-        masteryTimer = setTimeout(() => {
-            if (!masteryMoved) {
-                confirmMastery();
-            }
-        }, 750);
-    }, {passive: true});
-
-    container.addEventListener('touchmove', () => {
-        masteryMoved = true;
-        clearTimeout(masteryTimer);
-    }, {passive: true});
-
-    container.addEventListener('touchend', () => {
-        clearTimeout(masteryTimer);
-    });
-}
-
-// ── confirmMastery ────────────────────────────────────────────────────────────
-// Called after the mastery long-press gesture fires.
-// Adds the current word to knownWords, saves, then advances to the next card.
-// The guard (!knownWords.includes(word)) prevents duplicates.
-function confirmMastery() {
-    const word = wordData[currentIndex].WORD.trim();
-    if (confirm(`Mark "${word}" as mastered and hide it?`)) {
-        if(!knownWords.includes(word)) {
-            knownWords.push(word);
-            saveAndSync();
-            nextCard();
-        }
-    }
-}
 
 // ── handleCardFrontClick ──────────────────────────────────────────────────────
 // IMPORTANT: This function differentiates two tap zones on the card front:
@@ -1284,10 +1200,10 @@ function handleCardFrontClick(e) {
 //        calls updateRatingButtons() to highlight the stored rating (if any).
 // Counter format: "X / Y" normally, or "X / Y" within-deck when a deck is active.
 // IMPORTANT: Called after every navigation action (nextCard, prevCard, shuffleCard,
-// closeOverlays, confirmMastery). Do NOT call it in loops — it's expensive.
+// closeOverlays. Do NOT call it in loops — it's expensive.
 // Renders the current word (wordData[currentIndex]) onto both card faces.
 // IMPORTANT: Called after every navigation action (nextCard, prevCard, shuffleCard,
-// jumpPrompt, closeOverlays, confirmMastery).
+// jumpPrompt, closeOverlays.
 // Steps:
 // 1. Collects all available meanings (MEANING column + Meaning1..Meaning10 columns).
 // 2. Resets currentMeaningIdx to 0.
@@ -1676,72 +1592,14 @@ function renderExamples(item) {
 }
 
 // ── openSettings ──────────────────────────────────────────────────────────────
-// Shows the settings overlay. Also hides the known-overlay in case it was open
-// (used as the back-navigation target from the known-overlay header).
+// Shows the settings overlay.
 // IMPORTANT: e.stopPropagation() prevents the click from bubbling if called
 // from a child element inside another overlay.
 function openSettings(e) {
     if(e) e.stopPropagation();
-    document.getElementById('known-overlay').style.display = 'none';
     document.getElementById('settings-overlay').style.display = 'flex';
 }
 
-// ── openKnown ─────────────────────────────────────────────────────────────────
-// Shows the "Mastered Words" overlay and populates #known-list.
-// Words are shown in reverse-added order (most recently mastered first).
-// IMPORTANT: Long-press on the LEFT half of a known-word item (750ms) prompts
-// to restore it — removing it from knownWords and re-enabling it in the card flow.
-function openKnown() {
-    const list = document.getElementById('known-list');
-    list.innerHTML = "";
-
-    document.getElementById('settings-overlay').style.display = 'none';
-    document.getElementById('known-overlay').style.display = 'flex';
-
-    if (knownWords.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:gray; margin-top:50px;">No words mastered.</p>`;
-        return;
-    }
-
-    // Show most recently mastered words first
-    knownWords.slice().reverse().forEach(word => {
-        const masterItem = wordData.find(w => w.WORD.trim() === word);
-        const ipaText = masterItem ? masterItem.IPA : '';
-
-        const div = document.createElement('div');
-        div.className = 'known-item';
-        div.innerHTML = `<span class="known-word">${word}</span><span class="known-ipa">${ipaText}</span>`;
-
-        let pressTimer;
-        div.addEventListener('touchstart', (e) => {
-            // Only trigger restore gesture on left-half touch
-            if (e.touches[0].clientX < window.innerWidth / 2) {
-                pressTimer = setTimeout(() => {
-                    if(confirm(`Restore "${word}"?`)) {
-                        knownWords = knownWords.filter(w => w !== word);
-                        saveAndSync();
-                        openKnown(); // Re-render the list after restoring
-                    }
-                }, 750);
-            }
-        }, {passive: true});
-
-        div.addEventListener('touchend', () => clearTimeout(pressTimer));
-        list.appendChild(div);
-    });
-}
-
-// ── removeAllKnown ────────────────────────────────────────────────────────────
-// Clears the entire knownWords array after confirmation.
-// Guard: returns early if the list is already empty to avoid unnecessary confirm dialog.
-function removeAllKnown() {
-    if (knownWords.length === 0) return;
-    if (confirm("Remove all mastered words?")) {
-        knownWords = [];
-        saveAndSync();
-        openKnown(); // Re-render the now-empty list
-    }
-}
 
 // ── openFavs ──────────────────────────────────────────────────────────────────
 // Shows the Favorites overlay and populates #fav-list.
@@ -1867,7 +1725,6 @@ function openFavs() {
 // favorites or deletions changed while an overlay was open.
 function closeOverlays() { 
     document.getElementById('fav-overlay').style.display = 'none'; 
-    document.getElementById('known-overlay').style.display = 'none'; 
     document.getElementById('settings-overlay').style.display = 'none'; 
     document.getElementById('quiz-overlay').style.display = 'none';
     updateCard();
@@ -1967,7 +1824,7 @@ async function pushSync() {
             await fetch(WORKER_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples, known: knownWords })
+                body: JSON.stringify({ deleted: deletedExamples, favs: favExamples })
             });
             showSync('synced', 'Synced');
         } catch {} // Silently fail if offline — localStorage already has the data
@@ -1976,7 +1833,7 @@ async function pushSync() {
 
 // ── saveAndSync ───────────────────────────────────────────────────────────────
 // Single source of truth for persisting app state.
-// Always writes deletedExamples, favExamples, and knownWords to localStorage.
+// Always writes deletedExamples and favExamples to localStorage.
 // If shouldPush=true (default), also debounces a cloud sync via pushSync().
 // Pass shouldPush=false when merging cloud state on load to avoid push loops.
 // IMPORTANT: wordRatings is stored separately (wf_ratings) and NOT synced to
@@ -1989,7 +1846,6 @@ async function pushSync() {
 function saveAndSync(shouldPush = true) {
     localStorage.setItem('wf_deleted_log', JSON.stringify(deletedExamples));
     localStorage.setItem('wf_fav_log', JSON.stringify(favExamples));
-    localStorage.setItem('wf_known_words', JSON.stringify(knownWords));
     if(shouldPush) pushSync();
 }
 
@@ -2004,42 +1860,23 @@ function deleteEx(id, el) {
 }
 
 // ── prevCard ──────────────────────────────────────────────────────────────────
-// Moves to the previous card, skipping over mastered (known) words.
-// IMPORTANT: The do-while loop with a start-index guard prevents infinite loops
-// if ALL remaining words are in knownWords (it stops after one full cycle).
+// Moves to the previous card.
 function prevCard() {
-    let start = currentIndex;
-    do { 
-        currentIndex = (currentIndex - 1 + wordData.length) % wordData.length; 
-        if(currentIndex === start) break;
-    } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
+    currentIndex = (currentIndex - 1 + wordData.length) % wordData.length;
     updateCard();
 }
 
 // ── nextCard ──────────────────────────────────────────────────────────────────
-// Moves to the next card, skipping over mastered (known) words.
-// Same loop guard as prevCard() to handle the all-known edge case.
+// Moves to the next card.
 function nextCard() {
-    let start = currentIndex;
-    do { 
-        currentIndex = (currentIndex + 1) % wordData.length;
-        if(currentIndex === start) break;
-    } while (knownWords.includes(wordData[currentIndex].WORD.trim()));
+    currentIndex = (currentIndex + 1) % wordData.length;
     updateCard();
 }
 
 // ── shuffleCard ───────────────────────────────────────────────────────────────
-// Picks a random card index, retrying up to 100 times to avoid landing on a
-// mastered word.
-// IMPORTANT: The 100-attempt limit prevents an infinite loop if most/all words
-// are mastered. After 100 attempts it accepts whatever index was last picked.
+// Picks a random card index.
 function shuffleCard() {
-    let attempts = 0; let newIdx;
-    do { 
-        newIdx = Math.floor(Math.random() * wordData.length); 
-        attempts++;
-    } while (knownWords.includes(wordData[newIdx].WORD.trim()) && attempts < 100);
-    currentIndex = newIdx; 
+    currentIndex = Math.floor(Math.random() * wordData.length);
     updateCard();
 }
 
@@ -2374,18 +2211,6 @@ const DECKS = [
         filter: () => true,
     },
     {
-        id: 'sources',
-        name: 'Words from Sources',
-        desc: 'Words with real newspaper or book examples',
-        filter: (row) => {
-            // A word "has sources" if any of its Sentence N entries has a Source N value
-            for (let i = 0; i <= 75; i++) {
-                if ((row["Source " + i] || '').trim()) return true;
-            }
-            return false;
-        },
-    },
-    {
         id: 'unfavorited',
         name: 'Never Favorited',
         desc: "Words where you haven't saved any example",
@@ -2433,7 +2258,7 @@ function applyDeck(deckId) {
     activeDeckIndices = deckId === 'all'
         ? [] // empty = no filter, use full wordData
         : wordData.reduce((acc, row, idx) => {
-            if (!knownWords.includes(row.WORD.trim()) && deck.filter(row, idx, wordData))
+            if (deck.filter(row, idx, wordData))
                 acc.push(idx);
             return acc;
         }, []);
@@ -2472,14 +2297,11 @@ function renderDeckList() {
     list.innerHTML = '';
 
     DECKS.forEach(deck => {
-        // Count matching words (excluding known)
         let count;
         if (deck.id === 'all') {
-            count = wordData.length - knownWords.length;
+            count = wordData.length;
         } else {
-            count = wordData.filter((row, idx) =>
-                !knownWords.includes(row.WORD.trim()) && deck.filter(row, idx, wordData)
-            ).length;
+            count = wordData.filter((row, idx) => deck.filter(row, idx, wordData)).length;
         }
 
         const div = document.createElement('div');
