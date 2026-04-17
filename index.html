@@ -1385,25 +1385,46 @@ function renderQuizMeaning() {
     el.innerHTML = `<span>Meaning</span>${quizMeanings[quizMeaningIdx]}${counter}`;
 }
 
+// ── buildQuizPool ─────────────────────────────────────────────────────────────
+// Builds the quiz pool respecting quizExamplesLimit.
+// For each word that has favorites, at most quizExamplesLimit sentences are
+// included. Sentences are taken in their current favExamples order (favorites
+// first once sorted on the card, but here we just cap per-word).
+function buildQuizPool() {
+    // Group favExamples by word, then take up to quizExamplesLimit per word
+    const byWord = {};
+    favExamples.forEach(id => {
+        const word = id.split('|')[0].trim();
+        if (!byWord[word]) byWord[word] = [];
+        byWord[word].push(id);
+    });
+    const pool = [];
+    Object.values(byWord).forEach(ids => {
+        ids.slice(0, quizExamplesLimit).forEach(id => pool.push(id));
+    });
+    return pool;
+}
+
 // ── startQuiz ─────────────────────────────────────────────────────────────────
 // Initializes and opens the quiz overlay from the Favorites overlay.
 // IMPORTANT: e.stopPropagation() prevents the click from bubbling to the
 // parent fav-overlay header and triggering an unintended closeOverlays().
-// quizPool is a fresh copy of favExamples — it shrinks as questions are asked
-// and refills (in nextQuizQuestion) when exhausted.
+// quizPool is built via buildQuizPool() which caps sentences per word.
 function startQuiz(e) {
     if(e) e.stopPropagation();
     if (favExamples.length < 1) {
         alert("Add some favorites first!");
         return;
     }
-    quizPool = [...favExamples];
+    quizPool = buildQuizPool();
     quizScore = 0;
     quizWrong = 0;
 
     document.getElementById('fav-overlay').style.display = 'none';
     document.getElementById('quiz-overlay').style.display = 'flex';
-    document.getElementById('quiz-total-display').textContent = favExamples.length;
+    document.getElementById('quiz-total-display').textContent = quizPool.length;
+    document.getElementById('quiz-score-display').textContent = 0;
+    document.getElementById('quiz-wrong-display').textContent = 0;
     // Sync settings panel display value
     document.getElementById('examples-limit-display').textContent = quizExamplesLimit;
 
@@ -1421,7 +1442,8 @@ function startQuiz(e) {
 function nextQuizQuestion() {
     if (quizPool.length === 0) {
         alert("Well done! Restarting...");
-        quizPool = [...favExamples];
+        quizPool = buildQuizPool();
+        document.getElementById('quiz-total-display').textContent = quizPool.length;
     }
 
     isQuizLocked = false;
@@ -2476,11 +2498,24 @@ function toggleQuizSettings() {
     document.getElementById('examples-limit-display').textContent = quizExamplesLimit;
 }
 
-// changeExamplesLimit: increments or decrements quizExamplesLimit (clamped 1–20).
+// changeExamplesLimit: increments or decrements quizExamplesLimit (clamped 1–20),
+// then immediately resets the quiz pool and updates the Total / Left counters.
 function changeExamplesLimit(delta) {
     quizExamplesLimit = Math.min(20, Math.max(1, quizExamplesLimit + delta));
     localStorage.setItem('wf_quiz_examples_limit', quizExamplesLimit);
     document.getElementById('examples-limit-display').textContent = quizExamplesLimit;
+
+    // Rebuild pool with new limit and reset the round
+    quizPool = buildQuizPool();
+    quizScore = 0;
+    quizWrong = 0;
+    document.getElementById('quiz-total-display').textContent = quizPool.length;
+    document.getElementById('quiz-remaining-display').textContent = quizPool.length;
+    document.getElementById('quiz-score-display').textContent = 0;
+    document.getElementById('quiz-wrong-display').textContent = 0;
+
+    // Start a fresh question with the new pool
+    nextQuizQuestion();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
