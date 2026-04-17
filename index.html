@@ -1663,12 +1663,17 @@ function renderExamples(item) {
         }
     }
 
-    // Sort: favorites first, then sourced examples, then unsourced
+    // Parse a "Mon DD, YYYY" date string into a comparable timestamp (0 if missing/invalid)
+    const parseDate = (d) => {
+        if (!d) return 0;
+        const t = new Date(d).getTime();
+        return isNaN(t) ? 0 : t;
+    };
+
+    // Sort: 1) favorites first  2) most recent date descending  3) undated last
     rows.sort((a, b) => {
         if (b.isFav !== a.isFav) return b.isFav - a.isFav;
-        const aHasSource = (a.source || a.date) ? 1 : 0;
-        const bHasSource = (b.source || b.date) ? 1 : 0;
-        return bHasSource - aHasSource;
+        return parseDate(b.date) - parseDate(a.date);
     }).forEach((ex, idx) => {
         const div = document.createElement('div');
         div.className = 'example-item';
