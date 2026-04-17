@@ -309,7 +309,7 @@
 
         /* IMPORTANT: .card-back must have transform:rotateY(180deg) to start
            face-down. It is revealed when the parent .card gets .is-flipped. */
-        .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; }
+        .card-back { transform: rotateY(180deg); display: flex; flex-direction: column; min-height: 0; }
 
         /* IMPORTANT: clicking .back-header flips the card back (flipCard()).
            position:relative is needed for child z-index stacking to work correctly. */
@@ -333,7 +333,7 @@
         /* IMPORTANT: #example-list uses flex-grow:1 so it fills remaining card
            height below the back-header. overflow-y:auto + -webkit-overflow-scrolling
            enables momentum scrolling of the example sentences on iOS. */
-        #example-list { flex-grow: 1; overflow-y: auto; padding: 14px 20px 28px; -webkit-overflow-scrolling: touch; }
+        #example-list { flex-grow: 1; min-height: 0; overflow-y: auto; padding: 14px 20px 28px; -webkit-overflow-scrolling: touch; }
 
         /* IMPORTANT: .example-item.is-fav — favorited examples get a cycling color
            (red → yellow → green by position in favExamples) set via inline style.
@@ -706,25 +706,23 @@
 
         /* Hard — unselected: red text on dark bg */
         .rating-btn.hard { color: #FF6B6B; }
-        /* Hard — selected: bright solid red fill, white text, glow */
+        /* Hard — selected: dim red tint, red border, same text color */
         .rating-btn.hard.selected {
-            background: #FF4545;
-            border-color: #FF4545;
-            color: #fff;
-            box-shadow: 0 0 10px rgba(255,69,69,0.55);
+            background: rgba(255,69,69,0.2);
+            border-color: #FF6B6B;
+            color: #FF6B6B;
         }
-        .rating-btn.hard:active { background: rgba(255,107,107,0.18); border-color: #FF6B6B; }
+        .rating-btn.hard:active { background: rgba(255,107,107,0.15); border-color: #FF6B6B; }
 
         /* Easy — unselected: green text on dark bg */
         .rating-btn.easy { color: var(--success-green); }
-        /* Easy — selected: bright solid green fill, white text, glow */
+        /* Easy — selected: dim green tint, green border, same text color */
         .rating-btn.easy.selected {
-            background: #2ECC71;
-            border-color: #2ECC71;
-            color: #fff;
-            box-shadow: 0 0 10px rgba(46,204,113,0.55);
+            background: rgba(46,204,113,0.2);
+            border-color: var(--success-green);
+            color: var(--success-green);
         }
-        .rating-btn.easy:active { background: rgba(46,204,113,0.18); border-color: var(--success-green); }
+        .rating-btn.easy:active { background: rgba(46,204,113,0.15); border-color: var(--success-green); }
 
         /* ── Quiz Settings Panel ─────────────────────────────────────────────── */
         #quiz-settings-panel {
@@ -1186,7 +1184,7 @@ let quizMeanings = [];
 let quizMeaningIdx = 0;
 
 // ── Quiz Settings State ───────────────────────────────────────────────────────
-// quizExamplesLimit: max example sentences shown per word on the card back
+// quizExamplesLimit: max favorite sentences per word included in the quiz pool.
 // during a quiz session. Default 5, range 1–20. Persisted to localStorage.
 let quizExamplesLimit = parseInt(localStorage.getItem('wf_quiz_examples_limit') || '5');
 
@@ -1666,13 +1664,12 @@ function renderExamples(item) {
     }
 
     // Sort: favorites first, then sourced examples, then unsourced
-    // Apply the user-configured examples-per-word display limit
     rows.sort((a, b) => {
         if (b.isFav !== a.isFav) return b.isFav - a.isFav;
         const aHasSource = (a.source || a.date) ? 1 : 0;
         const bHasSource = (b.source || b.date) ? 1 : 0;
         return bHasSource - aHasSource;
-    }).slice(0, quizExamplesLimit).forEach((ex, idx) => {
+    }).forEach((ex, idx) => {
         const div = document.createElement('div');
         div.className = 'example-item';
         div.dataset.exId = ex.id;
