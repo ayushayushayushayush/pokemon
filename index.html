@@ -19,7 +19,7 @@
 
     <title>WordFlow Pro</title>
 
-    <!-- IMPORTANT: PapaParse is required to parse the words.csv data file.
+    <!-- IMPORTANT: PapaParse is required to parse the words_1.csv and words_2.csv data files.
          Do NOT remove this script tag — the entire app will fail to load without it. -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -1022,10 +1022,9 @@
 // ══════════════════════════════════════════════════════════════════════════════
 //
 // DATA FILES (must be in same directory as this HTML):
-//   words.csv    — 3,563 rows: WORD, IPA, PHONETIC, Type, MEANING, Meaning1-10,
-//                  and example columns 1–50. Primary vocabulary source.
-//   word2.csv    — sourced newspaper sentences for words 1–500.
-//                  Columns: Word, Sentence N, Source N, Date N, URL N (up to 68).
+//   words_1.csv  — words #1–#1886: WORD, IPA, PHONETIC, Type, Meaning0–Meaning10,
+//                  Sentence N, Source N, Date N, URL N (N = 0–75)
+//   words_2.csv  — words #1887+, same column format as words_1.csv
 //   audio-file/  — MP3s for words 1–1018      (e.g. audio-file/abandon.mp3)
 //   audio-file-2/— MP3s for words 1019–2026
 //   audio-file-3/— MP3s for words 2027–3034
@@ -1080,9 +1079,9 @@ const WORKER_URL = "https://dark-sky-e62b.iamayushdhakal.workers.dev";
 // knownWords: array of WORD strings the user has marked as mastered (hidden).
 // All three arrays are persisted to localStorage AND synced to GitHub Gist.
 // ══════════════════════════════════════════════════════════════════════════════
-let wordData = [];    // full rows from words.csv, keyed by column name (WORD, IPA, MEANING, Meaning1-10, 1-50, Type, PHONETIC)
-let word2Data = {};   // rows from word2.csv, keyed by lowercase word → [{text, source, date}]
-                      // word2.csv covers words 1–500 with real sourced newspaper sentences
+let wordData = [];    // full rows merged from words_1.csv + words_2.csv, keyed by column name
+                      // Columns: WORD, IPA, PHONETIC, Type, Meaning0–Meaning10,
+                      //          Sentence 0–Sentence N, Source N, Date N, URL N
 
 // ── Engagement Feature State ───────────────────────────────────────────────────
 const DAILY_GOAL = 7; // daily goal: words rated (hard/okay/easy) per day
@@ -1153,7 +1152,7 @@ function showSync(state, message) {
 // Entry point. Order matters:
 // 1. setupMasteryGesture() must run before the card is shown so gesture listeners
 //    are attached to #front-word-container immediately.
-// 2. PapaParse downloads and parses words.csv (header:true = column names as keys).
+// 2. PapaParse downloads and parses words_1.csv and words_2.csv (header:true = column names as keys).
 // 3. After parse, a GitHub Gist fetch merges cloud state into local state (union of
 //    deleted/favs/known from both sources), then calls saveAndSync(false) to
 //    persist without triggering another cloud push.
@@ -1161,18 +1160,17 @@ function showSync(state, message) {
 // 5. If the saved currentIndex points to a known/mastered word, skip to next.
 // IMPORTANT: Do NOT reorder these steps — the UI must not show before data is ready.
 // ── window.onload ─────────────────────────────────────────────────────────────
-// Entry point. Loads both CSVs in parallel using Promise.all, then:
-//   1. Populates wordData (from words.csv) and word2Data (from word2.csv)
-//   2. Builds ipaMap for inline IPA annotations in example sentences
-//   3. Merges cloud state (GitHub Gist via Cloudflare Worker) with localStorage
-//   4. Hides loading screen, shows app UI
-//   5. Renders first card (skipping mastered words if needed)
-//   6. Calls initEngagement() for streak/goal/WOTD, then applyDeck() for deck filter
+// Entry point. Loads words_1.csv and words_2.csv in parallel, merges them into
+// a single wordData array, then:
+//   1. Populates wordData (merged from both files) and builds ipaMap
+//   2. Merges cloud state (GitHub Gist via Cloudflare Worker) with localStorage
+//   3. Hides loading screen, shows app UI
+//   4. Renders first card (skipping mastered words if needed)
+//   5. Calls initEngagement() for streak/goal/WOTD, then applyDeck() for deck filter
 // DATA SOURCES:
-//   words.csv  — 3,563 vocabulary words: WORD, IPA, PHONETIC, Type, MEANING,
-//                Meaning1-10, and numbered example columns 1–50
-//   word2.csv  — sourced newspaper sentences for words 1–500:
-//                Word, Sentence N, Source N, Date N, URL N (up to 68 sentences)
+//   words_1.csv — words #1–#1886 ("insensible"), columns: #, WORD, PHONETIC, IPA,
+//                 Type, Meaning0–Meaning10, Sentence N, Source N, Date N, URL N
+//   words_2.csv — words #1887+, same column format as words_1.csv
 // IMPORTANT: Do NOT reorder the steps — the UI must not show before data is ready.
 window.onload = () => {
     setupMasteryGesture();
@@ -1181,31 +1179,16 @@ window.onload = () => {
         Papa.parse(url, { download: true, header: true, complete: r => resolve(r.data) })
     );
 
-    Promise.all([parseCSV("words.csv"), parseCSV("word2.csv")]).then(([wordsResults, word2Results]) => {
+    Promise.all([parseCSV("words_1.csv"), parseCSV("words_2.csv")]).then(([results1, results2]) => {
 
-        // Build wordData from words.csv
-        wordData = wordsResults.filter(row => row.WORD);
+        // Merge both files into a single wordData array, filtering out blank rows
+        wordData = [...results1, ...results2].filter(row => row.WORD && row.WORD.trim());
 
-        // Build ipaMap
+        // Build ipaMap from merged data
         wordData.forEach(row => {
             if (row.WORD && row.IPA) {
                 ipaMap[row.WORD.trim().toLowerCase()] = row.IPA.trim();
             }
-        });
-
-        // Build word2Data from word2.csv
-        word2Results.filter(row => row.Word && row.Word.trim()).forEach(row => {
-            const key = row.Word.trim().toLowerCase();
-            const examples = [];
-            for (let i = 1; i <= 68; i++) {
-                const text = row["Sentence " + i];
-                const source = row["Source " + i] || '';
-                const date = row["Date " + i] || '';
-                if (text && text.trim().length > 1) {
-                    examples.push({ text: text.trim(), source: source.trim(), date: date.trim() });
-                }
-            }
-            if (examples.length > 0) word2Data[key] = examples;
         });
 
         // Merge cloud state with local state
@@ -1316,13 +1299,11 @@ function updateCard() {
     const item = wordData[currentIndex];
     const meaningEl = document.getElementById('b-meaning');
 
-    // Collect all meanings: primary MEANING column + up to 10 Meaning1..Meaning10 columns
+    // Collect all meanings: Meaning0 through Meaning10 columns
     availableMeanings = [];
-    if (item.MEANING && item.MEANING.trim()) availableMeanings.push(item.MEANING.trim());
-    
-    for(let i=1; i<=10; i++) {
+    for (let i = 0; i <= 10; i++) {
         let val = item[`Meaning${i}`];
-        if(val && val.trim()) availableMeanings.push(val.trim());
+        if (val && val.trim()) availableMeanings.push(val.trim());
     }
     
     currentMeaningIdx = 0;
@@ -1428,8 +1409,7 @@ function nextQuizQuestion() {
     const quizWordData = wordData.find(w => w.WORD.trim().toLowerCase() === currentQuizCorrect.toLowerCase());
     quizMeanings = [];
     if (quizWordData) {
-        if (quizWordData.MEANING && quizWordData.MEANING.trim()) quizMeanings.push(quizWordData.MEANING.trim());
-        for (let i = 1; i <= 10; i++) {
+        for (let i = 0; i <= 10; i++) {
             const v = quizWordData[`Meaning${i}`];
             if (v && v.trim()) quizMeanings.push(v.trim());
         }
@@ -1445,13 +1425,19 @@ function nextQuizQuestion() {
     
     const maskedSentence = sentence.replace(regex, "<b>_________</b>");
 
-    // Show source/date for word2 examples in quiz
+    // Show source/date footer if available from the unified CSV columns
     let quizFooter = '';
-    const quizWordIdx = wordData.indexOf(quizWordData);
-    if (quizWordIdx >= 0 && quizWordIdx <= 499 && word2Data[currentQuizCorrect.toLowerCase()]) {
-        const match = word2Data[currentQuizCorrect.toLowerCase()].find(e => e.text === sentence.trim());
-        if (match && (match.source || match.date)) {
-            quizFooter = `<div class="example-footer" style="margin-top:12px;"><span class="example-source">${match.source}</span><span class="example-date">${match.date}</span></div>`;
+    if (quizWordData) {
+        for (let i = 0; i <= 75; i++) {
+            const t = (quizWordData["Sentence " + i] || '').trim();
+            if (t === sentence.trim()) {
+                const src  = (quizWordData["Source " + i] || '').trim();
+                const date = (quizWordData["Date "   + i] || '').trim();
+                if (src || date) {
+                    quizFooter = `<div class="example-footer" style="margin-top:12px;"><span class="example-source">${src}</span><span class="example-date">${date}</span></div>`;
+                }
+                break;
+            }
         }
     }
     document.getElementById('quiz-question').innerHTML = maskedSentence + quizFooter;
@@ -1583,18 +1569,18 @@ function annotateWithIPA(text, skipWord) {
 // Called by updateCard() every time the card changes. Clears #example-list first.
 //
 // DATA SOURCE:
-//   Words 1–500 (index 0–499): uses word2Data if available (sourced newspaper sentences)
-//   Words 501+: uses numbered columns "1"–"50" from words.csv
+//   All words: uses columns "Sentence N", "Source N", "Date N", "URL N" (N = 0–75)
+//   from the merged words_1.csv / words_2.csv data.
 //
 // FILTERING: skips sentences in deletedExamples ("WORD|text" format).
 //
-// SORT ORDER: 1) Favorites (italic) 2) Sourced (have source/date) 3) Unsourced
+// SORT ORDER: 1) Favorites (gold) 2) Sourced (have source/date) 3) Unsourced
 //
 // IPA ANNOTATION: each sentence is passed through annotateWithIPA() which wraps
 //   vocab words in a .word-ipa-wrap showing the IPA below the word.
 //
-// SOURCE/DATE FOOTER: word2Data sentences get a footer with source (left) and
-//   date (right), separated by a faint top border.
+// SOURCE/DATE FOOTER: sentences with a Source or Date get a footer with source
+//   (left) and date (right), separated by a faint top border.
 //
 // TOUCH GESTURES (per example div):
 //   Long press LEFT half  (750ms):  confirm → deleteEx() removes the sentence
@@ -1612,28 +1598,18 @@ function renderExamples(item) {
     const list = document.getElementById('example-list');
     list.innerHTML = "";
     const cleanWord = item.WORD.trim();
-    const wordIndex = wordData.indexOf(item); // 0-based index
     const rows = [];
 
-    // Words 1–500 (index 0–499): use word2.csv source if available
-    const useWord2 = wordIndex >= 0 && wordIndex <= 499 && word2Data[cleanWord.toLowerCase()];
-
-    if (useWord2) {
-        // Build rows from word2Data
-        word2Data[cleanWord.toLowerCase()].forEach(ex => {
-            const exId = `${cleanWord}|${ex.text}`;
-            if (deletedExamples.includes(exId)) return;
-            rows.push({ text: ex.text, source: ex.source, date: ex.date, id: exId, isFav: favExamples.includes(exId) });
-        });
-    } else {
-        // Collect example sentences from columns "1" through "50" in words.csv
-        for (let i = 1; i <= 50; i++) {
-            const text = item[i.toString()];
-            if (text && text.trim().length > 1) {
-                const exId = `${cleanWord}|${text.trim()}`;
-                if (deletedExamples.includes(exId)) continue;
-                rows.push({ text: text.trim(), source: '', date: '', id: exId, isFav: favExamples.includes(exId) });
-            }
+    // Collect example sentences from columns "Sentence 0" through "Sentence 75"
+    for (let i = 0; i <= 75; i++) {
+        const text = item["Sentence " + i];
+        if (text && text.trim().length > 1) {
+            const t = text.trim();
+            const source = (item["Source " + i] || '').trim();
+            const date   = (item["Date "   + i] || '').trim();
+            const exId   = `${cleanWord}|${t}`;
+            if (deletedExamples.includes(exId)) continue;
+            rows.push({ text: t, source, date, id: exId, isFav: favExamples.includes(exId) });
         }
     }
 
@@ -1781,7 +1757,7 @@ function removeAllKnown() {
 // Each group header shows the word + IPA. Tapping IPA plays audio.
 // Long-pressing (750ms) the word title navigates to that card (flipped).
 // Long-pressing (750ms) LEFT half of a sentence item prompts to unfavorite it.
-// For words 1–500 with word2Data, each sentence shows a source/date footer.
+// Source/date footers are shown for any sentence that has them in the CSV columns.
 // Sentences from the same word are grouped together in insertion order.
 // IMPORTANT: favExamples format is "WORD|sentence text" — both parts required.
 function openFavs() {
@@ -1847,12 +1823,18 @@ function openFavs() {
             const item = document.createElement('div');
             item.className = 'example-item';
 
-            // Look up source/date from word2Data if available for this word
-            const wordIdx = organized[word].index;
+            // Look up source/date from unified CSV columns for this word
+            const wordRow = wordData[organized[word].index];
             let source = '', date = '';
-            if (wordIdx >= 0 && wordIdx <= 499 && word2Data[word.toLowerCase()]) {
-                const match = word2Data[word.toLowerCase()].find(e => e.text === itemObj.text);
-                if (match) { source = match.source; date = match.date; }
+            if (wordRow) {
+                for (let i = 0; i <= 75; i++) {
+                    const t = (wordRow["Sentence " + i] || '').trim();
+                    if (t === itemObj.text) {
+                        source = (wordRow["Source " + i] || '').trim();
+                        date   = (wordRow["Date "   + i] || '').trim();
+                        break;
+                    }
+                }
             }
             const footerHtml = (source || date)
                 ? `<div class="example-footer"><span class="example-source">${source}</span><span class="example-date">${date}</span></div>`
@@ -2187,17 +2169,14 @@ function showWotd() {
 
     document.getElementById('wotd-word').textContent = item.WORD;
     document.getElementById('wotd-ipa').textContent = item.IPA || '';
-    document.getElementById('wotd-meaning').textContent = item.MEANING || '';
+    document.getElementById('wotd-meaning').textContent = item.Meaning0 || '';
 
-    // Pick a short example sentence if available
+    // Pick a short example sentence from the unified Sentence N columns
     let example = '';
-    for (let i = 1; i <= 50; i++) {
-        const t = item[i.toString()];
-        if (t && t.trim().length > 10 && t.trim().length < 180) { example = t.trim(); break; }
+    for (let i = 0; i <= 75; i++) {
+        const t = (item["Sentence " + i] || '').trim();
+        if (t.length > 10 && t.length < 180) { example = t; break; }
     }
-    // Also try word2Data
-    const w2 = word2Data[item.WORD.trim().toLowerCase()];
-    if (!example && w2 && w2.length > 0) example = w2[0].text;
     document.getElementById('wotd-example').textContent = example ? `"${example}"` : '';
 
     document.getElementById('wotd-modal').classList.add('show');
@@ -2397,8 +2376,14 @@ const DECKS = [
     {
         id: 'sources',
         name: 'Words from Sources',
-        desc: 'Words 1–500 with real newspaper examples',
-        filter: (row, idx) => idx <= 499 && word2Data[row.WORD.trim().toLowerCase()],
+        desc: 'Words with real newspaper or book examples',
+        filter: (row) => {
+            // A word "has sources" if any of its Sentence N entries has a Source N value
+            for (let i = 0; i <= 75; i++) {
+                if ((row["Source " + i] || '').trim()) return true;
+            }
+            return false;
+        },
     },
     {
         id: 'unfavorited',
