@@ -626,6 +626,17 @@
         .search-result-num {
             font-size: 0.62rem; color: var(--text-dim);
         }
+        .sr-heart {
+            font-size: 0.85rem; color: var(--accent-gold);
+            line-height: 1; display: block; text-align: right;
+        }
+        .sr-rating {
+            font-size: 0.55rem; font-weight: 700; letter-spacing: 0.05em;
+            padding: 2px 6px; border-radius: 8px; vertical-align: middle;
+            text-transform: uppercase;
+        }
+        .sr-hard { color: #FF6B6B; background: rgba(255,107,107,0.12); }
+        .sr-easy { color: var(--success-green); background: rgba(46,204,113,0.1); }
         #search-empty {
             padding: 60px 20px; text-align: center;
             font-size: 0.9rem; color: var(--text-secondary);
@@ -2168,11 +2179,16 @@ function renderSearchResults(query) {
 
         // Show current rating if any
         const rating = wordRatings[item.WORD.trim()];
-        const ratingDot = rating === 'hard' ? ' 🔴' : rating === 'easy' ? ' 🟢' : '';
+        const ratingDot = rating === 'hard' ? ' <span class="sr-rating sr-hard">Hard</span>' : rating === 'easy' ? ' <span class="sr-rating sr-easy">Easy</span>' : '';
+
+        // Show heart if word has any favorited examples
+        const hasFav = favExamples.some(id => id.startsWith(item.WORD.trim() + '|'));
+        const favHeart = hasFav ? '<span class="sr-heart">♥</span>' : '';
 
         div.innerHTML = `
             <div class="search-result-word">${displayWord}${ratingDot}</div>
             <div class="search-result-meta">
+                ${favHeart}
                 <span class="search-result-ipa">${item.IPA || ''}</span>
                 <span class="search-result-num">#${idx + 1}</span>
             </div>`;
