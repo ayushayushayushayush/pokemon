@@ -965,17 +965,17 @@
 
 <!-- ── Main App Header ─────────────────────────────────────────────────────────
      Two sub-headers, only one visible at a time:
-     #hdr-front: shown on card front — counter (search) center, settings right
-     #hdr-back:  shown on card back  — progress bar left, Hard/Easy + ★ right
+     #hdr-front: shown on card front — settings left, counter center, star right
+     #hdr-back:  shown on card back  — progress bar left, Hard/Easy right
      IMPORTANT: Do NOT remove id="app-header" — JS shows/hides it by that ID. -->
 <header id="app-header" style="display:none;">
-    <!-- Front header: counter + settings -->
+    <!-- Front header: settings left, counter center, star right -->
     <div id="hdr-front" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-        <div style="width:46px;"></div>
-        <div class="counter" id="counter" onclick="openSearch()">1 / 1</div>
         <div class="header-btn" onclick="openSettings(event)">⚙️</div>
+        <div class="counter" id="counter" onclick="openSearch()">1 / 1</div>
+        <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     </div>
-    <!-- Back header: progress bar left, Hard/Easy + ★ right -->
+    <!-- Back header: progress bar left, Hard/Easy right -->
     <div id="hdr-back" style="display:none;align-items:center;justify-content:space-between;width:100%;gap:12px;">
         <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
             <div id="progress-bar-track" style="flex:1;max-width:120px;"><div id="progress-bar-fill"></div></div>
@@ -984,7 +984,6 @@
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
             <button class="rating-btn hard" onclick="rateWord('hard')" id="hdr-hard-btn">Hard</button>
             <button class="rating-btn easy" onclick="rateWord('easy')" id="hdr-easy-btn">Easy</button>
-            <div class="header-btn fav-btn" onclick="openFavs()">★</div>
         </div>
     </div>
 </header>
