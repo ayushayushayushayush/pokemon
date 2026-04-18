@@ -1247,12 +1247,29 @@ window.onload = () => {
         Papa.parse(url, { download: true, header: true, complete: r => resolve(r.data) })
     );
 
-    Promise.all([parseCSV("words_1.csv"), parseCSV("words_2.csv")]).then(([results1, results2]) => {
+    // Load word data AND the full IPA dictionary in parallel for speed.
+    // ExamplesIPA.csv columns: word (lowercase), ipa, phonetic
+    // It covers a far larger vocabulary than the 3563 study words, so IPA hints
+    // will appear under virtually every word in every example sentence.
+    Promise.all([
+        parseCSV("words_1.csv"),
+        parseCSV("words_2.csv"),
+        parseCSV("ExamplesIPA.csv")
+    ]).then(([results1, results2, ipaResults]) => {
 
-        // Merge both files into a single wordData array, filtering out blank rows
+        // Merge both word files into a single wordData array, filtering blank rows
         wordData = [...results1, ...results2].filter(row => row.WORD && row.WORD.trim());
 
-        // Build ipaMap from merged data
+        // Build ipaMap from ExamplesIPA.csv first (broad dictionary coverage).
+        // words_1/2.csv IPA values are then overlaid so study-word pronunciations
+        // take priority if the dictionaries ever differ.
+        ipaResults.forEach(row => {
+            const w = (row.word || '').trim().toLowerCase();
+            const ipa = (row.ipa || '').trim();
+            if (w && ipa) ipaMap[w] = ipa;
+        });
+
+        // Overlay study-word IPA from wordData (higher-quality, hand-curated)
         wordData.forEach(row => {
             if (row.WORD && row.IPA) {
                 ipaMap[row.WORD.trim().toLowerCase()] = row.IPA.trim();
