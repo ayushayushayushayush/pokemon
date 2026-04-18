@@ -1698,11 +1698,65 @@ function cycleIpa(el) {
     el.textContent = variants[next];
 }
 
+// ── inflectIpa ───────────────────────────────────────────────────────────────
+// Given a stem's raw IPA string (possibly comma-separated variants) and the
+// suffix label that was stripped to find the stem, returns the IPA string with
+// the phonetically correct suffix appended to every variant.
+//
+// English phonology rules:
+//   -ed  → /ɪd/ after /t d/; /t/ after voiceless (/p k f s ʃ θ/); /d/ elsewhere
+//   -ing → / ɪŋ/ always
+//   -s/-es/-ies → / ɪz/ after sibilants; /s/ after voiceless; /z/ elsewhere
+//   -er  → / ər/ (comparative / agentive)
+//   -est → / ɪst/
+//   -ly  → / li/
+//   -ness→ / nɪs/
+//   -tion → stem IPA is already complete — no suffix appended
+function inflectIpa(rawIpa, suffix) {
+    if (!suffix || suffix === 'tion') return rawIpa;
+
+    return rawIpa.split(',').map(v => {
+        v = v.trim();
+        if (!v) return v;
+
+        // Final IPA symbol (strip stress marks, spaces, dots for the test)
+        const bare = v.replace(/[\s.ˈˌ]/g, '');
+        const last = bare.slice(-1);
+        // Check for affricates at the end
+        const endsAffricate = bare.endsWith('tʃ') || bare.endsWith('dʒ');
+
+        if (suffix === 'ed') {
+            if (last === 't' || last === 'd') return v + ' ɪd';
+            if ('pkfsʃθ'.includes(last) && !endsAffricate) return v + 't';
+            return v + 'd';
+        }
+
+        if (suffix === 'ing') return v + ' ɪŋ';
+
+        if (suffix === 's' || suffix === 'es' || suffix === 'ies') {
+            if (endsAffricate || 'szʃʒ'.includes(last)) return v + ' ɪz';
+            if ('ptkfθ'.includes(last)) return v + 's';
+            return v + 'z';
+        }
+
+        if (suffix === 'er')   return v + ' ər';
+        if (suffix === 'est')  return v + ' ɪst';
+        if (suffix === 'ly')   return v + ' li';
+        if (suffix === 'ness') return v + ' nɪs';
+
+        return v;
+    }).join(', ');
+}
+
 // ── annotateWithIPA ──────────────────────────────────────────────────────────
 // Wraps every word token in a .word-ipa-wrap. Words found in ipaMap get the
 // contextually correct IPA shown by default (smart for "a" and "the");
 // user can tap to cycle through all variants. All other words get an empty
 // hint for alignment. The card's focus word is wrapped but gets no IPA.
+//
+// When an inflected form is matched via stem-stripping, inflectIpa() appends
+// the phonetically correct suffix to every IPA variant so the hint reflects
+// the actual word in the sentence (e.g. "altered" → ˈɔl tər d, not ˈɔl tər).
 function annotateWithIPA(text, skipWord) {
     const skipLower = skipWord.toLowerCase();
     const tokens = text.split(/([A-Za-z'-]+)/);
@@ -1723,28 +1777,77 @@ function annotateWithIPA(text, skipWord) {
 
         if (lower === skipLower) return wrap(empty);
 
+        // Exact match — no suffix adjustment needed
         if (ipaMap[lower]) {
             const chosen = getContextualIpa(lower, ipaMap[lower], nextWord);
             return wrap(makeIpaHint(ipaMap[lower], chosen));
         }
 
-        const stems = [];
-        if (lower.endsWith('ing'))  stems.push(lower.slice(0, -3), lower.slice(0, -3) + 'e');
-        if (lower.endsWith('ed'))   stems.push(lower.slice(0, -2), lower.slice(0, -1), lower.slice(0, -2) + 'e');
-        if (lower.endsWith('s') && !lower.endsWith('ss')) stems.push(lower.slice(0, -1));
-        if (lower.endsWith('es'))   stems.push(lower.slice(0, -2));
-        if (lower.endsWith('ies'))  stems.push(lower.slice(0, -3) + 'y');
-        if (lower.endsWith('er'))   stems.push(lower.slice(0, -2), lower.slice(0, -2) + 'e');
-        if (lower.endsWith('est'))  stems.push(lower.slice(0, -3), lower.slice(0, -3) + 'e');
-        if (lower.endsWith('ly'))   stems.push(lower.slice(0, -2));
-        if (lower.endsWith('tion')) stems.push(lower.slice(0, -4) + 'te', lower.slice(0, -4));
-        if (lower.endsWith('ness')) stems.push(lower.slice(0, -4));
+        // Build stem candidates paired with the suffix label that was stripped.
+        // Each entry: [stemString, suffixLabel]
+        // Order matters: more specific endings checked before shorter ones.
+        const stemCandidates = [];
 
-        for (const stem of stems) {
+        if (lower.endsWith('ing')) {
+            stemCandidates.push(
+                [lower.slice(0, -3), 'ing'],
+                [lower.slice(0, -3) + 'e', 'ing']
+            );
+        }
+        if (lower.endsWith('ied')) {
+            // e.g. "glorified" → stem "glorify"
+            stemCandidates.push([lower.slice(0, -3) + 'y', 'ed']);
+        }
+        if (lower.endsWith('ed')) {
+            stemCandidates.push(
+                [lower.slice(0, -2), 'ed'],        // talked → talk
+                [lower.slice(0, -1), 'ed'],        // loved  → love (drop d, keep e)
+                [lower.slice(0, -2) + 'e', 'ed']  // altered→ altere (restore dropped e)
+            );
+        }
+        if (lower.endsWith('ies')) {
+            stemCandidates.push([lower.slice(0, -3) + 'y', 'ies']);
+        }
+        if (lower.endsWith('es') && !lower.endsWith('ies')) {
+            stemCandidates.push(
+                [lower.slice(0, -2), 'es'],
+                [lower.slice(0, -1), 's']
+            );
+        }
+        if (lower.endsWith('s') && !lower.endsWith('ss') && !lower.endsWith('es')) {
+            stemCandidates.push([lower.slice(0, -1), 's']);
+        }
+        if (lower.endsWith('est')) {
+            stemCandidates.push(
+                [lower.slice(0, -3), 'est'],
+                [lower.slice(0, -3) + 'e', 'est']
+            );
+        }
+        if (lower.endsWith('er')) {
+            stemCandidates.push(
+                [lower.slice(0, -2), 'er'],
+                [lower.slice(0, -2) + 'e', 'er']
+            );
+        }
+        if (lower.endsWith('ly')) {
+            stemCandidates.push([lower.slice(0, -2), 'ly']);
+        }
+        if (lower.endsWith('tion')) {
+            stemCandidates.push(
+                [lower.slice(0, -4) + 'te', 'tion'],
+                [lower.slice(0, -4), 'tion']
+            );
+        }
+        if (lower.endsWith('ness')) {
+            stemCandidates.push([lower.slice(0, -4), 'ness']);
+        }
+
+        for (const [stem, suffix] of stemCandidates) {
             if (stem.length < 3) continue;
             if (ipaMap[stem]) {
-                const chosen = getContextualIpa(stem, ipaMap[stem], nextWord);
-                return wrap(makeIpaHint(ipaMap[stem], chosen));
+                const inflected = inflectIpa(ipaMap[stem], suffix);
+                const chosen = getContextualIpa(stem, inflected, nextWord);
+                return wrap(makeIpaHint(inflected, chosen));
             }
         }
 
