@@ -283,7 +283,7 @@
         .card.is-flipped { transform: rotateY(180deg); }
 
         /* .scene clips card content via overflow:hidden + border-radius. */
-        .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 18px; overflow: hidden; border-radius: var(--radius-xl); position: relative; }
+        .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 18px; overflow: hidden; border-radius: var(--radius-xl); position: relative; transition: height 0.4s ease; }
 
         /* IMPORTANT: backface-visibility:hidden hides each face when it is
            rotated away from the viewer. Without this, both faces show through
@@ -380,9 +380,18 @@
         .example-item.is-fav { }
 
         /* ── Nav Controls (Bottom Buttons) ──────────────────────────────────────
-           IMPORTANT: padding-bottom uses calc(var(--safe-bottom) + 28px) to push
+           IMPORTANT: padding-bottom uses calc(var(--safe-bottom) + ...) to push
            buttons above the iPhone home indicator bar. */
-        .controls { padding: 16px 18px calc(var(--safe-bottom) + 28px); display: flex; gap: 10px; width: 100%; max-width: 420px; }
+        .controls { padding: 12px 18px calc(var(--safe-bottom) + 48px); display: flex; gap: 10px; width: 100%; max-width: 420px; transition: padding 0.4s ease; }
+
+        /* When card is flipped: push controls down further, giving examples more room */
+        .app-container.card-flipped .controls {
+            padding-top: 8px;
+            padding-bottom: calc(var(--safe-bottom) + 48px);
+        }
+        .app-container.card-flipped .scene {
+            height: 78vh;
+        }
         
         /* TWEAK: Taller, bolder nav buttons with zero padding.
            IMPORTANT: padding:0 is intentional — text is centered via flexbox.
@@ -1327,6 +1336,7 @@ function updateCard() {
     currentMeaningIdx = 0;
 
     document.getElementById('card').classList.remove('is-flipped');
+    document.getElementById('app').classList.remove('card-flipped');
     // Always return to front header when navigating to a new card
     document.getElementById('hdr-front').style.display = 'flex';
     document.getElementById('hdr-back').style.display  = 'none';
@@ -2077,6 +2087,7 @@ function flipCard() {
     const card = document.getElementById('card');
     card.classList.toggle('is-flipped');
     const isFlipped = card.classList.contains('is-flipped');
+    document.getElementById('app').classList.toggle('card-flipped', isFlipped);
     document.getElementById('hdr-front').style.display = isFlipped ? 'none' : 'flex';
     document.getElementById('hdr-back').style.display  = isFlipped ? 'flex' : 'none';
 }
