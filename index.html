@@ -887,15 +887,6 @@
                 <span>Themed Decks</span>
                 <span class="chevron">›</span>
             </div>
-            <div class="settings-item" onclick="toggleIpaHints()">
-                <div>
-                    <div>IPA Hints in Examples</div>
-                    <div style="font-size:0.72rem;color:var(--text-secondary);font-weight:400;margin-top:3px;">Show phonetics under words when card is flipped</div>
-                </div>
-                <div id="ipa-hints-toggle" style="width:44px;height:26px;border-radius:13px;background:var(--primary);transition:background 0.2s;position:relative;flex-shrink:0;">
-                    <div id="ipa-hints-knob" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:3px;left:21px;transition:left 0.2s;"></div>
-                </div>
-            </div>
             <div class="settings-item" onclick="resetDeleted()">
                 <span style="color:var(--delete-red);">Restore Deleted Examples</span>
                 <span class="chevron">›</span>
@@ -1048,7 +1039,7 @@
                         <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
                         <!-- IMPORTANT: #type-badge shows the word's grammatical type (noun,
                              verb, etc.) if available. Shown/hidden in updateCard(). -->
-                        <div id="type-badge" class="type-badge" style="display:none;"></div>
+                        <div id="type-badge" class="type-badge" style="display:none;" onclick="toggleIpaHints(event)"></div>
                     </div>
                     <div class="meaning-container">
                         <!-- IMPORTANT: #b-meaning is updated by updateCard() (initial meaning)
@@ -1175,7 +1166,7 @@ let quizExamplesLimit = parseInt(localStorage.getItem('wf_quiz_examples_limit') 
 
 // ── IPA Hints Setting ─────────────────────────────────────────────────────────
 // showIpaHints: whether to annotate example sentences with IPA hints on card back.
-// Default true. Persisted to localStorage key 'wf_show_ipa_hints'.
+// Default true. Toggled by tapping the type badge. Persisted to localStorage.
 let showIpaHints = localStorage.getItem('wf_show_ipa_hints') !== 'false';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1375,16 +1366,39 @@ function updateCard() {
     }
 
     // Show/hide grammatical type badge (noun, verb, adj, etc.)
-    const typeBadge = document.getElementById('type-badge');
-    if (item.Type && item.Type.trim()) {
-        typeBadge.textContent = item.Type.trim();
-        typeBadge.style.display = 'block';
-    } else {
-        typeBadge.style.display = 'none';
-    }
+    updateTypeBadge(item);
 
     renderExamples(item);
     updateRatingButtons();
+}
+
+// ── updateTypeBadge ───────────────────────────────────────────────────────────
+// Renders the type badge with the word's grammatical type.
+// Appends a small IPA indicator dot to signal whether IPA hints are on/off.
+// Called by updateCard() and toggleIpaHints().
+function updateTypeBadge(item) {
+    const typeBadge = document.getElementById('type-badge');
+    if (!typeBadge) return;
+    const typeItem = item || wordData[currentIndex];
+    if (typeItem && typeItem.Type && typeItem.Type.trim()) {
+        const dot = showIpaHints ? ' ·ipa' : '';
+        typeBadge.textContent = typeItem.Type.trim() + dot;
+        typeBadge.style.display = 'block';
+        typeBadge.style.opacity = showIpaHints ? '1' : '0.45';
+    } else {
+        typeBadge.style.display = 'none';
+    }
+}
+
+// ── toggleIpaHints ────────────────────────────────────────────────────────────
+// Flips showIpaHints, persists it, updates the badge, and re-renders examples.
+// e.stopPropagation() prevents the tap from bubbling to .back-header (flipCard).
+function toggleIpaHints(e) {
+    e.stopPropagation();
+    showIpaHints = !showIpaHints;
+    localStorage.setItem('wf_show_ipa_hints', showIpaHints);
+    updateTypeBadge();
+    if (wordData.length > 0) renderExamples(wordData[currentIndex]);
 }
 
 // ── renderQuizMeaning ─────────────────────────────────────────────────────────
@@ -1942,28 +1956,7 @@ function renderExamples(item) {
 // from a child element inside another overlay.
 function openSettings(e) {
     if(e) e.stopPropagation();
-    updateIpaToggleUI();
     document.getElementById('settings-overlay').style.display = 'flex';
-}
-
-// ── toggleIpaHints ────────────────────────────────────────────────────────────
-// Flips the showIpaHints setting, persists it, updates the toggle UI,
-// and re-renders the current card's examples to reflect the change immediately.
-function toggleIpaHints() {
-    showIpaHints = !showIpaHints;
-    localStorage.setItem('wf_show_ipa_hints', showIpaHints);
-    updateIpaToggleUI();
-    if (wordData.length > 0) renderExamples(wordData[currentIndex]);
-}
-
-// ── updateIpaToggleUI ─────────────────────────────────────────────────────────
-// Syncs the visual toggle switch to the current showIpaHints value.
-function updateIpaToggleUI() {
-    const track = document.getElementById('ipa-hints-toggle');
-    const knob  = document.getElementById('ipa-hints-knob');
-    if (!track || !knob) return;
-    track.style.background = showIpaHints ? 'var(--primary)' : 'var(--surface-4)';
-    knob.style.left = showIpaHints ? '21px' : '3px';
 }
 
 
