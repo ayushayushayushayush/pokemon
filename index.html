@@ -345,33 +345,31 @@
             vertical-align: top;
             line-height: 1.4;
             margin: 0 1px;
-            position: relative;
-            /* Width is driven purely by the word text, never by the IPA hint */
         }
         .word-ipa-wrap .word-text { line-height: inherit; }
         .word-ipa-hint {
             font-size: 0.55rem; color: #555;
             font-family: monospace; line-height: 1; text-align: center;
-            min-height: 0.7rem;
+            height: 0.75rem; /* fixed height — reserves space, never grows */
             white-space: nowrap;
-            /* IPA sits right under the word but takes no horizontal layout space.
-               left:50%/translateX(-50%) centers it under the word regardless of length. */
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            pointer-events: none; /* default: not clickable */
+            /* Zero-width container: the hint text visually overflows center
+               without pushing siblings apart horizontally */
+            width: 0;
+            overflow: visible;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
         }
-        /* has-variants: re-enable pointer events for tap cycling */
         .word-ipa-hint.has-variants {
-            pointer-events: auto;
             color: #666;
-            border-bottom: 1px dotted #444;
             cursor: pointer;
         }
+        .word-ipa-hint.has-variants > span,
+        .word-ipa-hint.has-variants {
+            border-bottom: 1px dotted #444;
+        }
         .word-ipa-hint.has-variants:active { color: var(--primary); }
-        /* Reserve the IPA row height on the word-wrap itself so words don't overlap the hint below */
-        .word-ipa-wrap { padding-bottom: 0.75rem; }
+        .word-ipa-wrap { padding-bottom: 0; }
         .example-item { background: #000000; padding: 14px 16px; font-size: 0.9rem; line-height: 1.6; color: #C0C0C8; margin-bottom: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); user-select: none; -webkit-user-select: none; transition: border-color 0.2s; }
         .example-footer { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,0.05); gap: 8px; }
         .example-source { font-size: 0.68rem; color: #555; font-style: italic; flex: 1; }
