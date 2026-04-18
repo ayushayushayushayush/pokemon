@@ -964,22 +964,28 @@
 
 
 <!-- ── Main App Header ─────────────────────────────────────────────────────────
-     Hidden until data loads (shown by window.onload). Contains three zones:
-     LEFT:   ⚙️ Settings button → openSettings()
-     CENTER: Counter pill (#counter) → tapping opens Search overlay (openSearch())
-             When a deck is active, shows position within deck (e.g. "12 / 89")
-     RIGHT:  Streak badge (🔥 + day count, updated by loadStreak()) and
-             ★ Favorites button → openFavs()
+     Two sub-headers, only one visible at a time:
+     #hdr-front: shown on card front — counter (search) center, settings right
+     #hdr-back:  shown on card back  — progress bar left, Hard/Easy + ★ right
      IMPORTANT: Do NOT remove id="app-header" — JS shows/hides it by that ID. -->
 <header id="app-header" style="display:none;">
-    <div id="header-progress-wrap" style="display:flex;align-items:center;gap:8px;flex:1;">
-        <div id="progress-bar-track" style="flex:1;max-width:120px;"><div id="progress-bar-fill"></div></div>
-        <div id="progress-label" style="font-size:0.62rem;color:var(--text-dim);white-space:nowrap;letter-spacing:0.04em;">0 / 7</div>
+    <!-- Front header: counter + settings -->
+    <div id="hdr-front" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+        <div style="width:46px;"></div>
+        <div class="counter" id="counter" onclick="openSearch()">1 / 1</div>
+        <div class="header-btn" onclick="openSettings(event)">⚙️</div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;">
-        <button class="rating-btn hard" onclick="rateWord('hard')" id="hdr-hard-btn">Hard</button>
-        <button class="rating-btn easy" onclick="rateWord('easy')" id="hdr-easy-btn">Easy</button>
-        <div class="header-btn fav-btn" onclick="openFavs()">★</div>
+    <!-- Back header: progress bar left, Hard/Easy + ★ right -->
+    <div id="hdr-back" style="display:none;align-items:center;justify-content:space-between;width:100%;gap:12px;">
+        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+            <div id="progress-bar-track" style="flex:1;max-width:120px;"><div id="progress-bar-fill"></div></div>
+            <div id="progress-label" style="font-size:0.62rem;color:var(--text-dim);white-space:nowrap;letter-spacing:0.04em;">0 / 7</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <button class="rating-btn hard" onclick="rateWord('hard')" id="hdr-hard-btn">Hard</button>
+            <button class="rating-btn easy" onclick="rateWord('easy')" id="hdr-easy-btn">Easy</button>
+            <div class="header-btn fav-btn" onclick="openFavs()">★</div>
+        </div>
     </div>
 </header>
 
@@ -1320,6 +1326,9 @@ function updateCard() {
     currentMeaningIdx = 0;
 
     document.getElementById('card').classList.remove('is-flipped');
+    // Always return to front header when navigating to a new card
+    document.getElementById('hdr-front').style.display = 'flex';
+    document.getElementById('hdr-back').style.display  = 'none';
     oxfordAudioActive = false; // cancel any lingering Oxford audio chain
     const deckLabel = activeDeckId !== 'all' && activeDeckIndices.length > 0
         ? `${activeDeckIndices.indexOf(currentIndex) + 1} / ${activeDeckIndices.length}`
@@ -2066,6 +2075,9 @@ function resetDeleted() {
 function flipCard() {
     const card = document.getElementById('card');
     card.classList.toggle('is-flipped');
+    const isFlipped = card.classList.contains('is-flipped');
+    document.getElementById('hdr-front').style.display = isFlipped ? 'none' : 'flex';
+    document.getElementById('hdr-back').style.display  = isFlipped ? 'flex' : 'none';
 }
 
 // ── playAudioFromEvent ────────────────────────────────────────────────────────
@@ -2326,7 +2338,7 @@ function loadStreak() {
 }
 
 function renderStreak(streak) {
-    document.getElementById('streak-count').textContent = streak;
+    // Streak display removed — no-op kept for compatibility
 }
 
 // ── Daily Goal ─────────────────────────────────────────────────────────────────
