@@ -340,7 +340,18 @@
            The class is kept for reference; color is applied in JS via getFavColor(). */
         .word-ipa-wrap { display: inline-flex; flex-direction: column; align-items: center; vertical-align: bottom; line-height: 1.4; margin: 0 1px; }
         .word-ipa-wrap .word-text { line-height: inherit; }
-        .word-ipa-hint { display: block; font-size: 0.62rem; color: #555; font-family: monospace; line-height: 1.2; text-align: center; white-space: nowrap; }
+        .word-ipa-hint {
+            display: block; font-size: 0.62rem; color: #555;
+            font-family: monospace; line-height: 1.2; text-align: center; white-space: nowrap;
+        }
+        /* When a word has multiple IPA variants, the hint gets this class.
+           A subtle underline + slightly brighter color signals it's tappable. */
+        .word-ipa-hint.has-variants {
+            color: #666;
+            border-bottom: 1px dotted #444;
+            cursor: pointer;
+        }
+        .word-ipa-hint.has-variants:active { color: var(--primary); }
         .example-footer { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,0.05); gap: 8px; }
         .example-source { font-size: 0.68rem; color: #555; font-style: italic; flex: 1; }
         .example-date { font-size: 0.65rem; color: #444; white-space: nowrap; flex-shrink: 0; }
@@ -1580,44 +1591,55 @@ function handleQuizTap(selectedWord, btn) {
     setTimeout(nextQuizQuestion, 1200);
 }
 
-// ── annotateWithIPA ──────────────────────────────────────────────────────────
-// Takes an example sentence string and the current card's word (to skip annotating it).
-// Returns an HTML string where each vocabulary word found in ipaMap is followed by
-// a subtle IPA annotation in parentheses.
-// Matches whole words only (word boundary), case-insensitive.
-// Also tries stemmed forms: strips common suffixes to catch inflections like
-// "running" → "run", "studies" → "study", etc.
+// ── makeIpaHint ───────────────────────────────────────────────────────────────
+// Takes a raw IPA string (may contain comma-separated variants like " eɪ, ə "),
+// returns an HTML string for the .word-ipa-hint span.
+// If there's only one variant, renders it as plain text.
+// If there are multiple variants, shows the first one and attaches a tap handler
+// that cycles through the rest inline — no layout shift, fully in-line.
+// data-variants stores the JSON-encoded array; data-idx tracks current position.
+function makeIpaHint(rawIpa) {
+    // Split on commas, trim whitespace, filter empty
+    const variants = rawIpa.split(',').map(s => s.trim()).filter(Boolean);
+    if (variants.length <= 1) {
+        return `<span class="word-ipa-hint">${variants[0] || rawIpa}</span>`;
+    }
+    // Multiple variants: show first, mark as tappable
+    const escaped = JSON.stringify(variants).replace(/"/g, '&quot;');
+    return `<span class="word-ipa-hint has-variants" data-variants="${escaped}" data-idx="0" onclick="cycleIpa(this)">${variants[0]}</span>`;
+}
+
+// ── cycleIpa ─────────────────────────────────────────────────────────────────
+// Called when user taps a multi-variant IPA hint. Advances to the next variant,
+// wrapping back to the first. Completely inline — no popup, no layout change.
+function cycleIpa(el) {
+    const variants = JSON.parse(el.dataset.variants.replace(/&quot;/g, '"'));
+    const next = (parseInt(el.dataset.idx) + 1) % variants.length;
+    el.dataset.idx = next;
+    el.textContent = variants[next];
+}
+
 // ── annotateWithIPA ──────────────────────────────────────────────────────────
 // Scans every word token in an example sentence and, if the word exists in
 // ipaMap (or a stemmed form of it does), wraps it in a .word-ipa-wrap span
-// with the IPA shown below in a .word-ipa-hint span.
-// skipWord: the current card's WORD — never annotated (it's already in the header).
-// Suffix stripping covers common inflections: running→run, studies→study,
-// precisely→precise, nations→nation, etc.
-// IMPORTANT: Template literals with backticks inside .word-ipa-hint spans are
-// safe here — they're in innerHTML, not the JS string parser.
+// with the IPA shown below via makeIpaHint() (handles multi-variant cycling).
+// skipWord: the current card's WORD — never annotated (already in the header).
 function annotateWithIPA(text, skipWord) {
     const skipLower = skipWord.toLowerCase();
 
-    // Build a sorted list of words to try (longest first to avoid partial matches)
-    const vocabWords = Object.keys(ipaMap).sort((a, b) => b.length - a.length);
-
-    // We'll do a token-by-token replacement to avoid double-annotating
-    // Split on word boundaries, keeping delimiters
     return text.replace(/[A-Za-z'-]+/g, (match) => {
         const lower = match.toLowerCase();
-        if (lower === skipLower) return match; // Don't annotate the current card's word
+        if (lower === skipLower) return match;
 
-        // Try exact match first
         if (ipaMap[lower]) {
-            return `<span class="word-ipa-wrap"><span class="word-text">${match}</span><span class="word-ipa-hint">${ipaMap[lower]}</span></span>`;
+            return `<span class="word-ipa-wrap"><span class="word-text">${match}</span>${makeIpaHint(ipaMap[lower])}</span>`;
         }
 
         // Try common suffix stripping to catch inflected forms
         const stems = [];
         if (lower.endsWith('ing'))  stems.push(lower.slice(0, -3), lower.slice(0, -3) + 'e');
         if (lower.endsWith('ed'))   stems.push(lower.slice(0, -2), lower.slice(0, -1), lower.slice(0, -2) + 'e');
-        if (lower.endsWith('s') && !lower.endsWith('ss'))   stems.push(lower.slice(0, -1));
+        if (lower.endsWith('s') && !lower.endsWith('ss')) stems.push(lower.slice(0, -1));
         if (lower.endsWith('es'))   stems.push(lower.slice(0, -2));
         if (lower.endsWith('ies'))  stems.push(lower.slice(0, -3) + 'y');
         if (lower.endsWith('er'))   stems.push(lower.slice(0, -2), lower.slice(0, -2) + 'e');
@@ -1628,7 +1650,7 @@ function annotateWithIPA(text, skipWord) {
 
         for (const stem of stems) {
             if (stem.length >= 3 && ipaMap[stem] && stem !== skipLower) {
-                return `<span class="word-ipa-wrap"><span class="word-text">${match}</span><span class="word-ipa-hint">${ipaMap[stem]}</span></span>`;
+                return `<span class="word-ipa-wrap"><span class="word-text">${match}</span>${makeIpaHint(ipaMap[stem])}</span>`;
             }
         }
 
