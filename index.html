@@ -1610,27 +1610,87 @@ function handleQuizTap(selectedWord, btn) {
     setTimeout(nextQuizQuestion, 1200);
 }
 
-// ── makeIpaHint ───────────────────────────────────────────────────────────────
-// Takes a raw IPA string (may contain comma-separated variants like " eɪ, ə "),
-// returns an HTML string for the .word-ipa-hint span.
-// If there's only one variant, renders it as plain text.
-// If there are multiple variants, shows the first one and attaches a tap handler
-// that cycles through the rest inline — no layout shift, fully in-line.
-// data-variants stores the JSON-encoded array; data-idx tracks current position.
-function makeIpaHint(rawIpa) {
-    // Split on commas, trim whitespace, filter empty
+// ── FUNCTION WORDS TO SKIP ────────────────────────────────────────────────────
+// These extremely common words add noise rather than learning value as IPA hints.
+// Articles/determiners (a, an, the) are handled separately with context-aware IPA.
+// ── WEAK_FORMS ────────────────────────────────────────────────────────────────
+// Standard weak (unstressed) pronunciations for English function words.
+// These are the forms used in normal connected speech (~95% of occurrences).
+// The strong (emphatic) form is available by tapping the IPA hint.
+// Based on standard EFL pronunciation dictionaries (Longman, Cambridge, Oxford).
+const WEAK_FORMS = {
+    // Article
+    'a': 'ə', 'an': 'ən',
+    // Prepositions
+    'to': 'tə', 'of': 'əv', 'for': 'fər', 'from': 'frəm',
+    'at': 'ət', 'or': 'ər', 'as': 'əz', 'than': 'ðən',
+    // Conjunctions
+    'and': 'ənd', 'but': 'bət',
+    // Pronouns
+    'he': 'hi', 'she': 'ʃi', 'we': 'wi', 'you': 'jə',
+    'him': 'ɪm', 'her': 'ər', 'them': 'ðəm',
+    'his': 'ɪz', 'your': 'jər', 'our': 'ər',
+    'us': 'əs', 'some': 'səm', 'that': 'ðət',
+    // Auxiliaries
+    'is': 'ɪz', 'are': 'ər', 'was': 'wəz', 'were': 'wər',
+    'has': 'həz', 'have': 'həv', 'had': 'həd',
+    'do': 'də', 'does': 'dəz',
+    'can': 'kən', 'could': 'kəd', 'will': 'wəl', 'would': 'wəd',
+    'should': 'ʃəd', 'shall': 'ʃəl', 'must': 'məst',
+    'be': 'bɪ', 'been': 'bɪn', 'not': 'nət',
+};
+
+// ── getContextualIpa ─────────────────────────────────────────────────────────
+// Returns the best default IPA to show for a word in running text.
+// For function words in WEAK_FORMS: always shows the weak form (the normal
+// connected-speech pronunciation). User taps to cycle to the strong form.
+// For "the": context-sensitive — ði before vowel sounds, ðə before consonants.
+// For all other words: shows the first variant from the IPA dictionary.
+function getContextualIpa(word, rawIpa, nextWord) {
     const variants = rawIpa.split(',').map(s => s.trim()).filter(Boolean);
-    if (variants.length <= 1) {
-        return `<span class="word-ipa-hint">${variants[0] || rawIpa}</span>`;
+
+    // "the" is context-sensitive between two distinct weak forms
+    if (word === 'the') {
+        const next = (nextWord || '').toLowerCase();
+        const beforeVowel = /^[aeiou]/.test(next);
+        const strong = variants.find(v => v.includes('i')) || 'ði';
+        const weak   = variants.find(v => v.includes('ə') && !v.includes('i')) || 'ðə';
+        return beforeVowel ? strong : weak;
     }
-    // Multiple variants: show first, mark as tappable
+
+    // All other function words: use hardcoded weak form as default
+    if (WEAK_FORMS[word]) return WEAK_FORMS[word];
+
+    // Everything else: first variant
+    return variants[0] || rawIpa;
+}
+
+// ── makeIpaHint ───────────────────────────────────────────────────────────────
+// Builds the IPA hint span. defaultIpa is the pre-selected form to show first.
+// If defaultIpa isn't already in the CSV variants, it's prepended so it's always
+// accessible (e.g. weak form not listed in the dictionary but still correct).
+// Single total variant → plain. Multiple → tappable cycling.
+function makeIpaHint(rawIpa, defaultIpa) {
+    const csvVariants = rawIpa.split(',').map(s => s.trim()).filter(Boolean);
+    const shown = defaultIpa || csvVariants[0] || rawIpa;
+
+    // Build full variant list: weak form first, then any CSV variants not already included
+    let variants;
+    if (defaultIpa && !csvVariants.includes(defaultIpa)) {
+        variants = [defaultIpa, ...csvVariants];
+    } else {
+        variants = csvVariants;
+    }
+
+    if (variants.length <= 1) {
+        return `<span class="word-ipa-hint">${shown}</span>`;
+    }
+    const startIdx = Math.max(0, variants.indexOf(shown));
     const escaped = JSON.stringify(variants).replace(/"/g, '&quot;');
-    return `<span class="word-ipa-hint has-variants" data-variants="${escaped}" data-idx="0" onclick="cycleIpa(this)">${variants[0]}</span>`;
+    return `<span class="word-ipa-hint has-variants" data-variants="${escaped}" data-idx="${startIdx}" onclick="cycleIpa(this)">${shown}</span>`;
 }
 
 // ── cycleIpa ─────────────────────────────────────────────────────────────────
-// Called when user taps a multi-variant IPA hint. Advances to the next variant,
-// wrapping back to the first. Completely inline — no popup, no layout change.
 function cycleIpa(el) {
     const variants = JSON.parse(el.dataset.variants.replace(/&quot;/g, '"'));
     const next = (parseInt(el.dataset.idx) + 1) % variants.length;
@@ -1639,22 +1699,35 @@ function cycleIpa(el) {
 }
 
 // ── annotateWithIPA ──────────────────────────────────────────────────────────
-// Scans every word token in an example sentence and, if the word exists in
-// ipaMap (or a stemmed form of it does), wraps it in a .word-ipa-wrap span
-// with the IPA shown below via makeIpaHint() (handles multi-variant cycling).
-// skipWord: the current card's WORD — never annotated (already in the header).
+// Wraps every word token in a .word-ipa-wrap. Words found in ipaMap get the
+// contextually correct IPA shown by default (smart for "a" and "the");
+// user can tap to cycle through all variants. All other words get an empty
+// hint for alignment. The card's focus word is wrapped but gets no IPA.
 function annotateWithIPA(text, skipWord) {
     const skipLower = skipWord.toLowerCase();
+    const tokens = text.split(/([A-Za-z'-]+)/);
 
-    return text.replace(/[A-Za-z'-]+/g, (match) => {
-        const lower = match.toLowerCase();
-        if (lower === skipLower) return `<span class="word-ipa-wrap"><span class="word-text">${match}</span><span class="word-ipa-hint"></span></span>`;
+    return tokens.map((token, i) => {
+        if (!/[A-Za-z]/.test(token)) return token;
 
-        if (ipaMap[lower]) {
-            return `<span class="word-ipa-wrap"><span class="word-text">${match}</span>${makeIpaHint(ipaMap[lower])}</span>`;
+        const lower = token.toLowerCase();
+
+        let nextWord = '';
+        for (let j = i + 1; j < tokens.length; j++) {
+            if (/[A-Za-z]/.test(tokens[j])) { nextWord = tokens[j]; break; }
         }
 
-        // Try common suffix stripping to catch inflected forms
+        const wrap = (hint) =>
+            `<span class="word-ipa-wrap"><span class="word-text">${token}</span>${hint}</span>`;
+        const empty = `<span class="word-ipa-hint"></span>`;
+
+        if (lower === skipLower) return wrap(empty);
+
+        if (ipaMap[lower]) {
+            const chosen = getContextualIpa(lower, ipaMap[lower], nextWord);
+            return wrap(makeIpaHint(ipaMap[lower], chosen));
+        }
+
         const stems = [];
         if (lower.endsWith('ing'))  stems.push(lower.slice(0, -3), lower.slice(0, -3) + 'e');
         if (lower.endsWith('ed'))   stems.push(lower.slice(0, -2), lower.slice(0, -1), lower.slice(0, -2) + 'e');
@@ -1668,14 +1741,15 @@ function annotateWithIPA(text, skipWord) {
         if (lower.endsWith('ness')) stems.push(lower.slice(0, -4));
 
         for (const stem of stems) {
-            if (stem.length >= 3 && ipaMap[stem] && stem !== skipLower) {
-                return `<span class="word-ipa-wrap"><span class="word-text">${match}</span>${makeIpaHint(ipaMap[stem])}</span>`;
+            if (stem.length < 3) continue;
+            if (ipaMap[stem]) {
+                const chosen = getContextualIpa(stem, ipaMap[stem], nextWord);
+                return wrap(makeIpaHint(ipaMap[stem], chosen));
             }
         }
 
-        // No IPA found — still wrap with empty hint to keep vertical alignment uniform
-        return `<span class="word-ipa-wrap"><span class="word-text">${match}</span><span class="word-ipa-hint"></span></span>`;
-    });
+        return wrap(empty);
+    }).join('');
 }
 
 // ── renderExamples ────────────────────────────────────────────────────────────
