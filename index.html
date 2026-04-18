@@ -983,12 +983,13 @@
         <div class="counter" id="counter" onclick="openSearch()">1 / 1</div>
         <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     </div>
-    <!-- Back header: progress bar left, Hard/Easy right -->
+    <!-- Back header: progress bar left, IPA toggle center, Hard/Easy right -->
     <div id="hdr-back" style="display:none;align-items:center;justify-content:space-between;width:100%;gap:12px;">
         <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
             <div id="progress-bar-track" style="flex:1;max-width:120px;"><div id="progress-bar-fill"></div></div>
             <div id="progress-label" style="font-size:0.62rem;color:var(--text-dim);white-space:nowrap;letter-spacing:0.04em;">0 / 7</div>
         </div>
+        <button id="ipa-toggle-btn" onclick="toggleIpaHints()" style="padding:0 10px;height:28px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface-2);font-family:'Lora',serif;font-size:0.65rem;font-weight:700;letter-spacing:0.04em;color:var(--text-secondary);cursor:pointer;transition:background 0.15s,border-color 0.15s,color 0.15s;flex-shrink:0;">IPA</button>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
             <button class="rating-btn hard" onclick="rateWord('hard')" id="hdr-hard-btn">Hard</button>
             <button class="rating-btn easy" onclick="rateWord('easy')" id="hdr-easy-btn">Easy</button>
@@ -1039,7 +1040,7 @@
                         <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
                         <!-- IMPORTANT: #type-badge shows the word's grammatical type (noun,
                              verb, etc.) if available. Shown/hidden in updateCard(). -->
-                        <div id="type-badge" class="type-badge" style="display:none;" onclick="toggleIpaHints(event)"></div>
+                        <div id="type-badge" class="type-badge" style="display:none;"></div>
                     </div>
                     <div class="meaning-container">
                         <!-- IMPORTANT: #b-meaning is updated by updateCard() (initial meaning)
@@ -1165,8 +1166,6 @@ let quizMeaningIdx = 0;
 let quizExamplesLimit = parseInt(localStorage.getItem('wf_quiz_examples_limit') || '5');
 
 // ── IPA Hints Setting ─────────────────────────────────────────────────────────
-// showIpaHints: whether to annotate example sentences with IPA hints on card back.
-// Default true. Toggled by tapping the type badge. Persisted to localStorage.
 let showIpaHints = localStorage.getItem('wf_show_ipa_hints') !== 'false';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1366,39 +1365,16 @@ function updateCard() {
     }
 
     // Show/hide grammatical type badge (noun, verb, adj, etc.)
-    updateTypeBadge(item);
-
-    renderExamples(item);
-    updateRatingButtons();
-}
-
-// ── updateTypeBadge ───────────────────────────────────────────────────────────
-// Renders the type badge with the word's grammatical type.
-// Appends a small IPA indicator dot to signal whether IPA hints are on/off.
-// Called by updateCard() and toggleIpaHints().
-function updateTypeBadge(item) {
     const typeBadge = document.getElementById('type-badge');
-    if (!typeBadge) return;
-    const typeItem = item || wordData[currentIndex];
-    if (typeItem && typeItem.Type && typeItem.Type.trim()) {
-        const dot = showIpaHints ? ' ·ipa' : '';
-        typeBadge.textContent = typeItem.Type.trim() + dot;
+    if (item.Type && item.Type.trim()) {
+        typeBadge.textContent = item.Type.trim();
         typeBadge.style.display = 'block';
-        typeBadge.style.opacity = showIpaHints ? '1' : '0.45';
     } else {
         typeBadge.style.display = 'none';
     }
-}
 
-// ── toggleIpaHints ────────────────────────────────────────────────────────────
-// Flips showIpaHints, persists it, updates the badge, and re-renders examples.
-// e.stopPropagation() prevents the tap from bubbling to .back-header (flipCard).
-function toggleIpaHints(e) {
-    e.stopPropagation();
-    showIpaHints = !showIpaHints;
-    localStorage.setItem('wf_show_ipa_hints', showIpaHints);
-    updateTypeBadge();
-    if (wordData.length > 0) renderExamples(wordData[currentIndex]);
+    renderExamples(item);
+    updateRatingButtons();
 }
 
 // ── renderQuizMeaning ─────────────────────────────────────────────────────────
@@ -2842,6 +2818,23 @@ function updateRatingButtons() {
     document.getElementById('hdr-easy-btn').classList.toggle('selected', rating === 'easy');
 }
 
+
+
+// ── toggleIpaHints / updateIpaToggleBtn ───────────────────────────────────────
+function toggleIpaHints() {
+    showIpaHints = !showIpaHints;
+    localStorage.setItem('wf_show_ipa_hints', showIpaHints);
+    updateIpaToggleBtn();
+    if (wordData.length > 0) renderExamples(wordData[currentIndex]);
+}
+function updateIpaToggleBtn() {
+    const btn = document.getElementById('ipa-toggle-btn');
+    if (!btn) return;
+    btn.style.background  = showIpaHints ? 'var(--primary-dim)' : 'var(--surface-2)';
+    btn.style.borderColor = showIpaHints ? 'var(--primary)'     : 'var(--border)';
+    btn.style.color       = showIpaHints ? 'var(--primary)'     : 'var(--text-secondary)';
+}
+window.addEventListener('DOMContentLoaded', updateIpaToggleBtn);
 
 </script>
 </body>
