@@ -276,7 +276,7 @@
         .card.is-flipped { transform: rotateY(180deg); }
 
         /* .scene clips card content via overflow:hidden + border-radius. */
-        .scene { width: 92%; max-width: 420px; height: 72vh; perspective: 1500px; margin-bottom: 18px; overflow: hidden; border-radius: var(--radius-xl); position: relative; transition: height 0.4s ease; }
+        .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 18px; overflow: hidden; border-radius: var(--radius-xl); position: relative; transition: height 0.4s ease; }
 
         /* IMPORTANT: backface-visibility:hidden hides each face when it is
            rotated away from the viewer. Without this, both faces show through
@@ -375,7 +375,7 @@
         /* ── Nav Controls (Bottom Buttons) ──────────────────────────────────────
            IMPORTANT: padding-bottom uses calc(var(--safe-bottom) + ...) to push
            buttons above the iPhone home indicator bar. */
-        .controls { padding: 6px 18px calc(var(--safe-bottom) + 16px); display: flex; gap: 10px; width: 100%; max-width: 420px; transition: padding 0.4s ease; }
+        .controls { padding: 12px 18px calc(var(--safe-bottom) + 48px); display: flex; gap: 10px; width: 100%; max-width: 420px; transition: padding 0.4s ease; }
 
         /* When card is flipped: tighter padding so buttons + examples all fit */
         .app-container.card-flipped .controls {
@@ -394,10 +394,10 @@
            IMPORTANT: padding:0 is intentional — text is centered via flexbox.
            The .primary variant (Next button) has a colored background and shadow. */
         .nav-btn { 
-            flex: 1; height: 50px; border-radius: var(--radius-md); border: none; 
+            flex: 1; height: 62px; border-radius: var(--radius-md); border: none; 
             background: var(--surface-3); color: var(--text-main); 
             font-family: 'Lora', Georgia, serif; 
-            font-weight: 800; font-size: 0.95rem; letter-spacing: 0.02em; 
+            font-weight: 800; font-size: 1.1rem; letter-spacing: 0.02em; 
             border: 1px solid var(--border); transition: background 0.15s, transform 0.1s, height 0.3s ease, font-size 0.3s ease; 
             padding: 0; display: flex; align-items: center; justify-content: center;
         }
@@ -887,6 +887,15 @@
                 <span>Themed Decks</span>
                 <span class="chevron">›</span>
             </div>
+            <div class="settings-item" onclick="toggleIpaHints()">
+                <div>
+                    <div>IPA Hints in Examples</div>
+                    <div style="font-size:0.72rem;color:var(--text-secondary);font-weight:400;margin-top:3px;">Show phonetics under words when card is flipped</div>
+                </div>
+                <div id="ipa-hints-toggle" style="width:44px;height:26px;border-radius:13px;background:var(--primary);transition:background 0.2s;position:relative;flex-shrink:0;">
+                    <div id="ipa-hints-knob" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:3px;left:21px;transition:left 0.2s;"></div>
+                </div>
+            </div>
             <div class="settings-item" onclick="resetDeleted()">
                 <span style="color:var(--delete-red);">Restore Deleted Examples</span>
                 <span class="chevron">›</span>
@@ -1163,6 +1172,11 @@ let quizMeaningIdx = 0;
 // quizExamplesLimit: max favorite sentences per word included in the quiz pool.
 // during a quiz session. Default 5, range 1–20. Persisted to localStorage.
 let quizExamplesLimit = parseInt(localStorage.getItem('wf_quiz_examples_limit') || '5');
+
+// ── IPA Hints Setting ─────────────────────────────────────────────────────────
+// showIpaHints: whether to annotate example sentences with IPA hints on card back.
+// Default true. Persisted to localStorage key 'wf_show_ipa_hints'.
+let showIpaHints = localStorage.getItem('wf_show_ipa_hints') !== 'false';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // IMPORTANT — Card State
@@ -1873,7 +1887,7 @@ function renderExamples(item) {
         const footerHtml = (ex.source || ex.date)
             ? `<div class="example-footer"><span class="example-source">${ex.source}</span><span class="example-date">${ex.date}</span></div>`
             : '';
-        div.innerHTML = `<strong>${idx+1}.</strong> ${annotateWithIPA(ex.text, '')}${footerHtml}`;
+        div.innerHTML = `<strong>${idx+1}.</strong> ${showIpaHints ? annotateWithIPA(ex.text, '') : ex.text}${footerHtml}`;
 
         // Apply color if this sentence is already favorited
         if (ex.isFav) {
@@ -1928,7 +1942,28 @@ function renderExamples(item) {
 // from a child element inside another overlay.
 function openSettings(e) {
     if(e) e.stopPropagation();
+    updateIpaToggleUI();
     document.getElementById('settings-overlay').style.display = 'flex';
+}
+
+// ── toggleIpaHints ────────────────────────────────────────────────────────────
+// Flips the showIpaHints setting, persists it, updates the toggle UI,
+// and re-renders the current card's examples to reflect the change immediately.
+function toggleIpaHints() {
+    showIpaHints = !showIpaHints;
+    localStorage.setItem('wf_show_ipa_hints', showIpaHints);
+    updateIpaToggleUI();
+    if (wordData.length > 0) renderExamples(wordData[currentIndex]);
+}
+
+// ── updateIpaToggleUI ─────────────────────────────────────────────────────────
+// Syncs the visual toggle switch to the current showIpaHints value.
+function updateIpaToggleUI() {
+    const track = document.getElementById('ipa-hints-toggle');
+    const knob  = document.getElementById('ipa-hints-knob');
+    if (!track || !knob) return;
+    track.style.background = showIpaHints ? 'var(--primary)' : 'var(--surface-4)';
+    knob.style.left = showIpaHints ? '21px' : '3px';
 }
 
 
