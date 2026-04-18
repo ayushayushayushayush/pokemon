@@ -117,44 +117,37 @@
         #sync-status.synced  { background: rgba(46,204,113,0.15); color: var(--success-green); border: 1px solid rgba(46,204,113,0.3); }
 
         /* ── App Header ──────────────────────────────────────────────────────────
-           IMPORTANT: The top padding uses calc(var(--safe-top) + 16px) to push
+           IMPORTANT: The top padding uses calc(var(--safe-top) + ...) to push
            header content below the iPhone status bar / notch. */
         header {
-            padding: calc(var(--safe-top) + 10px) 20px 10px;
+            padding: calc(var(--safe-top) + 8px) 20px 8px;
             display: flex; justify-content: space-between; align-items: center;
-            min-height: calc(var(--safe-top) + 66px);
+            min-height: calc(var(--safe-top) + 54px);
         }
 
-        /* TWEAK: Zero padding, larger font size for main header buttons.
-           IMPORTANT: padding:0 and font-size:1.7rem are intentional for emoji icon sizing.
-           The fixed 46x46px dimensions keep all header buttons the same visual weight. */
         .header-btn {
             display: flex; align-items: center; justify-content: center;
-            width: 46px; height: 46px; border-radius: var(--radius-sm); cursor: pointer;
+            width: 36px; height: 36px; border-radius: var(--radius-sm); cursor: pointer;
             background: var(--surface-3); color: var(--text-main);
             border: 1px solid var(--border); transition: background 0.15s, border-color 0.15s;
             padding: 0; 
-            font-size: 1.7rem; 
+            font-size: 1.3rem; 
             line-height: 1;
         }
         .header-btn:active { background: var(--surface-4); border-color: var(--border-bright); }
         
-        /* TWEAK: Text-based buttons inside overlays (e.g. "← Back") get their
-           padding restored and auto sizing, overriding the icon-button defaults above. */
         .header-btn.overlay-nav {
             width: auto; height: auto; padding: 8px 14px; font-size: 0.85rem; font-weight: 700;
         }
 
-        /* TWEAK: Counter pill in the main header — bigger and bolder than default.
-           IMPORTANT: The counter is clickable (calls jumpPrompt()) so do not remove
-           the height/display:flex centering, which ensures a proper tap target. */
+        /* Counter pill matches new header height */
         .counter {
             font-family: 'Playfair Display', serif;
             font-size: 1rem; font-weight: 800; letter-spacing: 0.02em;
             color: var(--text-main); background: var(--surface-2);
             padding: 0 18px; border-radius: 20px;
             border: 1px solid var(--border);
-            height: 40px; display: flex; align-items: center; justify-content: center;
+            height: 36px; display: flex; align-items: center; justify-content: center;
         }
 
         /* ── Full-Screen Overlays ────────────────────────────────────────────────
@@ -696,7 +689,7 @@
            SELF-RATING BUTTONS
         ══════════════════════════════════════════════════════════════════════ */
         .rating-btn {
-            padding: 0 14px; height: 46px; border: 1.5px solid var(--border);
+            padding: 0 14px; height: 36px; border: 1.5px solid var(--border);
             border-radius: 20px; font-family: 'Lora', serif;
             font-size: 0.72rem; font-weight: 700; cursor: pointer;
             background: var(--surface-2);
