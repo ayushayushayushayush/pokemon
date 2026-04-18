@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -385,13 +384,17 @@
            buttons above the iPhone home indicator bar. */
         .controls { padding: 12px 18px calc(var(--safe-bottom) + 48px); display: flex; gap: 10px; width: 100%; max-width: 420px; transition: padding 0.4s ease; }
 
-        /* When card is flipped: push controls down further, giving examples more room */
+        /* When card is flipped: tighter padding so buttons + examples all fit */
         .app-container.card-flipped .controls {
-            padding-top: 8px;
-            padding-bottom: calc(var(--safe-bottom) + 48px);
+            padding-top: 6px;
+            padding-bottom: calc(var(--safe-bottom) + 16px);
         }
         .app-container.card-flipped .scene {
             height: 78vh;
+        }
+        .app-container.card-flipped .nav-btn {
+            height: 50px;
+            font-size: 0.95rem;
         }
         
         /* TWEAK: Taller, bolder nav buttons with zero padding.
@@ -402,7 +405,7 @@
             background: var(--surface-3); color: var(--text-main); 
             font-family: 'Lora', Georgia, serif; 
             font-weight: 800; font-size: 1.1rem; letter-spacing: 0.02em; 
-            border: 1px solid var(--border); transition: background 0.15s, transform 0.1s; 
+            border: 1px solid var(--border); transition: background 0.15s, transform 0.1s, height 0.3s ease, font-size 0.3s ease; 
             padding: 0; display: flex; align-items: center; justify-content: center;
         }
         .nav-btn:active { transform: scale(0.97); }
