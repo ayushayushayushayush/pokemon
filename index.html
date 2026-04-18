@@ -1281,6 +1281,9 @@ window.onload = () => {
         // Start at correct card
         updateCard();
 
+        // Attach Oxford long-press gesture to front word container
+        setupOxfordLongPress();
+
         // Engagement features + deck (all data ready at this point)
         initEngagement();
         applyDeck(activeDeckId);
@@ -1336,6 +1339,7 @@ function updateCard() {
 
     document.getElementById('card').classList.remove('is-flipped');
     document.getElementById('rating-bar').style.display = 'none';
+    oxfordAudioActive = false; // cancel any lingering Oxford audio chain
     const deckLabel = activeDeckId !== 'all' && activeDeckIndices.length > 0
         ? `${activeDeckIndices.indexOf(currentIndex) + 1} / ${activeDeckIndices.length}`
         : `${currentIndex + 1} / ${wordData.length}`;
@@ -1385,11 +1389,10 @@ function renderQuizMeaning() {
 
 // ── buildQuizPool ─────────────────────────────────────────────────────────────
 // Builds the quiz pool respecting quizExamplesLimit.
-// For each word that has favorites, at most quizExamplesLimit sentences are
-// included. Sentences are taken in their current favExamples order (favorites
-// first once sorted on the card, but here we just cap per-word).
+// For each word that has favorites, examples are SHUFFLED first so that when
+// the limit is 1 (or any number), a different example is selected each round
+// rather than always the same one.
 function buildQuizPool() {
-    // Group favExamples by word, then take up to quizExamplesLimit per word
     const byWord = {};
     favExamples.forEach(id => {
         const word = id.split('|')[0].trim();
@@ -1398,7 +1401,9 @@ function buildQuizPool() {
     });
     const pool = [];
     Object.values(byWord).forEach(ids => {
-        ids.slice(0, quizExamplesLimit).forEach(id => pool.push(id));
+        // Shuffle this word's examples so rotation varies each quiz round
+        const shuffled = ids.slice().sort(() => Math.random() - 0.5);
+        shuffled.slice(0, quizExamplesLimit).forEach(id => pool.push(id));
     });
     return pool;
 }
@@ -1906,15 +1911,12 @@ function playAudioFromEvent(e) {
 }
 
 // ── playAudioByIndex ──────────────────────────────────────────────────────────
-// Plays the pronunciation MP3 for the word at the given index.
-// IMPORTANT: Audio files are split across 4 folders by word number:
+// Plays the PRIMARY pronunciation MP3 for the word at the given index.
+// Audio files are split across 4 folders by word number:
 //   audio-file/      → words 1–1018
 //   audio-file-2/    → words 1019–2026
 //   audio-file-3/    → words 2027–3034
 //   audio-file-4/    → words 3035+
-// Do NOT change these folder name or range boundaries — they must match the
-// actual file system structure on the server.
-// .catch(()=>{}) silently suppresses errors for missing audio files.
 function playAudioByIndex(idx) {
     if (idx < 0 || idx >= wordData.length) return;
     const word = wordData[idx].WORD;
@@ -1924,6 +1926,78 @@ function playAudioByIndex(idx) {
     else if (num >= 2027 && num <= 3034) f = "audio-file-3";
     else if (num >= 3035) f = "audio-file-4";
     new Audio(`${f}/${word}.mp3`).play().catch(()=>{});
+}
+
+// ── getOxfordFolder ───────────────────────────────────────────────────────────
+// Returns the Oxford audio folder path for the given word index (0-based).
+// Folder boundaries match the user-defined ranges:
+//   audio-ox/3500/1to1000   → indices 0–999   (words 1–1000)
+//   audio-ox/3500/1001-2000 → indices 1000–1999
+//   audio-ox/3500/2000-3000 → indices 2000–2999
+//   audio-ox/3500/3000-4000 → indices 3000+
+function getOxfordFolder(idx) {
+    if (idx < 1000)  return "audio-ox/3500/1to1000";
+    if (idx < 2000)  return "audio-ox/3500/1001-2000";
+    if (idx < 3000)  return "audio-ox/3500/2000-3000";
+    return "audio-ox/3500/3000-4000";
+}
+
+// ── playOxfordAudio ───────────────────────────────────────────────────────────
+// Plays all Oxford audio files for the word at currentIndex, one after another.
+// Files are named word_1.mp3, word_2.mp3, … Some words have only 1, some more.
+// Strategy: attempt word_1, then word_2, etc. Stop when a file 404s (no more).
+// Uses recursive chaining via .onended + .onerror to play sequentially.
+// Shows a brief visual pulse on #front-word-container so user knows it fired.
+let oxfordAudioActive = false;
+function playOxfordAudio(idx) {
+    if (oxfordAudioActive) return; // prevent overlapping long-press triggers
+    if (idx < 0 || idx >= wordData.length) return;
+
+    const word = wordData[idx].WORD.trim().toLowerCase();
+    const folder = getOxfordFolder(idx);
+
+    // Visual feedback: briefly pulse the word
+    const container = document.getElementById('front-word-container');
+    container.style.opacity = '0.5';
+    setTimeout(() => { container.style.opacity = '1'; }, 200);
+
+    oxfordAudioActive = true;
+
+    function playNext(n) {
+        const src = `${folder}/${word}_${n}.mp3`;
+        const audio = new Audio(src);
+        audio.onended = () => playNext(n + 1);
+        audio.onerror = () => { oxfordAudioActive = false; }; // no more files
+        audio.play().catch(() => { oxfordAudioActive = false; });
+    }
+
+    playNext(1);
+}
+
+// ── setupOxfordLongPress ──────────────────────────────────────────────────────
+// Attaches a 600ms long-press on #front-word-container that triggers Oxford audio.
+// Uses passive touch listeners for iOS scroll performance.
+// masteryMoved guard cancels the timer if the user scrolls/swipes.
+function setupOxfordLongPress() {
+    const container = document.getElementById('front-word-container');
+    let oxTimer = null;
+    let oxMoved = false;
+
+    container.addEventListener('touchstart', (e) => {
+        oxMoved = false;
+        oxTimer = setTimeout(() => {
+            if (!oxMoved) playOxfordAudio(currentIndex);
+        }, 600);
+    }, { passive: true });
+
+    container.addEventListener('touchmove', () => {
+        oxMoved = true;
+        clearTimeout(oxTimer);
+    }, { passive: true });
+
+    container.addEventListener('touchend', () => {
+        clearTimeout(oxTimer);
+    });
 }
 
 // ── handleMoreClick ───────────────────────────────────────────────────────────
