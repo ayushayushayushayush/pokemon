@@ -276,7 +276,7 @@
         .card.is-flipped { transform: rotateY(180deg); }
 
         /* .scene clips card content via overflow:hidden + border-radius. */
-        .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 18px; overflow: hidden; border-radius: var(--radius-xl); position: relative; transition: height 0.4s ease; }
+        .scene { width: 92%; max-width: 420px; height: 72vh; perspective: 1500px; margin-bottom: 18px; overflow: hidden; border-radius: var(--radius-xl); position: relative; transition: height 0.4s ease; }
 
         /* IMPORTANT: backface-visibility:hidden hides each face when it is
            rotated away from the viewer. Without this, both faces show through
@@ -375,7 +375,7 @@
         /* ── Nav Controls (Bottom Buttons) ──────────────────────────────────────
            IMPORTANT: padding-bottom uses calc(var(--safe-bottom) + ...) to push
            buttons above the iPhone home indicator bar. */
-        .controls { padding: 12px 18px calc(var(--safe-bottom) + 48px); display: flex; gap: 10px; width: 100%; max-width: 420px; transition: padding 0.4s ease; }
+        .controls { padding: 6px 18px calc(var(--safe-bottom) + 16px); display: flex; gap: 10px; width: 100%; max-width: 420px; transition: padding 0.4s ease; }
 
         /* When card is flipped: tighter padding so buttons + examples all fit */
         .app-container.card-flipped .controls {
@@ -394,10 +394,10 @@
            IMPORTANT: padding:0 is intentional — text is centered via flexbox.
            The .primary variant (Next button) has a colored background and shadow. */
         .nav-btn { 
-            flex: 1; height: 62px; border-radius: var(--radius-md); border: none; 
+            flex: 1; height: 50px; border-radius: var(--radius-md); border: none; 
             background: var(--surface-3); color: var(--text-main); 
             font-family: 'Lora', Georgia, serif; 
-            font-weight: 800; font-size: 1.1rem; letter-spacing: 0.02em; 
+            font-weight: 800; font-size: 0.95rem; letter-spacing: 0.02em; 
             border: 1px solid var(--border); transition: background 0.15s, transform 0.1s, height 0.3s ease, font-size 0.3s ease; 
             padding: 0; display: flex; align-items: center; justify-content: center;
         }
