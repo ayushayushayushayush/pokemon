@@ -319,7 +319,7 @@
         /* IMPORTANT: clicking #b-word plays audio (playAudioFromEvent).
            z-index:5 ensures it sits above any sibling overlapping elements. */
         .back-word { font-family: 'Playfair Display', serif; font-size: 1.55rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.04em; margin: 0; z-index: 5; }
-        .back-ipa { font-family: monospace; font-size: 0.78rem; color: var(--text-secondary); letter-spacing: 0.02em; z-index: 5; margin-left: 2px; align-self: center; }
+
 
         /* IMPORTANT: #more-btn cycles through multiple meanings via handleMoreClick().
            It is shown/hidden in updateCard() based on availableMeanings.length > 1. */
@@ -1075,7 +1075,6 @@
                         <!-- IMPORTANT: #b-word onclick calls playAudioFromEvent(event).
                              stopPropagation is essential here — see playAudioFromEvent(). -->
                         <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
-                        <span id="b-ipa" class="back-ipa"></span>
                         <!-- IMPORTANT: #more-btn is shown only when availableMeanings.length > 1.
                              onclick calls handleMoreClick(event) which cycles meanings. -->
                         <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
@@ -1404,7 +1403,6 @@ function updateCard() {
 
     // Populate card back
     document.getElementById('b-word').textContent = item.WORD;
-    document.getElementById('b-ipa').textContent = item.IPA || '';
     meaningEl.innerText = availableMeanings[0] || "";
 
     // Show/hide "More X/Y" button based on whether multiple meanings exist
@@ -1927,7 +1925,7 @@ function renderExamples(item) {
         const footerHtml = (ex.source || ex.date)
             ? `<div class="example-footer"><span class="example-source">${ex.source}</span><span class="example-date">${ex.date}</span></div>`
             : '';
-        div.innerHTML = `<strong>${idx+1}.</strong> ${annotateWithIPA(ex.text, cleanWord)}${footerHtml}`;
+        div.innerHTML = `<strong>${idx+1}.</strong> ${annotateWithIPA(ex.text, '')}${footerHtml}`;
 
         // Apply color if this sentence is already favorited
         if (ex.isFav) {
