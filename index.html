@@ -319,6 +319,7 @@
         /* IMPORTANT: clicking #b-word plays audio (playAudioFromEvent).
            z-index:5 ensures it sits above any sibling overlapping elements. */
         .back-word { font-family: 'Playfair Display', serif; font-size: 1.55rem; font-weight: 800; color: var(--delete-red); text-transform: uppercase; letter-spacing: 0.04em; margin: 0; z-index: 5; }
+        .back-ipa { font-family: monospace; font-size: 0.78rem; color: var(--text-secondary); letter-spacing: 0.02em; z-index: 5; margin-left: 2px; align-self: center; }
 
         /* IMPORTANT: #more-btn cycles through multiple meanings via handleMoreClick().
            It is shown/hidden in updateCard() based on availableMeanings.length > 1. */
@@ -370,11 +371,11 @@
         }
         .word-ipa-hint.has-variants:active { color: var(--primary); }
         .word-ipa-wrap { padding-bottom: 0; }
-        .example-item { background: #000000; padding: 14px 16px; font-size: 0.9rem; line-height: 1.6; color: #C0C0C8; margin-bottom: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); user-select: none; -webkit-user-select: none; transition: border-color 0.2s; }
-        .example-footer { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,0.05); gap: 8px; }
+        .example-item { background: transparent; padding: 12px 4px; font-size: 0.9rem; line-height: 1.6; color: #C0C0C8; border-bottom: 1px solid var(--border); user-select: none; -webkit-user-select: none; }
+        .example-item:last-child { border-bottom: none; }
+        .example-footer { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 6px; gap: 8px; }
         .example-source { font-size: 0.68rem; color: #555; font-style: italic; flex: 1; }
         .example-date { font-size: 0.65rem; color: #444; white-space: nowrap; flex-shrink: 0; }
-        .example-item { background: #000000; padding: 14px 16px; font-size: 0.9rem; line-height: 1.6; color: #C0C0C8; margin-bottom: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); user-select: none; -webkit-user-select: none; transition: border-color 0.2s; }
         .example-item.is-fav { }
 
         /* ── Nav Controls (Bottom Buttons) ──────────────────────────────────────
@@ -1074,6 +1075,7 @@
                         <!-- IMPORTANT: #b-word onclick calls playAudioFromEvent(event).
                              stopPropagation is essential here — see playAudioFromEvent(). -->
                         <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
+                        <span id="b-ipa" class="back-ipa"></span>
                         <!-- IMPORTANT: #more-btn is shown only when availableMeanings.length > 1.
                              onclick calls handleMoreClick(event) which cycles meanings. -->
                         <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
@@ -1343,6 +1345,8 @@ window.onload = () => {
 // - Tapping ANYWHERE ELSE on the card front → flips the card.
 // Do NOT simplify this to a single action — audio and flip are both required.
 function handleCardFrontClick(e) {
+    // If Oxford long-press just fired, skip this synthesized click entirely
+    if (oxfordJustFired) { oxfordJustFired = false; return; }
     if (e.target.closest('#front-word-container')) {
         playAudioByIndex(currentIndex);
     } else {
@@ -1400,6 +1404,7 @@ function updateCard() {
 
     // Populate card back
     document.getElementById('b-word').textContent = item.WORD;
+    document.getElementById('b-ipa').textContent = item.IPA || '';
     meaningEl.innerText = availableMeanings[0] || "";
 
     // Show/hide "More X/Y" button based on whether multiple meanings exist
@@ -2214,6 +2219,9 @@ function playOxfordAudio(idx) {
 // Attaches a 600ms long-press on #front-word-container that triggers Oxford audio.
 // Uses passive touch listeners for iOS scroll performance.
 // masteryMoved guard cancels the timer if the user scrolls/swipes.
+// oxfordJustFired: set to true when the long-press fires so handleCardFrontClick
+// can suppress the click event that iOS synthesizes after touchend.
+let oxfordJustFired = false;
 function setupOxfordLongPress() {
     const container = document.getElementById('front-word-container');
     let oxTimer = null;
@@ -2222,7 +2230,10 @@ function setupOxfordLongPress() {
     container.addEventListener('touchstart', (e) => {
         oxMoved = false;
         oxTimer = setTimeout(() => {
-            if (!oxMoved) playOxfordAudio(currentIndex);
+            if (!oxMoved) {
+                oxfordJustFired = true;
+                playOxfordAudio(currentIndex);
+            }
         }, 600);
     }, { passive: true });
 
