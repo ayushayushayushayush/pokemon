@@ -338,11 +338,12 @@
         /* IMPORTANT: .example-item.is-fav — favorited examples get a cycling color
            (red → yellow → green by position in favExamples) set via inline style.
            The class is kept for reference; color is applied in JS via getFavColor(). */
-        .word-ipa-wrap { display: inline-flex; flex-direction: column; align-items: center; vertical-align: bottom; line-height: 1.4; margin: 0 1px; }
+        .word-ipa-wrap { display: inline-flex; flex-direction: column; align-items: center; vertical-align: top; line-height: 1.4; margin: 0 1px; }
         .word-ipa-wrap .word-text { line-height: inherit; }
         .word-ipa-hint {
             display: block; font-size: 0.62rem; color: #555;
             font-family: monospace; line-height: 1.2; text-align: center; white-space: nowrap;
+            min-height: 0.75rem; /* reserves space even when empty, keeping all words level */
         }
         /* When a word has multiple IPA variants, the hint gets this class.
            A subtle underline + slightly brighter color signals it's tappable. */
@@ -352,6 +353,9 @@
             cursor: pointer;
         }
         .word-ipa-hint.has-variants:active { color: var(--primary); }
+        /* example-item: all tokens become inline-flex columns, so we need
+           the container to align them at the top so text rows stay level */
+        .example-item { background: #000000; padding: 14px 16px; font-size: 0.9rem; line-height: 1.6; color: #C0C0C8; margin-bottom: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); user-select: none; -webkit-user-select: none; transition: border-color 0.2s; }
         .example-footer { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,0.05); gap: 8px; }
         .example-source { font-size: 0.68rem; color: #555; font-style: italic; flex: 1; }
         .example-date { font-size: 0.65rem; color: #444; white-space: nowrap; flex-shrink: 0; }
@@ -1629,7 +1633,7 @@ function annotateWithIPA(text, skipWord) {
 
     return text.replace(/[A-Za-z'-]+/g, (match) => {
         const lower = match.toLowerCase();
-        if (lower === skipLower) return match;
+        if (lower === skipLower) return `<span class="word-ipa-wrap"><span class="word-text">${match}</span><span class="word-ipa-hint"></span></span>`;
 
         if (ipaMap[lower]) {
             return `<span class="word-ipa-wrap"><span class="word-text">${match}</span>${makeIpaHint(ipaMap[lower])}</span>`;
@@ -1654,7 +1658,8 @@ function annotateWithIPA(text, skipWord) {
             }
         }
 
-        return match;
+        // No IPA found — still wrap with empty hint to keep vertical alignment uniform
+        return `<span class="word-ipa-wrap"><span class="word-text">${match}</span><span class="word-ipa-hint"></span></span>`;
     });
 }
 
