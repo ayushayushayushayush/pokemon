@@ -984,11 +984,17 @@
         <div class="counter" id="counter" onclick="openSearch()">1 / 1</div>
         <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     </div>
-    <!-- Back header: IPA toggle + Hard/Easy right -->
-    <div id="hdr-back" style="display:none;align-items:center;justify-content:flex-end;width:100%;gap:8px;">
-        <button id="ipa-toggle-btn" onclick="toggleIpaHints()" style="padding:0 10px;height:28px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface-2);font-family:'Lora',serif;font-size:0.65rem;font-weight:700;letter-spacing:0.04em;color:var(--text-secondary);cursor:pointer;transition:background 0.15s,border-color 0.15s,color 0.15s;flex-shrink:0;">IPA</button>
-        <button class="rating-btn hard" onclick="rateWord('hard')" id="hdr-hard-btn">Hard</button>
-        <button class="rating-btn easy" onclick="rateWord('easy')" id="hdr-easy-btn">Easy</button>
+    <!-- Back header: progress left, IPA + Hard/Easy right -->
+    <div id="hdr-back" style="display:none;align-items:center;justify-content:space-between;width:100%;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+            <div id="progress-bar-track" style="flex:1;max-width:120px;"><div id="progress-bar-fill"></div></div>
+            <div id="progress-label" style="font-size:0.62rem;color:var(--text-dim);white-space:nowrap;letter-spacing:0.04em;">0 / 7</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <button id="ipa-toggle-btn" onclick="toggleIpaHints()" style="padding:0 10px;height:28px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface-2);font-family:'Lora',serif;font-size:0.65rem;font-weight:700;letter-spacing:0.04em;color:var(--text-secondary);cursor:pointer;transition:background 0.15s,border-color 0.15s,color 0.15s;flex-shrink:0;">IPA</button>
+            <button class="rating-btn hard" onclick="rateWord('hard')" id="hdr-hard-btn">Hard</button>
+            <button class="rating-btn easy" onclick="rateWord('easy')" id="hdr-easy-btn">Easy</button>
+        </div>
     </div>
 </header>
 
