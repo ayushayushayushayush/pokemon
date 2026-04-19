@@ -201,7 +201,8 @@
             font-size: 1.1rem; font-weight: 400; line-height: 1.7;
             color: var(--text-main); text-align: left;
             background: var(--surface-2); padding: 22px 20px; border-radius: var(--radius-md);
-            border: 1px solid var(--border); min-height: 120px; display: block;
+            border: 1px solid var(--border); min-height: 120px; max-height: 180px;
+            overflow-y: auto; -webkit-overflow-scrolling: touch; display: block;
             word-wrap: break-word; overflow-wrap: break-word;
         }
         /* IMPORTANT: .quiz-sentence b styles the masked word blank (_________).
@@ -213,7 +214,7 @@
            cursor:pointer and user-select:none are intentional. */
         .quiz-meaning {
             background: var(--surface-2); border: 1px solid var(--border);
-            border-left: 3px solid var(--primary); border-radius: var(--radius-sm);
+            border-radius: var(--radius-sm);
             padding: 12px 16px; font-size: 0.9rem; color: var(--text-secondary);
             font-style: italic; line-height: 1.6; cursor: pointer; user-select: none;
             transition: border-color 0.2s, background 0.2s;
@@ -276,7 +277,7 @@
         .card.is-flipped { transform: rotateY(180deg); }
 
         /* .scene clips card content via overflow:hidden + border-radius. */
-        .scene { width: 92%; max-width: 420px; height: 68vh; perspective: 1500px; margin-bottom: 18px; overflow: hidden; border-radius: var(--radius-xl); position: relative; transition: height 0.4s ease; }
+        .scene { width: 92%; max-width: 420px; height: 74vh; perspective: 1500px; margin-bottom: 12px; overflow: hidden; border-radius: var(--radius-xl); position: relative; transition: height 0.4s ease; }
 
         /* IMPORTANT: backface-visibility:hidden hides each face when it is
            rotated away from the viewer. Without this, both faces show through
@@ -375,7 +376,7 @@
         /* ── Nav Controls (Bottom Buttons) ──────────────────────────────────────
            IMPORTANT: padding-bottom uses calc(var(--safe-bottom) + ...) to push
            buttons above the iPhone home indicator bar. */
-        .controls { padding: 12px 18px calc(var(--safe-bottom) + 16px); display: flex; gap: 10px; width: 100%; max-width: 420px; transition: padding 0.4s ease; }
+        .controls { padding: 8px 18px calc(var(--safe-bottom) + 32px); display: flex; gap: 10px; width: 100%; max-width: 420px; transition: padding 0.4s ease; }
 
         /* When card is flipped: tighter padding so buttons + examples all fit */
         .app-container.card-flipped .controls {
@@ -383,7 +384,7 @@
             padding-bottom: calc(var(--safe-bottom) + 16px);
         }
         .app-container.card-flipped .scene {
-            height: 72vh;
+            height: 74vh;
         }
         .app-container.card-flipped .nav-btn {
             height: 50px;
@@ -689,9 +690,9 @@
            SELF-RATING BUTTONS
         ══════════════════════════════════════════════════════════════════════ */
         .rating-btn {
-            padding: 0 14px; height: 36px; border: 1.5px solid var(--border);
+            padding: 0 10px; height: 28px; border: 1.5px solid var(--border);
             border-radius: 20px; font-family: 'Lora', serif;
-            font-size: 0.72rem; font-weight: 700; cursor: pointer;
+            font-size: 0.65rem; font-weight: 700; cursor: pointer;
             background: var(--surface-2);
             display: inline-flex; align-items: center; justify-content: center;
             transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
@@ -977,18 +978,20 @@
      #hdr-back:  shown on card back  — progress bar left, Hard/Easy right
      IMPORTANT: Do NOT remove id="app-header" — JS shows/hides it by that ID. -->
 <header id="app-header" style="display:none;">
-    <!-- Front header: settings left, star right -->
+    <!-- Front header: settings left, counter center, star right -->
     <div id="hdr-front" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
         <div class="header-btn" onclick="openSettings(event)">⚙️</div>
+        <div class="counter" id="counter" onclick="openSearch()">1 / 1</div>
         <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     </div>
-    <!-- Back header: progress bar left, Hard/Easy right -->
-    <div id="hdr-back" style="display:none;align-items:center;justify-content:space-between;width:100%;gap:12px;">
+    <!-- Back header: progress left, IPA + Hard/Easy right -->
+    <div id="hdr-back" style="display:none;align-items:center;justify-content:space-between;width:100%;gap:8px;">
         <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
             <div id="progress-bar-track" style="flex:1;max-width:120px;"><div id="progress-bar-fill"></div></div>
             <div id="progress-label" style="font-size:0.62rem;color:var(--text-dim);white-space:nowrap;letter-spacing:0.04em;">0 / 7</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <button id="ipa-toggle-btn" onclick="toggleIpaHints()" style="padding:0 10px;height:28px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface-2);font-family:'Lora',serif;font-size:0.65rem;font-weight:700;letter-spacing:0.04em;color:var(--text-secondary);cursor:pointer;transition:background 0.15s,border-color 0.15s,color 0.15s;flex-shrink:0;">IPA</button>
             <button class="rating-btn hard" onclick="rateWord('hard')" id="hdr-hard-btn">Hard</button>
             <button class="rating-btn easy" onclick="rateWord('easy')" id="hdr-easy-btn">Easy</button>
         </div>
@@ -1011,6 +1014,11 @@
                  The long-press mastery gesture is attached to #front-word-container
                  Do NOT remove that element's id. -->
             <div class="card-face card-front" onclick="handleCardFrontClick(event)">
+                <!-- Progress bar: absolutely positioned so the word stays perfectly centered -->
+                <div id="front-progress-wrap" style="position:absolute;top:24px;left:24px;right:24px;display:flex;align-items:center;gap:8px;">
+                    <div id="progress-bar-track" style="flex:1;"><div id="progress-bar-fill"></div></div>
+                    <div id="progress-label" style="font-size:0.62rem;color:var(--text-dim);white-space:nowrap;letter-spacing:0.04em;">0 / 7</div>
+                </div>
                 <div class="word-container" id="front-word-container">
                     <h1 id="f-word" class="word-display">...</h1>
                     <div class="ipa-sub">
@@ -1035,16 +1043,16 @@
                         <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
                         <!-- IMPORTANT: #more-btn is shown only when availableMeanings.length > 1.
                              onclick calls handleMoreClick(event) which cycles meanings. -->
-                        <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
                         <!-- IMPORTANT: #type-badge shows the word's grammatical type (noun,
                              verb, etc.) if available. Shown/hidden in updateCard(). -->
                         <div id="type-badge" class="type-badge" style="display:none;"></div>
+                        <div id="meaning-counter" class="type-badge" style="display:none;"></div>
                     </div>
                     <div class="meaning-container">
                         <!-- IMPORTANT: #b-meaning is updated by updateCard() (initial meaning)
                              and handleMoreClick() (subsequent meanings). Use innerText not
                              innerHTML — meanings may contain characters that need escaping. -->
-                        <p id="b-meaning" class="meaning-text">...</p>
+                        <p id="b-meaning" class="meaning-text" onclick="handleMoreClick(event)" style="cursor:pointer;">...</p>
                     </div>
                 </div>
                 <!-- IMPORTANT: #example-list is rebuilt from scratch by renderExamples()
@@ -1329,7 +1337,8 @@ function updateCard() {
         if (val && val.trim()) availableMeanings.push(val.trim());
     }
     
-    currentMeaningIdx = 0;
+    // Start on the second meaning (index 1) if available; first meaning comes last
+    currentMeaningIdx = availableMeanings.length > 1 ? 1 : 0;
 
     document.getElementById('card').classList.remove('is-flipped');
     document.getElementById('app').classList.remove('card-flipped');
@@ -1340,6 +1349,7 @@ function updateCard() {
     const deckLabel = activeDeckId !== 'all' && activeDeckIndices.length > 0
         ? `${activeDeckIndices.indexOf(currentIndex) + 1} / ${activeDeckIndices.length}`
         : `${currentIndex + 1} / ${wordData.length}`;
+    document.getElementById('counter').textContent = deckLabel;
     localStorage.setItem('wf_index_v6', currentIndex); // Persist position across sessions
 
     // Populate card front
@@ -1349,14 +1359,10 @@ function updateCard() {
 
     // Populate card back
     document.getElementById('b-word').textContent = item.WORD;
-    meaningEl.innerText = availableMeanings[0] || "";
+    // meaning rendered below after moreBtn logic via renderMeaning()
 
-    // Show/hide "More X/Y" button based on whether multiple meanings exist
-    const moreBtn = document.getElementById('more-btn');
-    moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none';
-    if(moreBtn.style.display === 'block') {
-        moreBtn.textContent = `More 1/${availableMeanings.length}`;
-    }
+    // No more-btn — meaning is tappable directly
+    renderMeaning();
 
     // Show/hide grammatical type badge (noun, verb, adj, etc.)
     const typeBadge = document.getElementById('type-badge');
@@ -1472,7 +1478,10 @@ function nextQuizQuestion() {
     // Build regex to mask the target word and its inflected forms in the sentence
     const escapedWord = currentQuizCorrect.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const stem = escapedWord.endsWith('e') ? escapedWord.slice(0, -1) : escapedWord;
-    const regex = new RegExp(`\\b(?:${escapedWord}|${stem})\\w*`, 'gi');
+    // Also handle -y → -i substitution (e.g. subsidy → subsidies, subsidi*)
+    const stemY = escapedWord.endsWith('y') ? escapedWord.slice(0, -1) + 'i' : null;
+    const alts = [escapedWord, stem, ...(stemY ? [stemY] : [])].filter((v,i,a) => a.indexOf(v)===i);
+    const regex = new RegExp(`\\b(?:${alts.join('|')})\\w*`, 'gi');
     
     const maskedSentence = sentence.replace(regex, "<b>_________</b>");
 
@@ -1510,10 +1519,10 @@ function nextQuizQuestion() {
         const optData = wordData.find(w => w.WORD.trim() === opt);
         
         let optIpa = optData && optData.IPA ? optData.IPA.trim() : '';
-        // IMPORTANT: Split IPA on commas and insert <br> so long IPA strings
-        // wrap to a second line inside the option button instead of overflowing.
-        if (optIpa.includes(',')) {
-            optIpa = optIpa.split(',').join(',<br>');
+        // Show only first two IPA variants, joined with a line break
+        if (optIpa) {
+            const parts = optIpa.split(',').map(s => s.trim()).filter(Boolean);
+            optIpa = parts.slice(0, 2).join(',<br>');
         }
 
         btn.innerHTML = `<span class="opt-word">${opt}</span>${optIpa ? `<span class="opt-ipa">${optIpa}</span>` : ''}`;
@@ -1871,7 +1880,7 @@ function renderExamples(item) {
         const footerHtml = (ex.source || ex.date)
             ? `<div class="example-footer"><span class="example-source">${ex.source}</span><span class="example-date">${ex.date}</span></div>`
             : '';
-        div.innerHTML = `<strong>${idx+1}.</strong> ${annotateWithIPA(ex.text, '')}${footerHtml}`;
+        div.innerHTML = `<strong>${idx+1}.</strong> ${showIpaHints ? annotateWithIPA(ex.text, '') : ex.text}${footerHtml}`;
 
         // Apply color if this sentence is already favorited
         if (ex.isFav) {
@@ -2198,11 +2207,26 @@ function setupOxfordLongPress() {
 // Updates #b-meaning text and the "More X/Y" button label.
 // IMPORTANT: e.stopPropagation() prevents the click from bubbling to .back-header
 // and triggering flipCard().
-function handleMoreClick(e) { 
-    if(e) e.stopPropagation();
+function renderMeaning() {
+    const el = document.getElementById('b-meaning');
+    if (!el) return;
+    el.innerText = availableMeanings[currentMeaningIdx] || '';
+    const badge = document.getElementById('meaning-counter');
+    if (badge) {
+        if (availableMeanings.length > 1) {
+            badge.textContent = `${currentMeaningIdx + 1}/${availableMeanings.length}`;
+            badge.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+function handleMoreClick(e) {
+    if (e) e.stopPropagation();
+    if (availableMeanings.length <= 1) return;
     currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
-    document.getElementById('b-meaning').innerText = availableMeanings[currentMeaningIdx];
-    document.getElementById('more-btn').textContent = `More ${currentMeaningIdx+1}/${availableMeanings.length}`;
+    renderMeaning();
 }
 
 // ── jumpPrompt ────────────────────────────────────────────────────────────────
@@ -2812,6 +2836,25 @@ function updateRatingButtons() {
     document.getElementById('hdr-easy-btn').classList.toggle('selected', rating === 'easy');
 }
 
+// ── toggleIpaHints / updateIpaToggleBtn ───────────────────────────────────────
+let showIpaHints = localStorage.getItem('wf_show_ipa_hints') !== 'false';
+
+function toggleIpaHints() {
+    showIpaHints = !showIpaHints;
+    localStorage.setItem('wf_show_ipa_hints', showIpaHints);
+    updateIpaToggleBtn();
+    if (wordData.length > 0) renderExamples(wordData[currentIndex]);
+}
+
+function updateIpaToggleBtn() {
+    const btn = document.getElementById('ipa-toggle-btn');
+    if (!btn) return;
+    btn.style.background  = showIpaHints ? 'var(--primary-dim)' : 'var(--surface-2)';
+    btn.style.borderColor = showIpaHints ? 'var(--primary)'     : 'var(--border)';
+    btn.style.color       = showIpaHints ? 'var(--primary)'     : 'var(--text-secondary)';
+}
+
+document.addEventListener('DOMContentLoaded', updateIpaToggleBtn);
 
 </script>
 </body>
