@@ -1511,10 +1511,10 @@ function nextQuizQuestion() {
         const optData = wordData.find(w => w.WORD.trim() === opt);
         
         let optIpa = optData && optData.IPA ? optData.IPA.trim() : '';
-        // IMPORTANT: Split IPA on commas and insert <br> so long IPA strings
-        // wrap to a second line inside the option button instead of overflowing.
-        if (optIpa.includes(',')) {
-            optIpa = optIpa.split(',').join(',<br>');
+        // Show only first two IPA variants, joined with a line break
+        if (optIpa) {
+            const parts = optIpa.split(',').map(s => s.trim()).filter(Boolean);
+            optIpa = parts.slice(0, 2).join(',<br>');
         }
 
         btn.innerHTML = `<span class="opt-word">${opt}</span>${optIpa ? `<span class="opt-ipa">${optIpa}</span>` : ''}`;
