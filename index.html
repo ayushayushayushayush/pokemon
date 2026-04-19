@@ -201,7 +201,8 @@
             font-size: 1.1rem; font-weight: 400; line-height: 1.7;
             color: var(--text-main); text-align: left;
             background: var(--surface-2); padding: 22px 20px; border-radius: var(--radius-md);
-            border: 1px solid var(--border); min-height: 120px; display: block;
+            border: 1px solid var(--border); min-height: 120px; max-height: 180px;
+            overflow-y: auto; -webkit-overflow-scrolling: touch; display: block;
             word-wrap: break-word; overflow-wrap: break-word;
         }
         /* IMPORTANT: .quiz-sentence b styles the masked word blank (_________).
@@ -1039,6 +1040,7 @@
                         <!-- IMPORTANT: #type-badge shows the word's grammatical type (noun,
                              verb, etc.) if available. Shown/hidden in updateCard(). -->
                         <div id="type-badge" class="type-badge" style="display:none;"></div>
+                        <div id="meaning-counter" class="type-badge" style="display:none;"></div>
                     </div>
                     <div class="meaning-container">
                         <!-- IMPORTANT: #b-meaning is updated by updateCard() (initial meaning)
@@ -2202,10 +2204,16 @@ function setupOxfordLongPress() {
 function renderMeaning() {
     const el = document.getElementById('b-meaning');
     if (!el) return;
-    const counter = availableMeanings.length > 1
-        ? ` <em style="font-size:0.62rem;opacity:0.45;font-style:normal;">${currentMeaningIdx+1}/${availableMeanings.length}</em>`
-        : '';
-    el.innerHTML = (availableMeanings[currentMeaningIdx] || '') + counter;
+    el.innerText = availableMeanings[currentMeaningIdx] || '';
+    const badge = document.getElementById('meaning-counter');
+    if (badge) {
+        if (availableMeanings.length > 1) {
+            badge.textContent = `${currentMeaningIdx + 1}/${availableMeanings.length}`;
+            badge.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
 }
 
 function handleMoreClick(e) {
