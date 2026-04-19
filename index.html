@@ -964,7 +964,10 @@
      #fav-list is populated dynamically by openFavs(). -->
 <div id="fav-overlay">
     <header>
-        <div onclick="closeOverlays()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div onclick="closeOverlays()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
+            <button id="fav-ipa-toggle-btn" onclick="toggleIpaHints()" class="header-btn overlay-nav" style="font-size:0.85rem;font-family:'Lora',serif;letter-spacing:0.04em;">IPA</button>
+        </div>
         <div style="font-weight:800;">Favorites</div>
         <div class="header-btn overlay-nav" style="font-size: 1.15rem;" onclick="startQuiz(event)">💡</div>
     </header>
@@ -1576,20 +1579,20 @@ const WEAK_FORMS = {
     'a': 'ə', 'an': 'ən',
     // Prepositions
     'to': 'tə', 'of': 'əv', 'for': 'fər', 'from': 'frəm',
-    'at': 'ət', 'or': 'ər', 'as': 'əz', 'than': 'ðən',
+    'at': 'ət', 'or': 'ər', 'as': 'æz', 'than': 'ðən',
     // Conjunctions
-    'and': 'ənd', 'but': 'bət',
+    'and': 'ænd', 'but': 'bət',
     // Pronouns
     'he': 'hi', 'she': 'ʃi', 'we': 'wi', 'you': 'jə',
     'him': 'ɪm', 'her': 'ər', 'them': 'ðəm',
-    'his': 'ɪz', 'your': 'jər', 'our': 'ər',
-    'us': 'əs', 'some': 'səm', 'that': 'ðət',
+    'his': 'hɪz', 'your': 'jər', 'our': 'ər',
+    'us': 'əs', 'some': 'səm', 'that': 'ðæt',
     // Auxiliaries
     'is': 'ɪz', 'are': 'ər', 'was': 'wəz', 'were': 'wər',
-    'has': 'həz', 'have': 'həv', 'had': 'həd',
+    'has': 'hæz', 'have': 'həv', 'had': 'həd',
     'do': 'də', 'does': 'dəz',
     'can': 'kən', 'could': 'kəd', 'will': 'wəl', 'would': 'wəd',
-    'should': 'ʃəd', 'shall': 'ʃəl', 'must': 'məst',
+    'should': 'ʃʊd', 'shall': 'ʃəl', 'must': 'məst',
     'be': 'bɪ', 'been': 'bɪn', 'not': 'nət',
 };
 
@@ -2030,7 +2033,10 @@ function openFavs() {
             const footerHtml = (source || date)
                 ? `<div class="example-footer"><span class="example-source">${source}</span><span class="example-date">${date}</span></div>`
                 : '';
-            item.innerHTML = itemObj.text + footerHtml;
+            const displayText = showIpaHints
+                ? annotateWithIPA(itemObj.text, word)
+                : itemObj.text;
+            item.innerHTML = displayText + footerHtml;
 
             // Long-press LEFT half (750ms) to unfavorite
             let exTimer;
@@ -2839,15 +2845,77 @@ function toggleIpaHints() {
     showIpaHints = !showIpaHints;
     localStorage.setItem('wf_show_ipa_hints', showIpaHints);
     updateIpaToggleBtn();
-    if (wordData.length > 0) renderExamples(wordData[currentIndex]);
+    if (wordData.length === 0) return;
+
+    const favOverlay = document.getElementById('fav-overlay');
+    const isFavOpen = favOverlay && favOverlay.style.display === 'flex';
+
+    if (isFavOpen) {
+        // Capture scroll anchor BEFORE openFavs() wipes the list
+        const favList = document.getElementById('fav-list');
+        let anchorIndex = 0, anchorOffset = 0;
+        if (favList) {
+            const items = favList.querySelectorAll('.example-item');
+            const listTop = favList.getBoundingClientRect().top;
+            for (let i = 0; i < items.length; i++) {
+                const rect = items[i].getBoundingClientRect();
+                if (rect.top >= listTop - 4) {
+                    anchorIndex = i;
+                    anchorOffset = rect.top - listTop;
+                    break;
+                }
+            }
+        }
+        openFavs();
+        // Restore scroll position after rebuild
+        if (favList) {
+            const newItems = favList.querySelectorAll('.example-item');
+            const target = newItems[Math.min(anchorIndex, newItems.length - 1)];
+            if (target) {
+                favList.style.scrollBehavior = 'auto';
+                favList.scrollTop = Math.max(0, target.offsetTop - favList.offsetTop - anchorOffset);
+                requestAnimationFrame(() => { favList.style.scrollBehavior = 'smooth'; });
+            }
+        }
+        return;
+    }
+
+    // Card back: preserve scroll position across re-render
+    const list = document.getElementById('example-list');
+    let anchorIndex = 0, anchorOffset = 0;
+    if (list) {
+        const items = list.querySelectorAll('.example-item');
+        const listTop = list.getBoundingClientRect().top;
+        for (let i = 0; i < items.length; i++) {
+            const rect = items[i].getBoundingClientRect();
+            if (rect.top >= listTop - 4) {
+                anchorIndex = i;
+                anchorOffset = rect.top - listTop;
+                break;
+            }
+        }
+    }
+    renderExamples(wordData[currentIndex]);
+    if (list) {
+        const newItems = list.querySelectorAll('.example-item');
+        const target = newItems[Math.min(anchorIndex, newItems.length - 1)];
+        if (target) {
+            list.style.scrollBehavior = 'auto';
+            list.scrollTop = Math.max(0, target.offsetTop - list.offsetTop - anchorOffset);
+            requestAnimationFrame(() => { list.style.scrollBehavior = 'smooth'; });
+        }
+    }
 }
 
 function updateIpaToggleBtn() {
-    const btn = document.getElementById('ipa-toggle-btn');
-    if (!btn) return;
-    btn.style.background  = showIpaHints ? 'var(--primary-dim)' : 'var(--surface-2)';
-    btn.style.borderColor = showIpaHints ? 'var(--primary)'     : 'var(--border)';
-    btn.style.color       = showIpaHints ? 'var(--primary)'     : 'var(--text-secondary)';
+    const on = showIpaHints;
+    ['ipa-toggle-btn', 'fav-ipa-toggle-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.style.background  = on ? 'var(--primary-dim)' : 'var(--surface-2)';
+        btn.style.borderColor = on ? 'var(--primary)'     : 'var(--border)';
+        btn.style.color       = on ? 'var(--primary)'     : 'var(--text-secondary)';
+    });
 }
 
 document.addEventListener('DOMContentLoaded', updateIpaToggleBtn);
