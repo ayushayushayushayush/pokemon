@@ -966,7 +966,7 @@
     <header>
         <div style="display:flex;align-items:center;gap:8px;">
             <div onclick="closeOverlays()" class="header-btn overlay-nav" style="color:var(--primary);">← Back</div>
-            <button id="fav-ipa-toggle-btn" onclick="toggleIpaHints()" style="height:46px;padding:0 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-3);font-family:'Lora',serif;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;color:var(--text-secondary);cursor:pointer;transition:background 0.15s,border-color 0.15s,color 0.15s;flex-shrink:0;">IPA</button>
+            <button id="fav-ipa-toggle-btn" onclick="toggleIpaHints()" class="header-btn overlay-nav" style="font-size:0.85rem;font-family:'Lora',serif;letter-spacing:0.04em;">IPA</button>
         </div>
         <div style="font-weight:800;">Favorites</div>
         <div class="header-btn overlay-nav" style="font-size: 1.15rem;" onclick="startQuiz(event)">💡</div>
@@ -2038,7 +2038,10 @@ function openFavs() {
             const footerHtml = (source || date)
                 ? `<div class="example-footer"><span class="example-source">${source}</span><span class="example-date">${date}</span></div>`
                 : '';
-            item.innerHTML = itemObj.text + footerHtml;
+            const displayText = showIpaHints
+                ? annotateWithIPA(itemObj.text, word)
+                : itemObj.text;
+            item.innerHTML = displayText + footerHtml;
 
             // Long-press LEFT half (750ms) to unfavorite
             let exTimer;
@@ -2848,11 +2851,18 @@ function toggleIpaHints() {
     updateIpaToggleBtn();
     if (wordData.length === 0) return;
 
+    const favOverlay = document.getElementById('fav-overlay');
+    const isFavOpen = favOverlay && favOverlay.style.display === 'flex';
+
+    if (isFavOpen) {
+        // Re-render the favorites list with IPA on/off
+        openFavs();
+        return;
+    }
+
     const list = document.getElementById('example-list');
 
     // ── Scroll preservation ───────────────────────────────────────────────────
-    // Find the first example div whose top edge is at or below the scroll viewport.
-    // We'll restore this div's position after the rebuild so the user stays oriented.
     let anchorIndex = 0;
     let anchorOffset = 0;
     if (list) {
@@ -2862,30 +2872,21 @@ function toggleIpaHints() {
             const rect = items[i].getBoundingClientRect();
             if (rect.top >= listTop - 4) {
                 anchorIndex = i;
-                // How many px into this item was the scroll? (negative = above viewport top)
                 anchorOffset = rect.top - listTop;
                 break;
             }
         }
     }
 
-    // Rebuild with IPA on/off
     renderExamples(wordData[currentIndex]);
 
-    // ── Restore scroll position ───────────────────────────────────────────────
-    // After rebuild, find the same-indexed item and scroll so it sits at the
-    // same vertical position it was before. Use smooth scrolling via CSS
-    // transition on the scroll container.
     if (list) {
         const newItems = list.querySelectorAll('.example-item');
         const target = newItems[Math.min(anchorIndex, newItems.length - 1)];
         if (target) {
-            // Temporarily suppress scroll-behavior to land instantly at position,
-            // then enable smooth so subsequent user scrolls feel natural.
             list.style.scrollBehavior = 'auto';
             const targetTop = target.offsetTop - list.offsetTop;
             list.scrollTop = Math.max(0, targetTop - anchorOffset);
-            // Re-enable smooth scrolling after the forced position is set
             requestAnimationFrame(() => {
                 list.style.scrollBehavior = 'smooth';
             });
