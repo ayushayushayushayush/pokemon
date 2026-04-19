@@ -1036,7 +1036,6 @@
                         <p id="b-word" class="back-word" onclick="playAudioFromEvent(event)">...</p>
                         <!-- IMPORTANT: #more-btn is shown only when availableMeanings.length > 1.
                              onclick calls handleMoreClick(event) which cycles meanings. -->
-                        <div id="more-btn" class="more-btn" onclick="handleMoreClick(event)">More</div>
                         <!-- IMPORTANT: #type-badge shows the word's grammatical type (noun,
                              verb, etc.) if available. Shown/hidden in updateCard(). -->
                         <div id="type-badge" class="type-badge" style="display:none;"></div>
@@ -1045,7 +1044,7 @@
                         <!-- IMPORTANT: #b-meaning is updated by updateCard() (initial meaning)
                              and handleMoreClick() (subsequent meanings). Use innerText not
                              innerHTML — meanings may contain characters that need escaping. -->
-                        <p id="b-meaning" class="meaning-text">...</p>
+                        <p id="b-meaning" class="meaning-text" onclick="handleMoreClick(event)" style="cursor:pointer;">...</p>
                     </div>
                 </div>
                 <!-- IMPORTANT: #example-list is rebuilt from scratch by renderExamples()
@@ -1352,14 +1351,10 @@ function updateCard() {
 
     // Populate card back
     document.getElementById('b-word').textContent = item.WORD;
-    meaningEl.innerText = availableMeanings[currentMeaningIdx] || "";
+    // meaning rendered below after moreBtn logic via renderMeaning()
 
-    // Show/hide "More X/Y" button based on whether multiple meanings exist
-    const moreBtn = document.getElementById('more-btn');
-    moreBtn.style.display = availableMeanings.length > 1 ? 'block' : 'none';
-    if(moreBtn.style.display === 'block') {
-        moreBtn.textContent = `More ${currentMeaningIdx+1}/${availableMeanings.length}`;
-    }
+    // No more-btn — meaning is tappable directly
+    renderMeaning();
 
     // Show/hide grammatical type badge (noun, verb, adj, etc.)
     const typeBadge = document.getElementById('type-badge');
@@ -2204,11 +2199,20 @@ function setupOxfordLongPress() {
 // Updates #b-meaning text and the "More X/Y" button label.
 // IMPORTANT: e.stopPropagation() prevents the click from bubbling to .back-header
 // and triggering flipCard().
-function handleMoreClick(e) { 
-    if(e) e.stopPropagation();
+function renderMeaning() {
+    const el = document.getElementById('b-meaning');
+    if (!el) return;
+    const counter = availableMeanings.length > 1
+        ? ` <em style="font-size:0.62rem;opacity:0.45;font-style:normal;">${currentMeaningIdx+1}/${availableMeanings.length}</em>`
+        : '';
+    el.innerHTML = (availableMeanings[currentMeaningIdx] || '') + counter;
+}
+
+function handleMoreClick(e) {
+    if (e) e.stopPropagation();
+    if (availableMeanings.length <= 1) return;
     currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
-    document.getElementById('b-meaning').innerText = availableMeanings[currentMeaningIdx];
-    document.getElementById('more-btn').textContent = `More ${currentMeaningIdx+1}/${availableMeanings.length}`;
+    renderMeaning();
 }
 
 // ── jumpPrompt ────────────────────────────────────────────────────────────────
