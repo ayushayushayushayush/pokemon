@@ -292,7 +292,7 @@
 
         /* Card front — clicking the word container plays audio; clicking elsewhere flips.
            See handleCardFrontClick() for the logic that differentiates the two tap zones. */
-        .card-front { flex-direction: column; justify-content: flex-start; align-items: center; text-align: center; padding: 28px 30px 30px; cursor: pointer; }
+        .card-front { justify-content: center; align-items: center; text-align: center; padding: 40px 30px; cursor: pointer; }
 
         /* IMPORTANT: user-select:none on .word-container prevents text selection
            on long-press, which would interfere with the mastery long-press gesture
@@ -1007,21 +1007,18 @@
                  The long-press mastery gesture is attached to #front-word-container
                  Do NOT remove that element's id. -->
             <div class="card-face card-front" onclick="handleCardFrontClick(event)">
-                <!-- Progress bar in normal flow, sits between card top and word -->
-                <div id="front-progress-wrap" style="width:100%;display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <!-- Progress bar: absolutely positioned so the word stays perfectly centered -->
+                <div id="front-progress-wrap" style="position:absolute;top:24px;left:24px;right:24px;display:flex;align-items:center;gap:8px;">
                     <div id="progress-bar-track" style="flex:1;"><div id="progress-bar-fill"></div></div>
                     <div id="progress-label" style="font-size:0.62rem;color:var(--text-dim);white-space:nowrap;letter-spacing:0.04em;">0 / 7</div>
                 </div>
-                <!-- Word centered in remaining space -->
-                <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;">
-                    <div class="word-container" id="front-word-container">
-                        <h1 id="f-word" class="word-display">...</h1>
-                        <div class="ipa-sub">
-                            <!-- #f-ipa shows the IPA transcription; #f-phonetic shows a
-                                 plain-English phonetic spelling. Both are set by updateCard(). -->
-                            <span id="f-ipa"></span>
-                            <span id="f-phonetic"></span>
-                        </div>
+                <div class="word-container" id="front-word-container">
+                    <h1 id="f-word" class="word-display">...</h1>
+                    <div class="ipa-sub">
+                        <!-- #f-ipa shows the IPA transcription; #f-phonetic shows a
+                             plain-English phonetic spelling. Both are set by updateCard(). -->
+                        <span id="f-ipa"></span>
+                        <span id="f-phonetic"></span>
                     </div>
                 </div>
             </div>
@@ -1880,7 +1877,7 @@ function renderExamples(item) {
         const footerHtml = (ex.source || ex.date)
             ? `<div class="example-footer"><span class="example-source">${ex.source}</span><span class="example-date">${ex.date}</span></div>`
             : '';
-        div.innerHTML = `<strong>${idx+1}.</strong> ${annotateWithIPA(ex.text, '')}${footerHtml}`;
+        div.innerHTML = `<strong>${idx+1}.</strong> ${showIpaHints ? annotateWithIPA(ex.text, '') : ex.text}${footerHtml}`;
 
         // Apply color if this sentence is already favorited
         if (ex.isFav) {
@@ -2821,6 +2818,25 @@ function updateRatingButtons() {
     document.getElementById('hdr-easy-btn').classList.toggle('selected', rating === 'easy');
 }
 
+// ── toggleIpaHints / updateIpaToggleBtn ───────────────────────────────────────
+let showIpaHints = localStorage.getItem('wf_show_ipa_hints') !== 'false';
+
+function toggleIpaHints() {
+    showIpaHints = !showIpaHints;
+    localStorage.setItem('wf_show_ipa_hints', showIpaHints);
+    updateIpaToggleBtn();
+    if (wordData.length > 0) renderExamples(wordData[currentIndex]);
+}
+
+function updateIpaToggleBtn() {
+    const btn = document.getElementById('ipa-toggle-btn');
+    if (!btn) return;
+    btn.style.background  = showIpaHints ? 'var(--primary-dim)' : 'var(--surface-2)';
+    btn.style.borderColor = showIpaHints ? 'var(--primary)'     : 'var(--border)';
+    btn.style.color       = showIpaHints ? 'var(--primary)'     : 'var(--text-secondary)';
+}
+
+document.addEventListener('DOMContentLoaded', updateIpaToggleBtn);
 
 </script>
 </body>
