@@ -1333,6 +1333,7 @@ function updateCard() {
     // Start on the second meaning (index 1) if available; first meaning comes last
     currentMeaningIdx = availableMeanings.length > 1 ? 1 : 0;
 
+    stopMeaningCycle();
     document.getElementById('card').classList.remove('is-flipped');
     document.getElementById('app').classList.remove('card-flipped');
     // Always return to front header when navigating to a new card
@@ -2084,6 +2085,22 @@ function resetDeleted() {
 // animation here or the smooth cubic-bezier flip will break.
 // IMPORTANT: The CSS transition on .card handles the animation — do NOT use JS
 // animation here or the smooth cubic-bezier flip will break.
+let meaningCycleTimer = null;
+
+function startMeaningCycle() {
+    stopMeaningCycle();
+    if (availableMeanings.length <= 1) return;
+    meaningCycleTimer = setInterval(() => {
+        currentMeaningIdx = (currentMeaningIdx + 1) % availableMeanings.length;
+        document.getElementById('b-meaning').innerText = availableMeanings[currentMeaningIdx];
+        document.getElementById('more-btn').textContent = `More ${currentMeaningIdx+1}/${availableMeanings.length}`;
+    }, 4000);
+}
+
+function stopMeaningCycle() {
+    if (meaningCycleTimer) { clearInterval(meaningCycleTimer); meaningCycleTimer = null; }
+}
+
 function flipCard() {
     const card = document.getElementById('card');
     card.classList.toggle('is-flipped');
@@ -2091,6 +2108,7 @@ function flipCard() {
     document.getElementById('app').classList.toggle('card-flipped', isFlipped);
     document.getElementById('hdr-front').style.display = isFlipped ? 'none' : 'flex';
     document.getElementById('hdr-back').style.display  = isFlipped ? 'flex' : 'none';
+    if (isFlipped) { startMeaningCycle(); } else { stopMeaningCycle(); }
 }
 
 // ── playAudioFromEvent ────────────────────────────────────────────────────────
