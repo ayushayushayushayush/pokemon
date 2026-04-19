@@ -292,7 +292,7 @@
 
         /* Card front — clicking the word container plays audio; clicking elsewhere flips.
            See handleCardFrontClick() for the logic that differentiates the two tap zones. */
-        .card-front { justify-content: center; align-items: center; text-align: center; padding: 40px 30px; cursor: pointer; }
+        .card-front { flex-direction: column; justify-content: flex-start; align-items: center; text-align: center; padding: 28px 30px 30px; cursor: pointer; }
 
         /* IMPORTANT: user-select:none on .word-container prevents text selection
            on long-press, which would interfere with the mastery long-press gesture
@@ -983,13 +983,11 @@
         <div class="counter" id="counter" onclick="openSearch()">1 / 1</div>
         <div class="header-btn fav-btn" onclick="openFavs()">★</div>
     </div>
-    <!-- Back header: IPA toggle left, Hard/Easy right -->
-    <div id="hdr-back" style="display:none;align-items:center;justify-content:space-between;width:100%;gap:12px;">
-        <div style="flex:1;"></div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-            <button class="rating-btn hard" onclick="rateWord('hard')" id="hdr-hard-btn">Hard</button>
-            <button class="rating-btn easy" onclick="rateWord('easy')" id="hdr-easy-btn">Easy</button>
-        </div>
+    <!-- Back header: IPA toggle + Hard/Easy right -->
+    <div id="hdr-back" style="display:none;align-items:center;justify-content:flex-end;width:100%;gap:8px;">
+        <button id="ipa-toggle-btn" onclick="toggleIpaHints()" style="padding:0 10px;height:28px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface-2);font-family:'Lora',serif;font-size:0.65rem;font-weight:700;letter-spacing:0.04em;color:var(--text-secondary);cursor:pointer;transition:background 0.15s,border-color 0.15s,color 0.15s;flex-shrink:0;">IPA</button>
+        <button class="rating-btn hard" onclick="rateWord('hard')" id="hdr-hard-btn">Hard</button>
+        <button class="rating-btn easy" onclick="rateWord('easy')" id="hdr-easy-btn">Easy</button>
     </div>
 </header>
 
@@ -1009,18 +1007,21 @@
                  The long-press mastery gesture is attached to #front-word-container
                  Do NOT remove that element's id. -->
             <div class="card-face card-front" onclick="handleCardFrontClick(event)">
-                <!-- Progress bar at top of card front -->
-                <div id="front-progress-wrap" style="position:absolute;top:18px;left:24px;right:24px;display:flex;align-items:center;gap:8px;">
+                <!-- Progress bar in normal flow, sits between card top and word -->
+                <div id="front-progress-wrap" style="width:100%;display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                     <div id="progress-bar-track" style="flex:1;"><div id="progress-bar-fill"></div></div>
                     <div id="progress-label" style="font-size:0.62rem;color:var(--text-dim);white-space:nowrap;letter-spacing:0.04em;">0 / 7</div>
                 </div>
-                <div class="word-container" id="front-word-container">
-                    <h1 id="f-word" class="word-display">...</h1>
-                    <div class="ipa-sub">
-                        <!-- #f-ipa shows the IPA transcription; #f-phonetic shows a
-                             plain-English phonetic spelling. Both are set by updateCard(). -->
-                        <span id="f-ipa"></span>
-                        <span id="f-phonetic"></span>
+                <!-- Word centered in remaining space -->
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;">
+                    <div class="word-container" id="front-word-container">
+                        <h1 id="f-word" class="word-display">...</h1>
+                        <div class="ipa-sub">
+                            <!-- #f-ipa shows the IPA transcription; #f-phonetic shows a
+                                 plain-English phonetic spelling. Both are set by updateCard(). -->
+                            <span id="f-ipa"></span>
+                            <span id="f-phonetic"></span>
+                        </div>
                     </div>
                 </div>
             </div>
